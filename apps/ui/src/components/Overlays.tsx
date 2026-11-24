@@ -3,11 +3,13 @@ import { useTranslation } from 'react-i18next';
 import { START_PRESETS, type SaveInfo, type ShiftStats, type StartPreset } from '@ls112/protocol';
 import { formatDuration } from '../format';
 import { lookup } from '../lookup';
+import { formatBinding } from '../keymap';
 import { useSim } from '../sim-store';
+import { DiagnosticsButton } from './Settings';
 import css from './Dialog.module.css';
 import ov from './Overlays.module.css';
 
-function Modal(props: {
+export function Modal(props: {
   title: string;
   onClose?: () => void;
   children: React.ReactNode;
@@ -365,16 +367,20 @@ export function SavesDialog() {
 export function HelpDialog() {
   const { t } = useTranslation();
   const openDialog = useSim((s) => s.openDialog);
+  const keymap = useSim((s) => s.keymap);
+  // Belegbare Tasten aus der aktuellen Belegung, feste Dialogtasten dazu.
   const keys: [string, string][] = [
-    ['Leertaste', 'space'],
-    ['1 – 4', 'speed'],
-    ['F2', 'f2'],
+    [formatBinding(keymap.pause), 'space'],
+    [`${formatBinding(keymap.speed1)} – ${formatBinding(keymap.speed4)}`, 'speed'],
+    [formatBinding(keymap.acceptCall), 'f2'],
     ['Alt+1 – 6', 'alt'],
-    ['F3', 'f3'],
-    ['F4', 'f4'],
+    [formatBinding(keymap.dispatch), 'f3'],
+    [formatBinding(keymap.destination), 'f4'],
     ['Enter', 'enter'],
     ['Strg+Enter', 'ctrlEnter'],
-    ['Esc', 'esc'],
+    [formatBinding(keymap.closeDialog), 'esc'],
+    [`${formatBinding(keymap.tabIncidents)} – ${formatBinding(keymap.tabRadio)}`, 'tabs'],
+    [formatBinding(keymap.windows), 'windows'],
   ];
   return (
     <Modal
@@ -385,6 +391,19 @@ export function HelpDialog() {
     >
       <p>{t('help.flow')}</p>
       <p>{t('help.logistics')}</p>
+      <p>
+        <button
+          type="button"
+          className={css.btn}
+          onClick={() => {
+            openDialog({ kind: 'keys' });
+          }}
+        >
+          {t('help.changeKeys')}
+        </button>{' '}
+        <DiagnosticsButton />
+      </p>
+      <p className={css.hint}>{t('diagnostics.hint')}</p>
       <table className={css.table}>
         <tbody>
           {keys.map(([k, id]) => (

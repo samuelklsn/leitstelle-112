@@ -80,10 +80,31 @@ auf Leitung 2 klingelt schon der nächste Notruf.
 | `Leertaste`            | Pause                                          |
 | `1`–`4`                | Zeitraffer 1×, 2×, 5×, 10×                     |
 | `Esc`                  | Dialog schließen                               |
+| `Strg+1`–`Strg+4`      | Reiter Einsätze, Aufträge, Kliniken, Funk      |
+| `F1` / `F8` / `F9`     | Hilfe / Fenster und Layouts / Auswertung       |
+
+Alle Tasten außer Enter und Alt+Ziffer in der Notrufmaske lassen sich unter **Tasten** neu
+belegen.
+
+### Mehrere Bildschirme
+
+Unter **Fenster** öffnen Lagekarte, Listen (Einsätze, Aufträge, Kliniken, Funk) und
+Fahrzeugstatus je ein eigenes Fenster für weitere Bildschirme. Dialoge öffnen sich immer im
+Hauptfenster, die Auswahl eines Einsatzes gilt in allen Fenstern. Mitgelieferte Layouts passen
+sich der Zahl der Bildschirme an; eigene Anordnungen lassen sich speichern und werden beim
+nächsten Start wiederhergestellt.
+
+![Fenster und Layouts](docs/images/fenster.png)
+
+### Fehler melden
+
+**Hilfe → Diagnosepaket erstellen** speichert Protokolle und Absturzberichte als ZIP. Es wird
+nichts automatisch versendet – das Paket kann einem
+[Fehlerbericht](https://github.com/samuelklsn/leitstelle-112/issues/new/choose) angehängt werden.
 
 ## Stand und Roadmap
 
-**v0.3.0:** Feuerwehr mit Brand- und Hilfeleistungslagen, die sich ausbreiten. **v0.2.0:** strukturierte Notrufabfrage mit Fehl-, Scherz- und Doppelanrufen. **Seit v0.1.0:** Rettungsdienst im fiktiven Landkreis Brakenfeld. Dazu gehören
+**v0.6.0:** Mehrere Fenster und Bildschirme, eigene Tastenbelegung, Diagnosepaket. **v0.5.0:** Wetter, Feiertage, Ereignisse, Rettungshubschrauber. **v0.4.0:** Krankentransporte, Klinikabmeldungen, Pausen. **v0.3.0:** Feuerwehr mit Brand- und Hilfeleistungslagen, die sich ausbreiten. **v0.2.0:** strukturierte Notrufabfrage mit Fehl-, Scherz- und Doppelanrufen. **Seit v0.1.0:** Rettungsdienst im fiktiven Landkreis Brakenfeld. Dazu gehören
 7 Orte, 3 Rettungswachen, 2 Notarztstandorte, 2 Krankenhäuser, 4 Stichworte und
 14 Krankheitsbilder, außerdem Tutorial, Speichern und Laden sowie die Schichtauswertung.
 
@@ -97,7 +118,8 @@ auf Leitung 2 klingelt schon der nächste Notruf.
 | M6 Feuerwehr         | Feuerwachen, B/TH-Stichworte, Lagemeldung, Nachforderung, Brandausbreitung | ✅                                                                 |
 | M7 RD-Logistik       | KTW/ITW, Krankentransporte, Klinikabmeldungen, Status 6, Pausen            | ✅                                                                 |
 | M8 Welt-Dynamik      | Wetter, Feiertage, Sommerzeit, Ereignisse, Sperrungen, Regie, RTH          | ✅                                                                 |
-| M9 – M12             | Mehrmonitor, MANV, Langzeitspiel, Editoren                                 | [geplant](https://github.com/samuelklsn/leitstelle-112/milestones) |
+| M9 Mehrfenster       | Fenster je Ansicht, Layout-Profile, Tastenbelegung, Diagnosepaket          | ✅                                                                 |
+| M10 – M12            | MANV, Langzeitspiel, Editoren                                              | [geplant](https://github.com/samuelklsn/leitstelle-112/milestones) |
 
 ## Technik
 

@@ -1,3 +1,4 @@
+import { loadKeymap, saveKeymap, type Keymap } from './keymap';
 import { create } from 'zustand';
 import {
   PROTOCOL_VERSION,
@@ -27,7 +28,30 @@ export type Dialog =
   | { readonly kind: 'destination'; readonly vehicleId: string }
   | { readonly kind: 'evaluation'; readonly shift?: ShiftStats }
   | { readonly kind: 'saves' }
-  | { readonly kind: 'help' };
+  | { readonly kind: 'help' }
+  | { readonly kind: 'windows' }
+  | { readonly kind: 'keys' };
+
+/** Ansicht dieses Fensters (Mehrfenster, #50): Hauptfenster oder ein ausgelagerter Bereich. */
+export type WindowView = 'main' | 'map' | 'lists' | 'vehicles';
+export const WINDOW_VIEW: WindowView = (() => {
+  if (typeof window === 'undefined') return 'main';
+  const v = new URLSearchParams(window.location.search).get('view');
+  return v === 'map' || v === 'lists' || v === 'vehicles' ? v : 'main';
+})();
+
+/**
+ * Fenster desselben Spiels stimmen Auswahl und Dialoge ab: Nebenfenster öffnen Dialoge im
+ * Hauptfenster, eine Auswahl gilt in allen Fenstern.
+ */
+type WindowSync =
+  | { readonly type: 'select'; readonly incidentId: string | null }
+  | { readonly type: 'focusVehicle'; readonly vehicleId: string | null }
+  | { readonly type: 'dialog'; readonly dialog: Dialog };
+const channel: BroadcastChannel | undefined =
+  typeof BroadcastChannel === 'undefined' ? undefined : new BroadcastChannel('ls112-windows');
+
+export type BottomTab = 'incidents' | 'orders' | 'hospitals' | 'radio';
 
 interface SimStore {
   status: 'connecting' | 'connected' | 'disconnected';
@@ -52,6 +76,13 @@ interface SimStore {
   selectIncident: (id: string | null) => void;
   focusVehicle: (id: string | null) => void;
   notify: (text: string) => void;
+  /** Tastenbelegung (#30) und ob gerade eine Taste neu belegt wird. */
+  keymap: Keymap;
+  setKeymap: (keymap: Keymap) => void;
+  capturingKey: boolean;
+  setCapturingKey: (on: boolean) => void;
+  bottomTab: BottomTab;
+  setBottomTab: (tab: BottomTab) => void;
 }
 
 let port: MessagePort | undefined;
@@ -68,7 +99,8 @@ export const useSim = create<SimStore>((set, get) => ({
   world: undefined,
   host: undefined,
   events: [],
-  dialog: { kind: 'start' },
+  // Nur das Hauptfenster begrüßt mit dem Startbildschirm.
+  dialog: WINDOW_VIEW === 'main' ? { kind: 'start' } : null,
   selectedIncidentId: null,
   focusVehicleId: null,
   notice: null,
@@ -97,16 +129,37 @@ export const useSim = create<SimStore>((set, get) => ({
     set({ events: [], dialog: null, selectedIncidentId: null });
   },
   openDialog: (dialog) => {
+    // Nebenfenster haben keine Dialoge – das Hauptfenster übernimmt und kommt nach vorn.
+    if (WINDOW_VIEW !== 'main' && dialog) {
+      channel?.postMessage({ type: 'dialog', dialog } satisfies WindowSync);
+      window.ls112?.focusMainWindow();
+      return;
+    }
     set({ dialog });
   },
   selectIncident: (id) => {
     set({ selectedIncidentId: id });
+    channel?.postMessage({ type: 'select', incidentId: id } satisfies WindowSync);
   },
   focusVehicle: (id) => {
     set({ focusVehicleId: id });
+    channel?.postMessage({ type: 'focusVehicle', vehicleId: id } satisfies WindowSync);
   },
   notify: (text) => {
     set({ notice: { text, at: Date.now() } });
+  },
+  keymap: loadKeymap(),
+  setKeymap: (keymap) => {
+    saveKeymap(keymap);
+    set({ keymap });
+  },
+  capturingKey: false,
+  setCapturingKey: (on) => {
+    set({ capturingKey: on });
+  },
+  bottomTab: 'incidents',
+  setBottomTab: (tab) => {
+    set({ bottomTab: tab });
   },
 }));
 
@@ -152,7 +205,8 @@ function handleHostMessage(message: HostMessage): void {
       if (message.kind === 'manual') useSim.getState().notify(`Gespeichert: ${message.name}`);
       return;
     case 'shiftEnded':
-      useSim.setState({ dialog: { kind: 'evaluation', shift: message.shift } });
+      if (WINDOW_VIEW === 'main')
+        useSim.setState({ dialog: { kind: 'evaluation', shift: message.shift } });
       return;
     case 'error':
       window.ls112?.log('warn', 'Sim-Host meldet Fehler', { code: message.code });
@@ -162,6 +216,18 @@ function handleHostMessage(message: HostMessage): void {
       return;
   }
 }
+
+channel?.addEventListener('message', (event: MessageEvent<WindowSync>) => {
+  const m = event.data;
+  if (m.type === 'select') useSim.setState({ selectedIncidentId: m.incidentId });
+  if (m.type === 'focusVehicle') useSim.setState({ focusVehicleId: m.vehicleId });
+  if (m.type === 'dialog' && WINDOW_VIEW === 'main') {
+    useSim.setState({
+      dialog: m.dialog,
+      ...(m.dialog.kind === 'dispatch' ? { selectedIncidentId: m.dialog.incidentId } : {}),
+    });
+  }
+});
 
 /** Nimmt den vom Preload übergebenen MessagePort entgegen (auch nach Neustart des Sim-Hosts). */
 export function connectToSimHost(view: string): void {

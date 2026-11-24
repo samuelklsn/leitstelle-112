@@ -44,6 +44,7 @@ test.beforeAll(async () => {
       LS112_USER_DATA: userData,
       LS112_SEED: '112',
       LS112_CALL_RATE: '12',
+      LS112_DIAG_DIR: userData,
     },
   });
   page = await app.firstWindow();
@@ -174,6 +175,40 @@ test('Logistik: Transportaufträge, Kliniken und Status 6', async () => {
   await shot('kliniken');
   await page.getByTestId('tab-incidents').click();
   await page.getByTestId('btn-pause').click();
+});
+
+test('Mehrfenster: Lagekarte auf einem weiteren Bildschirm, Auswahl gilt überall', async () => {
+  await page.getByTestId('menu-windows').click();
+  await expect(page.getByTestId('windows-dialog')).toContainText('Ein Bildschirm');
+  await shot('fenster');
+  const opened = app.waitForEvent('window');
+  await page.getByTestId('open-window-lists').click();
+  const lists = await opened;
+  await expect(lists.getByTestId('window-lists')).toBeVisible();
+  // Nebenfenster haben kein Menü und keinen Startbildschirm.
+  await expect(lists.getByTestId('menu-windows')).toHaveCount(0);
+  await expect(lists.getByTestId('start-screen')).toHaveCount(0);
+  await lists.getByTestId('tab-orders').click();
+  await expect(lists.getByTestId('order-row').first()).toBeVisible();
+  // Disponieren im Nebenfenster öffnet den Dialog im Hauptfenster.
+  await lists.getByRole('button', { name: 'Disponieren' }).first().click();
+  await expect(page.getByTestId('dispatch-dialog')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await lists.close();
+});
+
+test('Tastenbelegung ändern und Diagnosepaket erstellen', async () => {
+  await page.getByTestId('menu-keys').click();
+  await page.getByTestId('key-help').click();
+  await page.keyboard.press('F6');
+  await expect(page.getByTestId('key-help')).toHaveText('F6');
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('keys-dialog')).toBeHidden();
+  await page.keyboard.press('F6');
+  await expect(page.getByRole('dialog', { name: 'Tastatur und Ablauf' })).toBeVisible();
+  await page.getByTestId('create-diagnostics').click();
+  await expect.poll(() => readdirSync(userData).filter((f) => f.endsWith('.zip')).length).toBe(1);
+  await page.keyboard.press('Escape');
 });
 
 test('stellt die Simulation nach einem Absturz aus dem Autosave wieder her', async () => {

@@ -2,7 +2,8 @@
  * Electron-Main-Prozess: Fenster, Lifecycle, Logging-Sammelstelle, Crash-Handling (ADR-0005).
  * Enthält keine Spiellogik.
  */
-import { join } from 'node:path';
+import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { basename, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import {
   BrowserWindow,
@@ -13,12 +14,27 @@ import {
   ipcMain,
   net,
   protocol,
+  screen,
   shell,
   utilityProcess,
   type UtilityProcess,
 } from 'electron';
 import { createLogger } from '../shared/logger';
 import { writeCrashReport } from '../shared/crash';
+import {
+  EMPTY_LAYOUT_FILE,
+  WINDOW_VIEWS,
+  allLayouts,
+  fitLayout,
+  parseLayoutFile,
+  removeLayout,
+  upsertLayout,
+  type DisplayInfo,
+  type LayoutFile,
+  type WindowPlacement,
+  type WindowView,
+} from '../shared/layouts';
+import { createZip, type ZipEntry } from '../shared/zip';
 
 const APP_ID = 'de.leitstelle112.app';
 const DEV_URL = process.env.LS112_DEV_URL;
@@ -84,6 +100,122 @@ let quitting = false;
 let simHost: UtilityProcess | undefined;
 let simHostRestarts = 0;
 const windows = new Set<BrowserWindow>();
+/** Welche Ansicht zeigt welches Fenster (Mehrfenster, #50). */
+const views = new Map<BrowserWindow, WindowView>();
+const layoutFile = () => join(app.getPath('userData'), 'layouts.json');
+
+function readLayouts(): LayoutFile {
+  try {
+    return existsSync(layoutFile())
+      ? parseLayoutFile(readFileSync(layoutFile(), 'utf8'))
+      : EMPTY_LAYOUT_FILE;
+  } catch (error) {
+    log.warn({ err: error }, 'Layout-Datei nicht lesbar');
+    return EMPTY_LAYOUT_FILE;
+  }
+}
+
+function writeLayouts(file: LayoutFile): void {
+  try {
+    writeFileSync(layoutFile(), JSON.stringify(file, null, 2), 'utf8');
+  } catch (error) {
+    log.warn({ err: error }, 'Layout-Datei nicht schreibbar');
+  }
+}
+
+function displays(): DisplayInfo[] {
+  const primary = screen.getPrimaryDisplay().id;
+  return screen
+    .getAllDisplays()
+    .map((d) => ({ id: d.id, primary: d.id === primary, workArea: d.workArea }));
+}
+
+function windowOf(view: WindowView): BrowserWindow | undefined {
+  for (const [win, v] of views) if (v === view && !win.isDestroyed()) return win;
+  return undefined;
+}
+
+function place(win: BrowserWindow, p: WindowPlacement): void {
+  if (win.isMaximized()) win.unmaximize();
+  win.setBounds(p.bounds);
+  if (p.maximized) win.maximize();
+}
+
+/** Layout anwenden: fehlende Fenster öffnen, überzählige Nebenfenster schließen. */
+function applyLayout(name: string): boolean {
+  const file = readLayouts();
+  const layout = allLayouts(file, displays()).find((l) => l.name === name);
+  if (!layout) return false;
+  const placements = fitLayout(layout, displays());
+  for (const p of placements) {
+    const win = windowOf(p.view) ?? createWindow(p.view);
+    place(win, p);
+  }
+  for (const [win, v] of views) {
+    if (v !== 'main' && !placements.some((p) => p.view === v)) win.close();
+  }
+  writeLayouts({ ...file, last: name });
+  return true;
+}
+
+function currentPlacements(): WindowPlacement[] {
+  return [...views]
+    .filter(([win]) => !win.isDestroyed())
+    .map(([win, view]) => ({
+      view,
+      bounds: win.getNormalBounds(),
+      maximized: win.isMaximized(),
+    }));
+}
+
+/** Logs und Absturzberichte als ZIP (#34) – nichts wird versendet. */
+async function createDiagnostics(parent: BrowserWindow | undefined): Promise<string | null> {
+  const entries: ZipEntry[] = [];
+  for (const [dir, prefix] of [
+    [logDir, 'logs'],
+    [crashDir, 'crashes'],
+  ] as const) {
+    if (!existsSync(dir)) continue;
+    for (const name of readdirSync(dir)) {
+      if (!/\.(log|json|txt|dmp)$/i.test(name)) continue;
+      try {
+        entries.push({ name: `${prefix}/${name}`, data: readFileSync(join(dir, name)) });
+      } catch {
+        // Gerade geschriebene Dateien können gesperrt sein – überspringen.
+      }
+    }
+  }
+  const info = {
+    version: app.getVersion(),
+    electron: process.versions.electron,
+    os: `${process.platform} ${process.getSystemVersion()}`,
+    arch: process.arch,
+    displays: screen.getAllDisplays().length,
+    simHostRestarts,
+    createdAt: new Date().toISOString(),
+  };
+  entries.push({ name: 'system.json', data: Buffer.from(JSON.stringify(info, null, 2)) });
+  const fileName = `Leitstelle112-Diagnose-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.zip`;
+  let target: string | undefined = process.env.LS112_DIAG_DIR
+    ? join(process.env.LS112_DIAG_DIR, fileName)
+    : undefined;
+  if (!target) {
+    const options = {
+      title: 'Diagnosepaket speichern',
+      defaultPath: join(app.getPath('desktop'), fileName),
+      filters: [{ name: 'ZIP-Archiv', extensions: ['zip'] }],
+    };
+    const result = parent
+      ? await dialog.showSaveDialog(parent, options)
+      : await dialog.showSaveDialog(options);
+    if (result.canceled || !result.filePath) return null;
+    target = result.filePath;
+  }
+  writeFileSync(target, createZip(entries));
+  log.info({ file: basename(target), entries: entries.length }, 'Diagnosepaket erstellt');
+  if (!process.env.LS112_DIAG_DIR) shell.showItemInFolder(target);
+  return target;
+}
 
 /** Basisinhalte: im Installer unter resources/content, in der Entwicklung im Repository. */
 function contentDir(): string {
@@ -164,13 +296,21 @@ function connectWindow(win: BrowserWindow): void {
   win.webContents.postMessage('sim-port', null, [port2]);
 }
 
-function createMainWindow(): BrowserWindow {
+const VIEW_TITLES: Record<WindowView, string> = {
+  main: 'Leitstelle 112',
+  map: 'Leitstelle 112 – Lagekarte',
+  lists: 'Leitstelle 112 – Einsätze, Aufträge, Kliniken, Funk',
+  vehicles: 'Leitstelle 112 – Fahrzeugstatus',
+};
+
+function createWindow(view: WindowView = 'main'): BrowserWindow {
+  const main = view === 'main';
   const win = new BrowserWindow({
-    width: 1600,
-    height: 900,
-    minWidth: 1024,
-    minHeight: 640,
-    title: 'Leitstelle 112',
+    width: main ? 1600 : 1100,
+    height: main ? 900 : 760,
+    minWidth: main ? 1024 : 480,
+    minHeight: main ? 640 : 360,
+    title: VIEW_TITLES[view],
     backgroundColor: '#0b0f14',
     show: false,
     autoHideMenuBar: true,
@@ -183,7 +323,17 @@ function createMainWindow(): BrowserWindow {
     },
   });
   windows.add(win);
-  win.on('closed', () => windows.delete(win));
+  views.set(win, view);
+  win.on('closed', () => {
+    windows.delete(win);
+    views.delete(win);
+  });
+  // Das Hauptfenster schließt die Anwendung samt Nebenfenstern.
+  if (main) {
+    win.on('close', () => {
+      for (const other of windows) if (other !== win && !other.isDestroyed()) other.destroy();
+    });
+  }
   win.once('ready-to-show', () => {
     win.show();
   });
@@ -204,13 +354,73 @@ function createMainWindow(): BrowserWindow {
     log.error({ details, crashReport: file }, 'Renderer-Prozess beendet');
   });
 
+  const query = main ? '' : `?view=${view}`;
   if (DEV_URL) {
-    void win.loadURL(DEV_URL);
+    void win.loadURL(`${DEV_URL}${query}`);
   } else {
-    void win.loadURL('app://ui/index.html');
+    void win.loadURL(`app://ui/index.html${query}`);
   }
   return win;
 }
+
+function isWindowView(v: unknown): v is WindowView {
+  return WINDOW_VIEWS.some((x) => x === v);
+}
+
+ipcMain.handle('window-open', (_event, view: unknown) => {
+  if (!isWindowView(view)) return false;
+  const existing = windowOf(view);
+  if (existing) {
+    if (existing.isMinimized()) existing.restore();
+    existing.focus();
+  } else {
+    createWindow(view);
+  }
+  return true;
+});
+
+ipcMain.on('window-focus-main', () => {
+  const win = windowOf('main');
+  if (win) {
+    if (win.isMinimized()) win.restore();
+    win.focus();
+  }
+});
+
+ipcMain.handle('layout-list', () => {
+  const file = readLayouts();
+  return {
+    last: file.last ?? null,
+    layouts: allLayouts(file, displays()).map((l) => ({
+      name: l.name,
+      builtIn: l.builtIn === true,
+      windows: l.windows.length,
+    })),
+    displays: displays().length,
+  };
+});
+
+ipcMain.handle('layout-apply', (_event, name: unknown) =>
+  typeof name === 'string' ? applyLayout(name) : false,
+);
+
+ipcMain.handle('layout-save', (_event, name: unknown) => {
+  if (typeof name !== 'string' || name.trim().length === 0) return false;
+  writeLayouts(
+    upsertLayout(readLayouts(), { name: name.trim().slice(0, 60), windows: currentPlacements() }),
+  );
+  return true;
+});
+
+ipcMain.handle('layout-delete', (_event, name: unknown) => {
+  if (typeof name !== 'string') return false;
+  writeLayouts(removeLayout(readLayouts(), name));
+  return true;
+});
+
+ipcMain.handle('diagnostics-create', (event) =>
+  createDiagnostics([...windows].find((w) => w.webContents === event.sender)),
+);
 
 type RendererLogLevel = 'info' | 'warn' | 'error';
 ipcMain.on('renderer-log', (_event, level: unknown, message: unknown, context: unknown) => {
@@ -252,7 +462,10 @@ if (!gotLock) {
   void app.whenReady().then(() => {
     registerAppProtocol();
     startSimHost();
-    createMainWindow();
+    createWindow('main');
+    // Zuletzt benutztes Layout wiederherstellen (nicht im Test – dort zählt der Ausgangszustand).
+    const last = readLayouts().last;
+    if (last && !IS_E2E) applyLayout(last);
   });
   app.on('window-all-closed', () => {
     app.quit();

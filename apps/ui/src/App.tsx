@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { SPEEDS } from '@ls112/protocol';
 import { formatClock, formatDate, formatTimeOfDay } from './format';
 import { lookup } from './lookup';
-import { useSim } from './sim-store';
+import { WINDOW_VIEW, useSim, type WindowView } from './sim-store';
 import { useGlobalShortcuts } from './use-shortcuts';
 import { CallMask } from './components/CallMask';
 import { DestinationDialog, DispatchDialog } from './components/DispatchDialog';
@@ -16,11 +16,13 @@ import {
   TutorialCoach,
 } from './components/Overlays';
 import { BottomTabs, CallsPanel, VehiclePanel } from './components/Panels';
+import { KeysDialog, WindowsDialog } from './components/Settings';
 import css from './App.module.css';
 
 export function App() {
   useGlobalShortcuts();
   const dialog = useSim((s) => s.dialog);
+  if (WINDOW_VIEW !== 'main') return <SecondaryWindow view={WINDOW_VIEW} />;
   return (
     <div className={css.shell}>
       <Header />
@@ -45,12 +47,36 @@ export function App() {
       {dialog?.kind === 'evaluation' && <EvaluationDialog shift={dialog.shift} />}
       {dialog?.kind === 'saves' && <SavesDialog />}
       {dialog?.kind === 'help' && <HelpDialog />}
+      {dialog?.kind === 'windows' && <WindowsDialog />}
+      {dialog?.kind === 'keys' && <KeysDialog />}
       <Notice />
     </div>
   );
 }
 
-function Header() {
+/**
+ * Ausgelagerte Ansicht für einen weiteren Bildschirm (#50): Lagekarte, Listen oder
+ * Fahrzeugstatus. Dialoge öffnen sich im Hauptfenster.
+ */
+function SecondaryWindow({ view }: { view: Exclude<WindowView, 'main'> }) {
+  return (
+    <div className={css.shell}>
+      <Header secondary />
+      <main className={css.single} data-testid={`window-${view}`}>
+        {view === 'map' && (
+          <section className={css.map} aria-label="Lagekarte">
+            <MapView />
+          </section>
+        )}
+        {view === 'lists' && <BottomTabs />}
+        {view === 'vehicles' && <VehiclePanel />}
+      </main>
+      <Notice />
+    </div>
+  );
+}
+
+function Header({ secondary = false }: { secondary?: boolean }) {
   const { t } = useTranslation();
   const host = useSim((s) => s.host);
   const world = useSim((s) => s.world);
@@ -68,42 +94,62 @@ function Header() {
         <span className={css.brandTitle}>{t('app.title')}</span>
         <span className={css.brandSub}>{world?.centerName}</span>
       </div>
-      <nav className={css.menu}>
-        <button
-          type="button"
-          onClick={() => {
-            openDialog({ kind: 'start' });
-          }}
-          data-testid="menu-new"
-        >
-          {t('menu.new')}
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            openDialog({ kind: 'saves' });
-          }}
-        >
-          {t('menu.saves')}
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            openDialog({ kind: 'evaluation' });
-          }}
-          data-testid="open-evaluation"
-        >
-          {t('menu.evaluation')}
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            openDialog({ kind: 'help' });
-          }}
-        >
-          {t('menu.help')}
-        </button>
-      </nav>
+      {!secondary && (
+        <nav className={css.menu}>
+          <button
+            type="button"
+            onClick={() => {
+              openDialog({ kind: 'start' });
+            }}
+            data-testid="menu-new"
+          >
+            {t('menu.new')}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              openDialog({ kind: 'saves' });
+            }}
+          >
+            {t('menu.saves')}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              openDialog({ kind: 'evaluation' });
+            }}
+            data-testid="open-evaluation"
+          >
+            {t('menu.evaluation')}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              openDialog({ kind: 'help' });
+            }}
+          >
+            {t('menu.help')}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              openDialog({ kind: 'windows' });
+            }}
+            data-testid="menu-windows"
+          >
+            {t('menu.windows')}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              openDialog({ kind: 'keys' });
+            }}
+            data-testid="menu-keys"
+          >
+            {t('menu.keys')}
+          </button>
+        </nav>
+      )}
       <div className={css.clock} data-testid="sim-clock">
         {host && (
           <>

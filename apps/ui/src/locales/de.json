@@ -10,7 +10,9 @@
     "save": "Speichern",
     "saves": "Spielstände",
     "evaluation": "Auswertung",
-    "help": "Hilfe"
+    "help": "Hilfe",
+    "windows": "Fenster",
+    "keys": "Tasten"
   },
   "clock": {
     "pause": "Pause",
@@ -392,8 +394,11 @@
       "enter": "Vorschlag bestätigen (Alarmieren, Zuweisen)",
       "ctrlEnter": "Einsatz anlegen (in der Notrufmaske)",
       "esc": "Dialog schließen",
-      "alt": "Fragen der Notrufabfrage (Alt+0: alle)"
-    }
+      "alt": "Fragen der Notrufabfrage (Alt+0: alle)",
+      "tabs": "Reiter Einsätze / Aufträge / Kliniken / Funk",
+      "windows": "Fenster und Layouts für mehrere Bildschirme"
+    },
+    "changeKeys": "Tastenbelegung ändern …"
   },
   "tutorial": {
     "title": "Tutorial",
@@ -495,5 +500,58 @@
   "world": {
     "noFlying": "kein Flugwetter für den Rettungshubschrauber",
     "until": "voraussichtlich bis {{time}}"
+  },
+  "windows": {
+    "title": "Fenster und Bildschirme",
+    "browserOnly": "Mehrere Fenster gibt es nur in der Desktop-Anwendung.",
+    "open": "In eigenem Fenster öffnen",
+    "openHint": "Ziehen Sie das Fenster auf einen weiteren Bildschirm. Dialoge öffnen sich im Hauptfenster, die Auswahl gilt in allen Fenstern.",
+    "view": {
+      "map": "Lagekarte",
+      "lists": "Einsätze, Aufträge, Kliniken, Funk",
+      "vehicles": "Fahrzeugstatus"
+    },
+    "layouts": "Layouts",
+    "displays_one": "{{count}} Bildschirm erkannt",
+    "displays_other": "{{count}} Bildschirme erkannt",
+    "builtIn": "mitgeliefert",
+    "own": "eigenes Layout",
+    "windowCount_one": "{{count}} Fenster",
+    "windowCount_other": "{{count}} Fenster",
+    "apply": "Anwenden",
+    "delete": "Löschen",
+    "namePlaceholder": "Name für die aktuelle Anordnung",
+    "save": "Aktuelle Anordnung speichern",
+    "saved": "Layout „{{name}}“ gespeichert"
+  },
+  "keys": {
+    "title": "Tastenbelegung",
+    "hint": "Klicken Sie auf eine Taste und drücken Sie dann die neue Taste. Ist sie schon belegt, tauschen beide Aktionen ihre Tasten.",
+    "press": "Taste drücken …",
+    "reset": "Vorgabe wiederherstellen",
+    "fixed": "Fest belegt: Enter bestätigt den Vorschlag, Strg+Enter legt den Einsatz an, Alt+1–6 stellt Fragen in der Notrufmaske.",
+    "action": {
+      "acceptCall": "Notruf annehmen / Gespräch öffnen",
+      "dispatch": "Einsatz ohne Kräfte disponieren",
+      "destination": "Ältesten Sprechwunsch bearbeiten",
+      "pause": "Pause / Weiter",
+      "speed1": "Zeitraffer 1×",
+      "speed2": "Zeitraffer 2×",
+      "speed3": "Zeitraffer 5×",
+      "speed4": "Zeitraffer 10×",
+      "closeDialog": "Dialog schließen",
+      "help": "Hilfe",
+      "evaluation": "Auswertung",
+      "tabIncidents": "Reiter Einsätze",
+      "tabOrders": "Reiter Aufträge",
+      "tabHospitals": "Reiter Kliniken",
+      "tabRadio": "Reiter Funk",
+      "windows": "Fenster und Layouts"
+    }
+  },
+  "diagnostics": {
+    "create": "Diagnosepaket erstellen …",
+    "saved": "Diagnosepaket gespeichert",
+    "hint": "Das Diagnosepaket enthält Protokolle und Absturzberichte dieses Rechners als ZIP-Datei. Es wird nichts versendet – Sie können es einem Fehlerbericht anhängen."
   }
 }
