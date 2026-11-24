@@ -205,6 +205,23 @@ export const Settings = z.object({
     ratePer100k: z.number().positive(),
     hourlyProfile: z.array(z.number().nonnegative()).length(24),
     abandonAfterSeconds: Range,
+    /** Antwortzeit des Anrufers je Frage der Notrufabfrage (Sekunden). */
+    answerSeconds: Range.default([3, 8]),
+    /** Anteile besonderer Anrufe (ADR-0014). */
+    kinds: z
+      .object({
+        /** Hosentaschen- und Fehlanrufe (Stille). */
+        misdial: Probability,
+        /** Scherz- und Missbrauchsanrufe. */
+        prank: Probability,
+        /** Auskunftsanrufe (Apotheke, Bereitschaftsdienst, Krankentransport). */
+        info: Probability,
+        /** Wahrscheinlichkeit einer weiteren Meldung zu einem laufenden Einsatz. */
+        duplicate: Probability,
+        /** Anteil der Einsätze im Freien, die die Polizei (110) übergibt. */
+        police: Probability,
+      })
+      .default({ misdial: 0.06, prank: 0.03, info: 0.05, duplicate: 0.12, police: 0.25 }),
   }),
   times: z.object({
     /** Ausrückzeit von der Wache tagsüber / nachts (Sekunden). */
