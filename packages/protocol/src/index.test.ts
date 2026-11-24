@@ -81,3 +81,22 @@ describe('parseSimCommand', () => {
     expect(parseSimCommand({ type: 'vehicle/assignDestination', vehicleId: 'v' })).toBeUndefined();
   });
 });
+
+describe('Notrufabfrage im Protokoll', () => {
+  it('akzeptiert Fragen und Zuordnungen, lehnt unbekannte Fragen ab', () => {
+    expect(parseSimCommand({ type: 'call/ask', callId: 'N1', question: 'breathing' })).toEqual({
+      type: 'call/ask',
+      callId: 'N1',
+      question: 'breathing',
+    });
+    expect(
+      parseSimCommand({ type: 'call/ask', callId: 'N1', question: 'blutgruppe' }),
+    ).toBeUndefined();
+    expect(parseSimCommand({ type: 'call/link', callId: 'N1', incidentId: 'E1' })).toEqual({
+      type: 'call/link',
+      callId: 'N1',
+      incidentId: 'E1',
+    });
+    expect(parseSimCommand({ type: 'call/link', callId: 'N1' })).toBeUndefined();
+  });
+});
