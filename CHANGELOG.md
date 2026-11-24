@@ -6,6 +6,35 @@ Versionierung nach [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+## [0.3.0] – 2026-11-24 – Feuerwehr (M6)
+
+### Hinzugefügt
+
+- **Feuerwehr im Landkreis Brakenfeld:**
+  - Feuerwache Brakenfeld mit hauptamtlicher Wachbereitschaft und 6 Freiwillige Feuerwehren
+    mit eigener, längerer Ausrückzeit (Meldeempfänger, Anfahrt zum Gerätehaus).
+  - 15 Fahrzeuge: ELW 1, HLF, LF, DLK, RW, TLF.
+- **Neues Stichwortschema:** B 1–3 und TH 1–2. Die AAO kennt Ersatzfahrzeuge, ein LF statt eines
+  HLF, und der Vorschlag nimmt das schnellste geeignete Fahrzeug.
+- **9 Feuerwehrlagen:** Mülleimer- und PKW-Brand, Heimrauchmelder, Küchen-, Wohnungs- und
+  Dachstuhlbrand, Ölspur, Baum auf Fahrbahn, Verkehrsunfall mit eingeklemmter Person. Rund 15 %
+  aller Notrufe sind Feuerwehrlagen.
+- **Lagemeldung und Nachforderung:** Das erste Fahrzeug meldet die echte Lage und fordert
+  fehlende Kräfte nach. Der Einsatz wird dann wieder als „Kräfte nachgefordert“ angezeigt.
+- **Lageentwicklung:**
+  - Ohne Feuerwehr vor Ort breitet sich ein Brand aus (Küche → Wohnung → Dachstuhl).
+  - Patienten können sich bei langer Wartezeit um eine NACA-Stufe verschlechtern.
+- **Verletzte bei Feuerwehrlagen** werden parallel vom Rettungsdienst versorgt. Eingeklemmte
+  Personen sind erst nach der technischen Rettung transportfähig.
+- **Auswertung:** Eintreffzeit der Feuerwehr (10 Minuten) als eigene Kennzahl. Brandausbreitung
+  wird als Fehler gewertet.
+- **Karte:** Feuerwachen werden als „FW“ angezeigt. Fahrzeuge auf ihrer Wache blendet die Karte
+  aus, damit sie sich nicht stapeln.
+
+### Behoben
+
+- Der Anrufmix-Test verwendet feste Seeds und ist damit nicht mehr flaky.
+
 ## [0.2.0] – 2026-11-24 – Notrufannahme 2.0 (M5)
 
 ### Hinzugefügt
@@ -122,7 +151,8 @@ eigentlichen Sinn – das kommt ab M2/M3.
 - Nach einem Absturz startet die Simulation neu beim Schichtbeginn; Autosave folgt in M4.
 - Der Installer wird nur in der CI gebaut (Richtlinie des Entwicklungsrechners, PLAN Kapitel 9).
 
-[Unreleased]: https://github.com/samuelklsn/leitstelle-112/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/samuelklsn/leitstelle-112/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/samuelklsn/leitstelle-112/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/samuelklsn/leitstelle-112/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/samuelklsn/leitstelle-112/compare/v0.0.1...v0.1.0
 [0.0.1]: https://github.com/samuelklsn/leitstelle-112/releases/tag/v0.0.1
