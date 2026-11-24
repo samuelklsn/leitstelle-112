@@ -58,11 +58,13 @@ test.afterAll(async () => {
   rmSync(userData, { recursive: true, force: true });
 });
 
-test('Startbildschirm und freies Spiel', async () => {
+test('Startbildschirm und Tutorial', async () => {
   await expect(page).toHaveTitle('Leitstelle 112');
   await page.waitForTimeout(800);
   await shot('startbildschirm');
-  await page.getByTestId('start-free').click();
+  // Das Tutorial garantiert als ersten Anruf einen echten Notfall.
+  await page.getByTestId('start-tutorial').click();
+  await expect(page.getByTestId('tutorial-coach')).toBeVisible();
   await expect(page.getByTestId('start-screen')).toBeHidden();
   await expect(page.getByTestId('vehicle-row')).toHaveCount(7);
 });
@@ -89,7 +91,13 @@ test('kompletter Einsatz: Notruf → Disposition → Anfahrt → Zielklinik', as
   await page.keyboard.press('F2');
   const mask = page.getByTestId('call-mask');
   await expect(mask).toBeVisible();
-  await expect(page.getByTestId('transcript')).toContainText('Wo genau');
+  // Strukturierte Abfrage: Fragen stellen, Antworten kommen nach einigen Sekunden.
+  await expect(page.getByTestId('take-address')).toBeDisabled();
+  await page.getByTestId('ask-all').click();
+  await expect(page.getByTestId('transcript')).toContainText('Atmet die Person normal?');
+  await expect(page.getByTestId('take-address')).toBeEnabled({ timeout: 30_000 });
+  // Alle Antworten abwarten – der Anrufer antwortet nacheinander.
+  await expect(page.getByTestId('typing')).toHaveCount(0, { timeout: 90_000 });
   await page.getByTestId('take-address').click();
   const results = page.getByTestId('address-results').locator('button');
   await expect(results.first()).toBeVisible();
