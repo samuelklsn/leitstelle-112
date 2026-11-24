@@ -66,7 +66,8 @@ test('Startbildschirm und Tutorial', async () => {
   await page.getByTestId('start-tutorial').click();
   await expect(page.getByTestId('tutorial-coach')).toBeVisible();
   await expect(page.getByTestId('start-screen')).toBeHidden();
-  await expect(page.getByTestId('vehicle-row')).toHaveCount(7);
+  // 7 Rettungsdienst- und 15 Feuerwehrfahrzeuge.
+  await expect(page.getByTestId('vehicle-row')).toHaveCount(22);
 });
 
 test('Takt, Pause und Zeitraffer', async () => {
@@ -116,7 +117,7 @@ test('kompletter Einsatz: Notruf → Disposition → Anfahrt → Zielklinik', as
   await expect(dispatch).toBeHidden();
 
   await page.getByTestId('btn-speed-10').click();
-  await expect(page.getByTestId('vehicle-marker').first()).toBeVisible();
+  await expect(page.getByTestId('vehicle-marker').filter({ visible: true }).first()).toBeVisible();
   await page.getByTestId('tab-radio').click();
   await expect(page.getByTestId('event-log')).toContainText('Einsatz übernommen', {
     timeout: 30_000,
