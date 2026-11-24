@@ -9,7 +9,10 @@ describe('Basisinhalte', () => {
   it('sind gültig und vollständig verknüpft', () => {
     const c = loadContentFromDirs(BASE);
     expect(c.region.towns.length).toBeGreaterThanOrEqual(5);
-    expect(c.stations.flatMap((s) => s.vehicles)).toHaveLength(7);
+    const vehicles = c.stations.flatMap((s) => s.vehicles);
+    expect(vehicles.filter((v) => v.type === "base:rtw" || v.type === "base:nef")).toHaveLength(7);
+    expect(vehicles.length).toBeGreaterThan(15);
+    expect(c.fireScenarios.length).toBeGreaterThanOrEqual(8);
     expect(c.hospitals).toHaveLength(2);
     expect(c.keywords.map((k) => k.code)).toContain('RD 2');
     expect(c.diagnoses.length).toBeGreaterThanOrEqual(12);
