@@ -206,6 +206,8 @@ export function createIncident(
     addressId,
     truth: call.truth,
     report: call.report,
+    callKind: call.kind,
+    ...(call.duplicateOf !== undefined ? { duplicateOf: call.duplicateOf } : {}),
     status: 'open',
     vehicleIds: [],
     assessed: false,
@@ -491,6 +493,14 @@ function arriveAtScene(ctx: Ctx, v: VehicleState): void {
   scheduleSceneDone(ctx, incident);
 }
 
+function releaseAll(ctx: Ctx, incident: IncidentState): void {
+  for (const id of [...incident.vehicleIds]) {
+    const o = findVehicle(ctx, id);
+    if (o) releaseVehicle(ctx, o, 'released');
+  }
+  if (incident.status !== 'closed') closeIncident(ctx, incident);
+}
+
 /** Nur das zuerst eingetroffene Fahrzeug meldet den Erstbefund. */
 function hasAssessmentPending(ctx: Ctx, incident: IncidentState, self: VehicleState): boolean {
   return incident.vehicleIds.some((id) => {
@@ -522,6 +532,25 @@ export function onAssessed(ctx: Ctx, v: VehicleState): void {
   if (!incident || incident.assessed) return;
   incident.assessed = true;
   const d = ctx.content.diagnoses.get(incident.truth.diagnosisId);
+
+  // Doppelt angelegt: Die Kollegen des ersten Einsatzes sind längst da.
+  if (incident.duplicateOf !== undefined) {
+    radio(ctx, v, 'alreadyHandled');
+    addIncidentError(ctx, incident, 'duplicateIncident');
+    releaseAll(ctx, incident);
+    return;
+  }
+  // Scherz-, Fehl- oder Auskunftsanruf als Einsatz: vor Ort ist niemand.
+  if (incident.callKind !== 'emergency') {
+    radio(ctx, v, 'noPatient');
+    addIncidentError(
+      ctx,
+      incident,
+      incident.callKind === 'prank' ? 'prankDispatched' : 'nonEmergencyDispatched',
+    );
+    releaseAll(ctx, incident);
+    return;
+  }
 
   if (d?.transport === 0 && !incident.truth.transport) {
     // Kein Patient vor Ort (z. B. bereits weg, Fehlalarm in guter Absicht).

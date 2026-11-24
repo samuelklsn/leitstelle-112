@@ -46,20 +46,46 @@ export interface CallerReport {
   readonly number: string;
   readonly townId: string | null;
   readonly toTownId: string | null;
+  /** Rückrufnummer; leer bei unterdrückter Nummer. */
   readonly callback: string;
   readonly ageGuess: number;
   readonly sex: 'm' | 'w';
   /** Anrufer schätzt die Lage schlimmer (+1) oder harmloser (-1) ein als sie ist. */
   readonly misjudge: -1 | 0 | 1;
+  /** Antwort auf „Ist die Person ansprechbar?" */
+  readonly conscious: 'yes' | 'no' | 'unclear';
+  /** Antwort auf „Atmet die Person normal?" */
+  readonly breathing: 'normal' | 'difficult' | 'none' | 'unclear';
 }
+
+/**
+ * Art des Anrufs (ADR-0014): Nicht jeder Notruf ist ein Notfall. Der Disponent muss Fehl-,
+ * Scherz- und Auskunftsanrufe erkennen und Doppelmeldungen dem bestehenden Einsatz zuordnen.
+ */
+export type CallKind = 'emergency' | 'duplicate' | 'misdial' | 'prank' | 'info';
+
+/** Woher der Anruf kommt: Notruf 112 oder Übergabe der Polizei (110). */
+export type CallSource = '112' | '110';
+
+/** Fragen der strukturierten Notrufabfrage. */
+export const QUESTIONS = ['where', 'what', 'who', 'conscious', 'breathing', 'callback'] as const;
+export type Question = (typeof QUESTIONS)[number];
 
 export interface CallState {
   readonly id: string;
   readonly receivedAt: SimTime;
   status: 'waiting' | 'talking';
   acceptedAt?: SimTime;
+  readonly kind: CallKind;
+  readonly source: CallSource;
+  /** Bei Doppelmeldungen: der bereits bestehende Einsatz. */
+  readonly duplicateOf?: string;
   readonly truth: Truth;
   readonly report: CallerReport;
+  /** Bereits beantwortete Fragen. */
+  answered: Question[];
+  /** Gestellte, noch unbeantwortete Fragen (der Anrufer antwortet nacheinander). */
+  asked: Question[];
 }
 
 // ----------------------------------------------------------------------------- Einsätze
@@ -74,7 +100,10 @@ export type ErrorCode =
   | 'slowDispatch'
   | 'doctorLate'
   | 'unsuitableHospital'
-  | 'destinationTimeout';
+  | 'destinationTimeout'
+  | 'duplicateIncident'
+  | 'prankDispatched'
+  | 'nonEmergencyDispatched';
 
 export type Outcome = 'gut' | 'beeintraechtigt' | 'verstorben' | 'keinPatient';
 
@@ -89,6 +118,10 @@ export interface IncidentState {
   addressId: number;
   readonly truth: Truth;
   readonly report: CallerReport;
+  /** Art des zugrunde liegenden Anrufs (Scherzanruf, Doppelmeldung …). */
+  readonly callKind: CallKind;
+  /** Doppelt angelegt: dieser Einsatz existierte schon. */
+  readonly duplicateOf?: string;
   status: 'open' | 'active' | 'closed';
   vehicleIds: string[];
   firstAlarmAt?: SimTime;
@@ -175,6 +208,7 @@ export interface ShiftStats {
 /** Intern geplante Ereignisse. */
 export type ScheduledPayload =
   | { readonly kind: 'call/abandon'; readonly callId: string }
+  | { readonly kind: 'call/answer'; readonly callId: string }
   | { readonly kind: 'vehicle/turnoutDone'; readonly vehicleId: string; readonly seq: number }
   | { readonly kind: 'vehicle/arrive'; readonly vehicleId: string; readonly seq: number }
   | { readonly kind: 'vehicle/assessed'; readonly vehicleId: string; readonly seq: number }
@@ -200,6 +234,8 @@ export interface SimState {
 export type SimCommand =
   | { readonly type: 'call/accept'; readonly callId: string }
   | { readonly type: 'call/close'; readonly callId: string }
+  | { readonly type: 'call/ask'; readonly callId: string; readonly question: Question }
+  | { readonly type: 'call/link'; readonly callId: string; readonly incidentId: string }
   | {
       readonly type: 'incident/create';
       readonly callId: string;
@@ -222,6 +258,7 @@ export type RejectReason =
   | 'unknownCall'
   | 'callNotWaiting'
   | 'callNotTalking'
+  | 'lineBusy'
   | 'unknownAddress'
   | 'unknownKeyword'
   | 'unknownIncident'
@@ -246,6 +283,18 @@ export type SimEvent =
     }
   | { readonly type: 'call/abandoned'; readonly at: SimTime; readonly callId: string }
   | { readonly type: 'call/closed'; readonly at: SimTime; readonly callId: string }
+  | {
+      readonly type: 'call/answer';
+      readonly at: SimTime;
+      readonly callId: string;
+      readonly question: Question;
+    }
+  | {
+      readonly type: 'call/linked';
+      readonly at: SimTime;
+      readonly callId: string;
+      readonly incidentId: string;
+    }
   | { readonly type: 'incident/created'; readonly at: SimTime; readonly incidentId: string }
   | {
       readonly type: 'incident/closed';
@@ -275,6 +324,7 @@ export type RadioMessage =
   | 'arrived'
   | 'requestDoctor'
   | 'requestTransport'
+  | 'alreadyHandled'
   | 'doctorNotNeeded'
   | 'secondUnitNotNeeded'
   | 'requestDestination'

@@ -27,7 +27,8 @@ export function closeIncident(ctx: Ctx, incident: IncidentState): void {
     incident.firstArrivalAt !== undefined
       ? incident.firstArrivalAt - incident.receivedAt
       : undefined;
-  if (emergency && responseMs !== undefined && d?.transport !== 0) {
+  const realPatient = incident.callKind === 'emergency' && incident.duplicateOf === undefined;
+  if (emergency && realPatient && responseMs !== undefined && d?.transport !== 0) {
     shift.hilfsfristMeasured++;
     shift.totalResponseMs += responseMs;
     if (responseMs <= hf.minutes * MS_PER_MINUTE) shift.hilfsfristMet++;
@@ -38,7 +39,7 @@ export function closeIncident(ctx: Ctx, incident: IncidentState): void {
   const chosen = ctx.content.keywords.get(incident.keywordId);
   const correct = ctx.content.keywords.get(d?.keyword ?? '');
   const chosenHasDoctor = chosen?.aao.some((a) => ctx.content.doctorTypes.has(a.type)) ?? false;
-  if (chosen && correct) {
+  if (chosen && correct && realPatient) {
     // Bewertet wird nur, was am Telefon erkennbar war: das fachlich passende Stichwort zum
     // Meldebild. Ein erst vor Ort sichtbarer Notarzt-Bedarf ist kein Dispositionsfehler.
     const correctHasDoctor = correct.aao.some((a) => ctx.content.doctorTypes.has(a.type));
@@ -74,6 +75,7 @@ function addError(ctx: Ctx, incident: IncidentState, code: ErrorCode): void {
 
 export function computeOutcome(ctx: Ctx, incident: IncidentState): Outcome {
   const d = ctx.content.diagnoses.get(incident.truth.diagnosisId);
+  if (incident.callKind !== 'emergency' || incident.duplicateOf !== undefined) return 'keinPatient';
   if (!d || (d.transport === 0 && !incident.truth.transport)) return 'keinPatient';
   const min = (t: number | undefined) =>
     t === undefined ? Infinity : (t - incident.receivedAt) / MS_PER_MINUTE;
