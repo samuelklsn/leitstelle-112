@@ -152,7 +152,13 @@
     "th_trapped": "Unfall! Ein Auto ist gegen einen Baum, der Fahrer ist eingeklemmt und kommt nicht raus!",
     "order": "Transportauftrag",
     "firework": "Hier hat sich jemand mit einem Böller verletzt, die Hand blutet stark!",
-    "fire_field": "Hier brennt die Wiese am Waldrand, das Feuer breitet sich aus!"
+    "fire_field": "Hier brennt die Wiese am Waldrand, das Feuer breitet sich aus!",
+    "mci_bus": "Hier ist ein Bus umgekippt! Überall liegen Leute, manche bewegen sich nicht, Kinder schreien!",
+    "mci_pileup": "Auf der Autobahn sind ganz viele Autos ineinander gefahren, ich sehe überall Verletzte!",
+    "mci_train": "Ein Zug hat am Bahnübergang einen Lkw erfasst und ist entgleist – da sind sehr viele Verletzte!",
+    "mci_fire": "Das ganze Haus brennt! Leute stehen an den Fenstern, einige husten und können nicht mehr laufen!",
+    "mci_hazmat": "Im Hallenbad riecht es stechend nach Chlor, viele haben Atemnot und Augenbrennen!",
+    "mci_evacuation": "Im Pflegeheim ist der Strom ausgefallen, die Beatmungsgeräte und der Aufzug gehen nicht, wir müssen alle raus!"
   },
   "keyword": {
     "pick": "Stichwort wählen"
@@ -265,7 +271,12 @@
     "grounded": "Kein Flugwetter – bleiben am Boden, Status 6.",
     "flyable": "Flugwetter wieder gegeben, einsatzbereit.",
     "externalMission": "Übernehmen Einsatz im Nachbarbereich, Status 6.",
-    "externalBack": "Zurück aus dem Nachbarbereich, einsatzbereit."
+    "externalBack": "Zurück aus dem Nachbarbereich, einsatzbereit.",
+    "mciReport": "Lagemeldung: Großschadenslage, viele Betroffene! Sichtung beginnt, fordern nach.",
+    "triageDone": "Sichtung abgeschlossen, Ergebnis liegt vor.",
+    "patientLoaded": "Patient transportfähig.",
+    "greenTreated": "Leichtverletzte vor Ort versorgt und entlassen.",
+    "stagingReady": "Bereitstellungsraum eingerichtet, Fahrzeuge bitte dorthin."
   },
   "events": {
     "call/incoming": "Notruf {{id}} klingelt",
@@ -300,7 +311,8 @@
     "notReleasable": "Fahrzeug kann jetzt nicht abbestellt werden",
     "lineBusy": "Sie führen bereits ein Gespräch",
     "noBreakDue": "Keine Pause beantragt.",
-    "notOnBreak": "Das Fahrzeug ist nicht in der Pause."
+    "notOnBreak": "Das Fahrzeug ist nicht in der Pause.",
+    "notMci": "Das ist keine Großlage."
   },
   "outcome": {
     "gut": "gut versorgt",
@@ -326,7 +338,8 @@
     "transportLate": "Transportauftrag zu spät abgeholt",
     "hospitalClosed": "Patient in abgemeldete Abteilung gebracht",
     "breakMissed": "Besatzung ohne Pause (Arbeitszeitverstoß)",
-    "unsuitableTransport": "Ungeeignetes Fahrzeug für den Transportauftrag"
+    "unsuitableTransport": "Ungeeignetes Fahrzeug für den Transportauftrag",
+    "mciOverload": "Klinik bei der Großlage überlastet, obwohl andere aufnahmebereit waren"
   },
   "evaluation": {
     "title": "Schichtauswertung",
@@ -378,7 +391,8 @@
       "today": "Heute – Wetter und Kalender wie draußen",
       "winter": "Winter – Glätte, Schnee, Grippewelle",
       "summer": "Sommer – Hitze, Gewitter, Volksfeste",
-      "newYear": "Silvesternacht – ab 19 Uhr"
+      "newYear": "Silvesternacht – ab 19 Uhr",
+      "drill": "MANV-Übung – heute, mit einer Großlage gleich zu Beginn"
     }
   },
   "help": {
@@ -553,5 +567,45 @@
     "create": "Diagnosepaket erstellen …",
     "saved": "Diagnosepaket gespeichert",
     "hint": "Das Diagnosepaket enthält Protokolle und Absturzberichte dieses Rechners als ZIP-Datei. Es wird nichts versendet – Sie können es einem Fehlerbericht anhängen."
+  },
+  "mci": {
+    "title": "MANV-Übersicht",
+    "open": "MANV",
+    "situation": "Lage",
+    "estimated_one": "Lagemeldung: etwa {{count}} Betroffener",
+    "estimated_other": "Lagemeldung: etwa {{count}} Betroffene",
+    "triagePending": "Die Sichtung läuft. Ein Leitender Notarzt oder ein Notarzt vor Ort beschleunigt sie; ohne Arzt sichten die Besatzungen deutlich langsamer.",
+    "delivered_one": "{{count}} in der Klinik",
+    "delivered_other": "{{count}} in Kliniken",
+    "decisions": "Entscheidungen der Leitstelle",
+    "autoDistribute": "Patientenverteilung nach Kapazität übernehmen (statt Sprechwunsch je Transport)",
+    "staging": "Bereitstellungsraum einrichten – Fahrzeuge werden einzeln abgerufen (wirkt, sobald ein OrgL vor Ort ist)",
+    "decisionHint": "Ohne Bereitstellungsraum stauen sich mehr als vier Fahrzeuge an den Ladeplätzen. Die Verteilung schickt Schwerverletzte in die nächste geeignete Klinik und verteilt die übrigen.",
+    "distribution": "Verteilung auf Kliniken",
+    "patient": "Pat.",
+    "category": "Sichtung",
+    "injury": "Verletzung / Erkrankung",
+    "status": "Verbleib",
+    "onSiteCare": "Versorgung vor Ort",
+    "triage": {
+      "1": "rot",
+      "2": "gelb",
+      "3": "grün",
+      "4": "tot"
+    },
+    "triageLong": {
+      "1": "T1 rot",
+      "2": "T2 gelb",
+      "3": "T3 grün",
+      "4": "T4 tot"
+    },
+    "state": {
+      "waiting": "wartet",
+      "loading": "in Versorgung",
+      "transport": "im Transport",
+      "delivered": "in der Klinik",
+      "onSite": "vor Ort versorgt",
+      "deceased": "verstorben"
+    }
   }
 }

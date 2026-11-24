@@ -6,6 +6,7 @@ import { lookup, type Lookup } from '../lookup';
 import { useSim, type LogEntry } from '../sim-store';
 import { FmsChip } from './FmsChip';
 import { HospitalPanel, OrderList } from './Logistics';
+import { MciSummary } from './MciDialog';
 import css from './Panels.module.css';
 
 /** Notrufe sollen schnell angenommen werden; ab diesen Wartezeiten wird die Zeile auffällig. */
@@ -141,6 +142,22 @@ export function IncidentList() {
                   <span className={css.finding}>▶ {describeFinding(i.finding, L)}</span>
                 ) : (
                   <span className={css.meta}>{t(`report.${i.report.reportKey}`)}</span>
+                )}
+                {i.mci && (
+                  <span className={css.flagAlarm}>
+                    <MciSummary mci={i.mci} />{' '}
+                    <button
+                      type="button"
+                      className={css.smallBtn}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openDialog({ kind: 'mci', incidentId: i.id });
+                      }}
+                      data-testid="open-mci"
+                    >
+                      {t('mci.open')}
+                    </button>
+                  </span>
                 )}
                 {i.locating && <span className={css.flagAlarm}>{t('incidents.locating')}</span>}
                 {i.unitsMissing && (

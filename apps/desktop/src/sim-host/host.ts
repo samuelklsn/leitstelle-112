@@ -188,6 +188,8 @@ export class SimHost {
         startTime: this.options.startTime(mode === 'tutorial' ? 'today' : start),
         callRateFactor: this.options.callRateFactor ?? 1,
         tutorial: mode === 'tutorial',
+        // MANV-Übung: Der erste Notruf meldet eine Großlage (ADR-0017).
+        ...(mode === 'free' && start === 'drill' ? { drill: true } : {}),
       }),
       this.options.content,
     );

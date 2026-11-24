@@ -189,7 +189,21 @@ export function DestinationDialog({ vehicleId }: { vehicleId: string }) {
     command({ type: 'vehicle/assignDestination', vehicleId, hospitalId });
     openDialog(null);
   };
-  const finding = incident?.finding;
+  // Großlage: Der Befund ist der des Patienten an Bord, nicht der Gesamtlage.
+  const mciPatient = incident?.mci?.patients.find((p) => p.id === vehicle.mciPatientId);
+  const finding = mciPatient
+    ? {
+        ...(incident?.finding ?? {
+          patient: true,
+          needsDoctor: false,
+          transport: true,
+          infectious: false,
+        }),
+        diagnosisId: mciPatient.diagnosisId,
+        naca: mciPatient.triage === 1 ? 5 : mciPatient.triage === 2 ? 3 : 2,
+        needsDoctor: mciPatient.triage === 1,
+      }
+    : incident?.finding;
   return (
     <div
       className={css.side}

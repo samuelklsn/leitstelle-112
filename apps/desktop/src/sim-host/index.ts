@@ -47,6 +47,7 @@ function shiftStart(preset: StartPreset = 'today'): number {
     case 'newYear':
       return simTimeFrom(year, 12, 31, 19);
     case 'today':
+    case 'drill':
       return simTimeFrom(year, month, now.getDate(), hour);
   }
 }
