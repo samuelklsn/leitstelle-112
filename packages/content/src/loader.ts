@@ -1,8 +1,10 @@
 import { parse } from 'yaml';
 import { z } from 'zod';
 import {
+  Climate,
   Diagnosis,
   FireScenario,
+  Holiday,
   Hospital,
   Keyword,
   RegionConfig,
@@ -10,6 +12,8 @@ import {
   Station,
   TransportOrder,
   VehicleType,
+  Weather,
+  WorldEvent,
   type ContentBundle,
 } from './schema';
 
@@ -49,6 +53,10 @@ const FileSchema = z
     diagnoses: z.array(Diagnosis).optional(),
     fireScenarios: z.array(FireScenario).optional(),
     transportOrders: z.array(TransportOrder).optional(),
+    weather: z.array(Weather).optional(),
+    climate: z.array(Climate).optional(),
+    worldEvents: z.array(WorldEvent).optional(),
+    holidays: z.array(Holiday).optional(),
     settings: Settings.optional(),
   })
   .strict();
@@ -65,6 +73,10 @@ export function loadContent(files: readonly ContentFile[]): ContentBundle {
     diagnoses: [] as Diagnosis[],
     fireScenarios: [] as FireScenario[],
     transportOrders: [] as TransportOrder[],
+    weather: [] as Weather[],
+    climate: [] as Climate[],
+    worldEvents: [] as WorldEvent[],
+    holidays: [] as Holiday[],
     settings: undefined as Settings | undefined,
   };
 
@@ -97,6 +109,10 @@ export function loadContent(files: readonly ContentFile[]): ContentBundle {
     merged.diagnoses.push(...(data.diagnoses ?? []));
     merged.fireScenarios.push(...(data.fireScenarios ?? []));
     merged.transportOrders.push(...(data.transportOrders ?? []));
+    merged.weather.push(...(data.weather ?? []));
+    merged.climate.push(...(data.climate ?? []));
+    merged.worldEvents.push(...(data.worldEvents ?? []));
+    merged.holidays.push(...(data.holidays ?? []));
   }
 
   if (!merged.region)
@@ -242,6 +258,59 @@ export function checkReferences(c: ContentBundle): ContentProblem[] {
     if (!towns.has(e.to))
       problems.push({ file: 'region', path: e.name, message: `Unbekannter Ort ${e.to}` });
   }
+  // Welt (ADR-0016): Wetterlagen, Klima, Ereignisse, Feiertage.
+  const weatherIds = unique(
+    'weather',
+    c.weather.map((w) => w.id),
+  );
+  const scenarioIds = new Set(c.fireScenarios.map((s) => s.id));
+  const checkMultipliers = (
+    file: string,
+    id: string,
+    m: { diagnoses: Record<string, number>; fireScenarios: Record<string, number> },
+  ) => {
+    for (const d of Object.keys(m.diagnoses))
+      if (!diagnosisIds.has(d))
+        problems.push({ file, path: id, message: `Unbekanntes Krankheitsbild ${d}` });
+    for (const s of Object.keys(m.fireScenarios))
+      if (!scenarioIds.has(s))
+        problems.push({ file, path: id, message: `Unbekannte Feuerwehrlage ${s}` });
+  };
+  for (const w of c.weather) checkMultipliers('weather', w.id, w);
+  unique(
+    'worldEvents',
+    c.worldEvents.map((e) => e.id),
+  );
+  for (const e of c.worldEvents) {
+    checkMultipliers('worldEvents', e.id, e);
+    if (!e.date && e.perDay === 0)
+      problems.push({ file: 'worldEvents', path: e.id, message: 'Weder Datum noch perDay' });
+  }
+  if (c.weather.length > 0) {
+    for (let m = 1; m <= 12; m++) {
+      const entry = c.climate.find((x) => x.month === m);
+      if (!entry) {
+        problems.push({ file: 'climate', path: m.toString(), message: 'Monat fehlt' });
+        continue;
+      }
+      for (const w of Object.keys(entry.weather))
+        if (!weatherIds.has(w))
+          problems.push({ file: 'climate', path: m.toString(), message: `Unbekanntes Wetter ${w}` });
+    }
+  }
+  for (const h of c.holidays) {
+    if ((h.date === undefined) === (h.easterOffset === undefined))
+      problems.push({
+        file: 'holidays',
+        path: h.name,
+        message: 'Genau eins von date oder easterOffset angeben',
+      });
+  }
+  const airTypes = new Set(c.vehicleTypes.filter((t) => t.air).map((t) => t.id));
+  for (const s of c.stations)
+    for (const v of s.vehicles)
+      if ((airTypes.has(v.type) || v.service?.daylight) && !c.settings.daylight)
+        problems.push({ file: 'stations', path: v.id, message: 'Tageslicht-Tabelle fehlt' });
   if (c.diagnoses.length === 0)
     problems.push({ file: 'diagnoses', path: '', message: 'Keine Krankheitsbilder definiert' });
   return problems;

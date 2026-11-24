@@ -8,8 +8,11 @@ import type {
   Station,
   TransportOrder,
   VehicleType,
+  Weather,
+  WorldEvent,
 } from '@ls112/content';
 import { nearestNode, type Router, type TravelContext } from '@ls112/routing';
+import { isRestDay } from './calendar';
 import type { Rng } from './rng';
 import { toCalendar, type SimTime } from './time';
 import type { RngStreamName, ScheduledPayload, SimConfig, SimEvent, SimState } from './types';
@@ -41,6 +44,10 @@ export interface ContentIndex {
   readonly vehicleService: ReadonlyMap<string, Service>;
   /** Nächste Adresse je Klinik – Abholort bei Verlegungen und Entlassungen. */
   readonly hospitalAddress: ReadonlyMap<string, number>;
+  readonly weather: ReadonlyMap<string, Weather>;
+  readonly worldEvents: ReadonlyMap<string, WorldEvent>;
+  /** Hausadressen je Ort (Einsatzorte bei Ereignissen wie dem Volksfest). */
+  readonly townHouses: ReadonlyMap<string, readonly number[]>;
 }
 
 export function indexContent(bundle: ContentBundle, world: World): ContentIndex {
@@ -77,7 +84,21 @@ export function indexContent(bundle: ContentBundle, world: World): ContentIndex 
     hospitalAddress: new Map(
       bundle.hospitals.map((h) => [h.id, nearestAddress(world, h.position)] as const),
     ),
+    weather: byId(bundle.weather),
+    worldEvents: byId(bundle.worldEvents),
+    townHouses: housesByTown(world),
   };
+}
+
+function housesByTown(world: World): Map<string, number[]> {
+  const out = new Map<string, number[]>();
+  for (const a of world.addresses) {
+    if (a.kind !== 'house') continue;
+    const list = out.get(a.townId) ?? [];
+    list.push(a.id);
+    out.set(a.townId, list);
+  }
+  return out;
 }
 
 function nearestAddress(world: World, [x, y]: readonly [number, number]): number {
@@ -107,9 +128,23 @@ export interface Ctx {
   newId(prefix: string): string;
 }
 
-export function travelContext(time: SimTime, emergency: boolean): TravelContext {
+/**
+ * Verkehrslage für eine Fahrt jetzt: Uhrzeit, Ruhetag (Wochenende, Feiertag), Sonderrechte und
+ * Wetter. Der Wetterfaktor wird gerundet, damit der Kantenzeit-Cache klein bleibt.
+ */
+export function travelContext(
+  ctx: Pick<Ctx, 'content' | 'state'>,
+  emergency: boolean,
+): TravelContext {
+  const time = ctx.state.time;
   const cal = toCalendar(time);
-  return { hour: cal.hour, weekend: cal.weekday >= 6, emergency };
+  const weather = ctx.content.weather.get(ctx.state.world.weatherId)?.speed ?? 1;
+  return {
+    hour: cal.hour,
+    weekend: isRestDay(ctx.content.bundle.holidays, time),
+    emergency,
+    weather: Math.round(weather * 100) / 100,
+  };
 }
 
 /** Gleichverteilte Ganzzahl aus einem Bereich [min, max]. */

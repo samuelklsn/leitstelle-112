@@ -1,5 +1,6 @@
 import { pickCumulative, pickWeighted, rangeInt, type Ctx } from '../context';
 import { MS_PER_HOUR, MS_PER_MINUTE, TICK_MS, toCalendar } from '../time';
+import { callFactor, eventTown, mixWeights } from './world';
 import {
   QUESTIONS,
   type CallKind,
@@ -28,7 +29,8 @@ const DUPLICATE_WINDOW_MS = 20 * MS_PER_MINUTE;
 export function generateCalls(ctx: Ctx): void {
   const { hour } = toCalendar(ctx.state.time);
   const profile = ctx.content.bundle.settings.calls.hourlyProfile[hour] ?? 1;
-  let p = (meanCallsPerHour(ctx) * profile * TICK_MS) / MS_PER_HOUR;
+  // Wochentag, Wetter, Ereignisse und Einsatz-Regie verschieben die Rate (ADR-0016).
+  let p = (meanCallsPerHour(ctx) * profile * callFactor(ctx) * TICK_MS) / MS_PER_HOUR;
   const tutorialFirst = ctx.config.tutorial && ctx.state.shift.callsReceived === 0;
   if (ctx.config.tutorial) {
     // Training: der erste Notruf kommt sofort, danach nur ein ruhiges Grundrauschen.
@@ -123,6 +125,10 @@ function pickAddress(ctx: Ctx, outdoor: boolean): number {
   if (outdoor && world.roadAddressIds.length > 0 && rng.chance(0.5)) {
     return world.roadAddressIds[rng.nextInt(0, world.roadAddressIds.length - 1)] ?? 0;
   }
+  // Laufendes Ereignis (Volksfest): Ein Teil der Notrufe kommt aus diesem Ort.
+  const town = eventTown(ctx);
+  const houses = town !== undefined ? ctx.content.townHouses.get(town) : undefined;
+  if (houses && houses.length > 0) return rng.pick(houses);
   return world.houseIds[pickCumulative(rng, world.houseWeights)] ?? 0;
 }
 
@@ -153,7 +159,7 @@ function patientFrom(ctx: Ctx, diagnosisId: string): PatientPart {
 /** Brand- oder Hilfeleistungslage, ggf. mit verletzter Person. */
 function createFireTruth(ctx: Ctx): Truth {
   const rng = ctx.rng.patients;
-  const s = ctx.content.bundle.fireScenarios[pickCumulative(rng, ctx.content.fireCumWeights)];
+  const s = ctx.content.bundle.fireScenarios[pickCumulative(rng, mixWeights(ctx).fire)];
   if (!s) throw new Error('Keine Feuerwehrlagen');
   const addressId = pickAddress(ctx, s.outdoor);
   const fire = { scenarioId: s.id, originalScenarioId: s.id, escalations: 0, done: false };
@@ -186,7 +192,7 @@ function createTruth(ctx: Ctx): Truth {
   ) {
     return createFireTruth(ctx);
   }
-  const d = ctx.content.bundle.diagnoses[pickCumulative(rng, ctx.content.diagnosisCumWeights)];
+  const d = ctx.content.bundle.diagnoses[pickCumulative(rng, mixWeights(ctx).diagnoses)];
   if (!d) throw new Error('Keine Krankheitsbilder');
   return { ...patientFrom(ctx, d.id), addressId: pickAddress(ctx, d.outdoor), patient: true };
 }

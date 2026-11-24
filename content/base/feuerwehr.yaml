@@ -193,6 +193,16 @@ fireScenarios:
     reports: [{key: th_oil, weight: 1}]
     needs: [{type: base:lf, count: 1, alternatives: [base:hlf]}]
     workMinutes: [30, 60]
+  # Flächen- und Waldbrand: im Normalfall selten, bei Hitze und Trockenheit häufig.
+  - id: base:vegetation
+    name: Flächen- oder Waldbrand
+    weight: 0.3
+    kind: brand
+    keyword: base:b2
+    outdoor: true
+    reports: [{key: fire_field, weight: 1}]
+    needs: [{type: base:tlf, count: 1}, {type: base:lf, count: 2, alternatives: [base:hlf]}]
+    workMinutes: [45, 90]
   - id: base:th-tree
     name: Baum auf Fahrbahn
     weight: 3

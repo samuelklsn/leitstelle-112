@@ -7,8 +7,17 @@ vehicleTypes:
   - {id: base:itw, short: ITW, name: Intensivtransportwagen, canTransport: true, doctor: false, radioCode: 81, transportClass: intensiv}
   # Notarztwagen: RTW mit Notarzt an Bord. Im Landkreis nicht stationiert, für Mods und Regionen.
   - {id: base:naw, short: NAW, name: Notarztwagen, canTransport: true, doctor: true, radioCode: 84, transportClass: notfall}
+  # Rettungshubschrauber: Notarzt aus der Luft, fliegt nur bei Tageslicht und Flugwetter.
+  - {id: base:rth, short: RTH, name: Rettungshubschrauber, canTransport: true, doctor: true, radioCode: 10, transportClass: notfall, air: true}
 
 stations:
+  # Luftrettungsstation am Rand des Landkreises; der RTH fliegt auch für die Nachbarbereiche.
+  - id: base:lrs-hohenwarte
+    name: Luftrettungsstation Hohenwarte
+    kind: luftrettung
+    position: [25200, 18800]
+    vehicles:
+      - {id: base:rth-1, callsign: Luftrettung Hohenwarte 1/10-1, type: base:rth, service: {daylight: true}}
   - id: base:rw-brakenfeld
     name: Rettungswache Brakenfeld
     kind: rettungswache

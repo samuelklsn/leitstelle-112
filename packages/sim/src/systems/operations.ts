@@ -13,6 +13,7 @@ import {
 import { closeIncident } from './outcome';
 import {
   accountDriving,
+  airMs,
   canTransport,
   currentNode,
   drive,
@@ -21,6 +22,7 @@ import {
   isDoctor,
   isDoctorOnly,
   isEmergencyTransport,
+  isAir,
   isFireUnit,
   isRdUnit,
   markBusy,
@@ -172,11 +174,14 @@ export function suggestVehicles(ctx: Ctx, incidentId: string): VehicleSuggestion
   const keyword = ctx.content.keywords.get(incident.keywordId);
   const tree = ctx.router.timesTo(
     incidentNode(ctx, incident),
-    travelContext(ctx.state.time, keyword?.emergency ?? true),
+    travelContext(ctx, keyword?.emergency ?? true),
   );
   const eta = (v: VehicleState): number | undefined => {
     if (!isAvailable(v)) return undefined;
-    const drive = tree.dist[currentNode(v, ctx.state.time)] ?? UNREACHABLE;
+    const from = currentNode(v, ctx.state.time);
+    const drive = isAir(ctx, v)
+      ? airMs(ctx, from, incidentNode(ctx, incident))
+      : (tree.dist[from] ?? UNREACHABLE);
     if (drive === UNREACHABLE) return undefined;
     const turnout = turnoutRange(ctx, v);
     return drive + ((turnout[0] + turnout[1]) / 2) * 1000;
@@ -266,15 +271,15 @@ export function suggestHospitals(ctx: Ctx, vehicleId: string): HospitalSuggestio
   if (!v || !incident) return [];
   const dept = ctx.content.diagnoses.get(incident.truth.diagnosisId)?.department;
   const emergency = transportIsEmergency(ctx, incident);
-  const tree = ctx.router.timesFrom(
-    currentNode(v, ctx.state.time),
-    travelContext(ctx.state.time, emergency),
-  );
+  const tree = ctx.router.timesFrom(currentNode(v, ctx.state.time), travelContext(ctx, emergency));
   // Bei vitaler Bedrohung gilt die Aufnahmepflicht – dann zählt nur die nächste geeignete Klinik.
   const vital = incident.truth.naca >= VITAL_NACA;
+  const from = currentNode(v, ctx.state.time);
   const list = ctx.content.bundle.hospitals.map((h) => ({
     hospitalId: h.id,
-    etaMs: tree.dist[ctx.content.hospitalNode.get(h.id) ?? 0] ?? UNREACHABLE,
+    etaMs: isAir(ctx, v)
+      ? airMs(ctx, from, ctx.content.hospitalNode.get(h.id) ?? 0)
+      : (tree.dist[ctx.content.hospitalNode.get(h.id) ?? 0] ?? UNREACHABLE),
     suitable: dept === undefined || h.departments.includes(dept),
     open: dept === undefined || isDepartmentOpen(ctx, h.id, dept),
   }));
@@ -291,6 +296,9 @@ export function suggestHospitals(ctx: Ctx, vehicleId: string): HospitalSuggestio
 function turnoutRange(ctx: Ctx, v: VehicleState): readonly [number, number] {
   const t = ctx.content.bundle.settings.times;
   const night = isNight(ctx.state.time);
+  // Hubschrauber: Triebwerke anlassen und abheben, auch nach dem Wiederauftanken.
+  if (isAir(ctx, v))
+    return v.status === 2 ? ctx.content.bundle.settings.air.liftoffSeconds : [30, 60];
   if (v.status !== 2) return t.turnoutMobileSeconds;
   const own = ctx.content.stationTurnout.get(v.stationId);
   if (own) return night ? own.night : own.day;
@@ -669,10 +677,22 @@ export function onAssessed(ctx: Ctx, v: VehicleState): void {
     }
   }
   // Nur ein Patient: überzählige Transportmittel werden abbestellt (das zuerst eingetroffene bleibt).
+  // Ein RTW am Boden transportiert vorrangig; NAW und RTH bleiben, solange ihr Notarzt gebraucht
+  // wird, sonst werden sie frei, wenn ein RTW da ist.
   const transporters = assigned.filter((o) => isEmergencyTransport(ctx, o));
-  const keep = transporters.find((o) => o.task === 'onScene') ?? transporters[0];
+  const ground = transporters.filter((o) => !isDoctor(ctx, o));
+  const keep =
+    ground.find((o) => o.task === 'onScene') ??
+    ground[0] ??
+    transporters.find((o) => o.task === 'onScene') ??
+    transporters[0];
   for (const o of transporters) {
-    if (o !== keep) releaseVehicle(ctx, o, 'secondUnitNotNeeded');
+    if (o === keep) continue;
+    if (isDoctor(ctx, o)) {
+      if (!incident.truth.needsDoctor) releaseVehicle(ctx, o, 'doctorNotNeeded');
+    } else {
+      releaseVehicle(ctx, o, 'secondUnitNotNeeded');
+    }
   }
   scheduleSceneDone(ctx, incident);
 }
@@ -687,9 +707,11 @@ function scheduleSceneDone(ctx: Ctx, incident: IncidentState): void {
   // Eingeklemmte Person: Erst nach der technischen Rettung transportfähig.
   const fire = incident.truth.fire;
   if (fire && !fire.done && ctx.content.fireScenarios.get(fire.scenarioId)?.kind === 'th') return;
-  const rtw = incident.vehicleIds
+  // Transportiert wird bevorzugt bodengebunden; NAW/RTH nur, wenn kein RTW vor Ort ist.
+  const onScene = incident.vehicleIds
     .map((id) => findVehicle(ctx, id))
-    .find((o): o is VehicleState => !!o && isEmergencyTransport(ctx, o) && o.task === 'onScene');
+    .filter((o): o is VehicleState => !!o && isEmergencyTransport(ctx, o) && o.task === 'onScene');
+  const rtw = onScene.find((o) => !isDoctor(ctx, o)) ?? onScene[0];
   if (!rtw || incident.firstArrivalAt === undefined) return;
   if (incident.truth.needsDoctor && incident.doctorArrivalAt === undefined) return;
   const at = Math.max(
@@ -805,8 +827,9 @@ function startTransport(ctx: Ctx, v: VehicleState, hospitalId: string): void {
   for (const id of [...incident.vehicleIds]) {
     const o = findVehicle(ctx, id);
     if (!o || o === v) continue;
+    // Auch der Notarzt aus NAW oder RTH begleitet – der Hubschrauber fliegt zur Klinik nach.
     if (
-      isDoctorOnly(ctx, o) &&
+      isDoctor(ctx, o) &&
       o.task === 'onScene' &&
       incident.truth.needsDoctor &&
       incident.truth.naca >= 4

@@ -65,6 +65,14 @@ import {
   seedPreBookedOrders,
   updateLogistics,
 } from './systems/logistics';
+import {
+  initWorld,
+  onDirectorPhase,
+  onEventEnd,
+  onWeatherChange,
+  syncClosures,
+  updateWorld,
+} from './systems/world';
 import { generateWorld } from './world/generator';
 import type { World } from './world/types';
 
@@ -183,6 +191,8 @@ export class Simulation {
         return id;
       },
     };
+    // Sperrungen sind abgeleiteter Zustand des Routers – nach dem Laden wiederherstellen.
+    syncClosures(this.ctx);
   }
 
   static create(config: SimConfig, content: ContentBundle): Simulation {
@@ -197,6 +207,18 @@ export class Simulation {
       incidents: [],
       vehicles: [],
       hospitals: {},
+      world: {
+        weatherId: '',
+        temperature: 10,
+        weatherUntil: config.startTime,
+        events: [],
+        director: {
+          from: 1,
+          to: 1,
+          phaseStart: config.startTime,
+          phaseEnd: config.startTime,
+        },
+      },
       shift: newShift(1, config.startTime),
       shiftHistory: [],
     };
@@ -209,6 +231,8 @@ export class Simulation {
       [],
       contentHash(content),
     );
+    // Erst die Welt (Wetter entscheidet, ob der Hubschrauber fliegt), dann die Fahrzeuge.
+    initWorld(sim.ctx);
     sim.state.vehicles = sim.initialVehicles();
     for (const v of sim.state.vehicles) initVehicleLogistics(sim.ctx, v);
     sim.state.hospitals = initialHospitals(sim.ctx);
@@ -279,6 +303,7 @@ export class Simulation {
     ) {
       this.handleScheduled(due.payload);
     }
+    updateWorld(this.ctx);
     updateLogistics(this.ctx);
     generateCalls(this.ctx);
     generateOrders(this.ctx);
@@ -409,6 +434,19 @@ export class Simulation {
     }
     if (p.kind === 'order/expire') {
       onOrderExpire(ctx, p.incidentId);
+      return;
+    }
+    if (p.kind === 'world/weather') {
+      // Nur der zuletzt geplante Wechsel zählt.
+      if (this.state.time >= this.state.world.weatherUntil) onWeatherChange(ctx);
+      return;
+    }
+    if (p.kind === 'world/director') {
+      if (this.state.time >= this.state.world.director.phaseEnd) onDirectorPhase(ctx);
+      return;
+    }
+    if (p.kind === 'world/eventEnd') {
+      onEventEnd(ctx, p.key);
       return;
     }
     const v = findVehicle(ctx, p.vehicleId);

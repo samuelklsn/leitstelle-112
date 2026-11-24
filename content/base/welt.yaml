@@ -1,0 +1,140 @@
+# Welt-Dynamik (ADR-0016): Wetter, Klima, Ereignisse und Feiertage.
+# Alle Faktoren sind Annahmen für ein glaubwürdiges Spiel, siehe docs/domain/welt.md.
+# Faktoren auf Krankheitsbilder und Feuerwehrlagen verschieben den Einsatzmix (1 = unverändert).
+
+weather:
+  - {id: base:klar, name: Klar, symbol: "☀", speed: 1, calls: 1, flyable: true}
+  - {id: base:bewoelkt, name: Bewölkt, symbol: "☁", speed: 1, calls: 1, flyable: true}
+  - id: base:regen
+    name: Regen
+    symbol: "🌧"
+    speed: 0.92
+    calls: 1.04
+    flyable: true
+    diagnoses: {base:traffic-injury: 1.3, base:fall: 1.1}
+  - id: base:gewitter
+    name: Gewitter und Sturm
+    symbol: "⛈"
+    minTemperature: 14
+    speed: 0.85
+    calls: 1.12
+    flyable: false
+    diagnoses: {base:traffic-injury: 1.3}
+    fireScenarios: {base:th-tree: 8, base:fire-roof: 1.6, base:fire-alarm: 1.5}
+  - id: base:nebel
+    name: Nebel
+    symbol: "🌫"
+    speed: 0.82
+    calls: 1.03
+    flyable: false
+    diagnoses: {base:traffic-injury: 1.6}
+    fireScenarios: {base:th-trapped: 1.6}
+  - id: base:schnee
+    name: Schneefall
+    symbol: "❄"
+    maxTemperature: 1
+    speed: 0.72
+    calls: 1.08
+    flyable: false
+    diagnoses: {base:fall: 1.6, base:traffic-injury: 1.8}
+    fireScenarios: {base:th-trapped: 1.8, base:th-tree: 2}
+  - id: base:glaette
+    name: Glätte
+    symbol: "🧊"
+    maxTemperature: 1
+    speed: 0.6
+    calls: 1.25
+    flyable: true
+    diagnoses: {base:fall: 2.6, base:traffic-injury: 2.2}
+    fireScenarios: {base:th-trapped: 2.2, base:th-oil: 1.5}
+  - id: base:hitze
+    name: Hitze
+    symbol: "🔥"
+    minTemperature: 30
+    speed: 1
+    calls: 1.15
+    flyable: true
+    diagnoses: {base:exsiccosis: 6, base:dyspnea: 1.3, base:intoxication: 1.2}
+    fireScenarios: {base:vegetation: 12, base:fire-bin: 1.5}
+
+# Häufigkeit der Wetterlagen je Monat (relative Gewichte) und Temperaturbereich in °C.
+climate:
+  - {month: 1, temperature: [-7, 5], weather: {base:klar: 2, base:bewoelkt: 4, base:regen: 1.5, base:nebel: 1.5, base:schnee: 2, base:glaette: 1.5}}
+  - {month: 2, temperature: [-6, 7], weather: {base:klar: 2, base:bewoelkt: 4, base:regen: 2, base:nebel: 1, base:schnee: 1.5, base:glaette: 1.2}}
+  - {month: 3, temperature: [-2, 12], weather: {base:klar: 3, base:bewoelkt: 4, base:regen: 2.5, base:nebel: 0.8, base:schnee: 0.4, base:glaette: 0.4}}
+  - {month: 4, temperature: [2, 17], weather: {base:klar: 4, base:bewoelkt: 4, base:regen: 2.5, base:gewitter: 0.3, base:nebel: 0.4}}
+  - {month: 5, temperature: [6, 22], weather: {base:klar: 5, base:bewoelkt: 3.5, base:regen: 2.5, base:gewitter: 1}}
+  - {month: 6, temperature: [10, 28], weather: {base:klar: 5, base:bewoelkt: 3, base:regen: 2, base:gewitter: 1.5, base:hitze: 1}}
+  - {month: 7, temperature: [12, 32], weather: {base:klar: 5, base:bewoelkt: 2.5, base:regen: 2, base:gewitter: 1.5, base:hitze: 2}}
+  - {month: 8, temperature: [12, 31], weather: {base:klar: 5, base:bewoelkt: 2.5, base:regen: 2, base:gewitter: 1.3, base:hitze: 1.6}}
+  - {month: 9, temperature: [8, 24], weather: {base:klar: 4.5, base:bewoelkt: 3.5, base:regen: 2.5, base:gewitter: 0.5, base:nebel: 1}}
+  - {month: 10, temperature: [3, 17], weather: {base:klar: 3, base:bewoelkt: 4, base:regen: 3, base:nebel: 2, base:gewitter: 0.3}}
+  - {month: 11, temperature: [-1, 10], weather: {base:klar: 2, base:bewoelkt: 4.5, base:regen: 3, base:nebel: 2, base:schnee: 0.6, base:glaette: 0.8}}
+  - {month: 12, temperature: [-5, 6], weather: {base:klar: 2, base:bewoelkt: 4.5, base:regen: 2, base:nebel: 1.5, base:schnee: 1.8, base:glaette: 1.4}}
+
+worldEvents:
+  - id: base:silvester
+    name: Silvester und Neujahrsnacht
+    date: {month: 12, day: 31, hour: 18}
+    durationHours: [12, 12]
+    calls: 1.9
+    diagnoses: {base:firework-injury: 400, base:intoxication: 3, base:psych: 1.5}
+    fireScenarios: {base:fire-bin: 6, base:fire-car: 2, base:fire-flat: 1.5, base:fire-roof: 1.5}
+  - id: base:volksfest
+    name: Volksfest
+    months: [5, 6, 7, 8, 9]
+    weekdays: [5, 6, 7]
+    perDay: 0.12
+    startHour: [14, 18]
+    durationHours: [7, 10]
+    town: true
+    minPopulation: 3000
+    localShare: 0.35
+    calls: 1.1
+    diagnoses: {base:intoxication: 4, base:traffic-injury: 1.3, base:psych: 1.4}
+  - id: base:weihnachtsmarkt
+    name: Weihnachtsmarkt
+    months: [12]
+    weekdays: [5, 6, 7]
+    perDay: 0.3
+    startHour: [15, 17]
+    durationHours: [5, 7]
+    town: true
+    minPopulation: 9000
+    localShare: 0.25
+    calls: 1.05
+    diagnoses: {base:intoxication: 2.5, base:fall: 1.3}
+  - id: base:grippewelle
+    name: Grippewelle
+    months: [12, 1, 2, 3]
+    perDay: 0.03
+    durationHours: [240, 480]
+    calls: 1.12
+    diagnoses: {base:dyspnea: 1.7}
+  - id: base:baustelle
+    name: Baustelle mit Vollsperrung
+    perDay: 0.25
+    startHour: [6, 9]
+    durationHours: [24, 168]
+    closure: true
+  - id: base:sperrung-veranstaltung
+    name: Straßensperrung für eine Veranstaltung
+    months: [4, 5, 6, 7, 8, 9]
+    weekdays: [6, 7]
+    perDay: 0.2
+    startHour: [8, 12]
+    durationHours: [5, 9]
+    closure: true
+
+# Gesetzliche Feiertage (Annahme: Feiertage eines Flächenlandes mit Fronleichnam).
+holidays:
+  - {name: Neujahr, date: {month: 1, day: 1}}
+  - {name: Karfreitag, easterOffset: -2}
+  - {name: Ostermontag, easterOffset: 1}
+  - {name: Tag der Arbeit, date: {month: 5, day: 1}}
+  - {name: Christi Himmelfahrt, easterOffset: 39}
+  - {name: Pfingstmontag, easterOffset: 50}
+  - {name: Fronleichnam, easterOffset: 60}
+  - {name: Tag der Deutschen Einheit, date: {month: 10, day: 3}}
+  - {name: 1. Weihnachtstag, date: {month: 12, day: 25}}
+  - {name: 2. Weihnachtstag, date: {month: 12, day: 26}}

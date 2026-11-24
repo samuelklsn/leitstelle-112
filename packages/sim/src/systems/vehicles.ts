@@ -38,6 +38,26 @@ export function isDoctorOnly(ctx: Ctx, v: VehicleState): boolean {
   return isDoctor(ctx, v) && !canTransport(ctx, v);
 }
 
+/** Luftrettungsmittel (RTH) – fliegt Luftlinie. */
+export function isAir(ctx: Ctx, v: VehicleState): boolean {
+  return ctx.content.vehicleTypes.get(v.typeId)?.air ?? false;
+}
+
+/**
+ * Flugzeit zwischen zwei Knoten: Luftlinie mit Reisegeschwindigkeit plus Landung (Mittelwert,
+ * ohne Zufall – die Startzeit steckt in der Ausrückzeit).
+ */
+export function airMs(ctx: Ctx, from: number, to: number): number {
+  if (from === to) return 0;
+  const g = ctx.world.graph;
+  const dx = (g.x[to] ?? 0) - (g.x[from] ?? 0);
+  const dy = (g.y[to] ?? 0) - (g.y[from] ?? 0);
+  const air = ctx.content.bundle.settings.air;
+  const flight = (Math.sqrt(dx * dx + dy * dy) / (air.speedKmh / 3.6)) * 1000;
+  const landing = ((air.landingSeconds[0] + air.landingSeconds[1]) / 2) * 1000;
+  return Math.round(flight + landing);
+}
+
 /** Feuerwehrfahrzeug = weder Transportmittel noch Notarzt. */
 export function isFireUnit(ctx: Ctx, v: VehicleState): boolean {
   return !canTransport(ctx, v) && !isDoctor(ctx, v);
@@ -118,10 +138,20 @@ export function drive(
   const now = ctx.state.time;
   accountDriving(ctx, v, now);
   const seq = newTask(v, task);
-  const travel = travelContext(now, emergency);
-  const partial = partialEdge(v, now);
+  const travel = travelContext(ctx, emergency);
+  const air = isAir(ctx, v);
+  const partial = air ? undefined : partialEdge(v, now);
   let route: RouteState;
-  if (partial) {
+  if (air) {
+    // Hubschrauber: Luftlinie vom letzten Standort, keine Straßen.
+    const from = currentNode(v, now);
+    const ms = airMs(ctx, from, target);
+    route =
+      ms > 0
+        ? { nodes: [from, target], cumulativeMs: [0, ms], startedAt: now, emergency }
+        : { nodes: [from], cumulativeMs: [0], startedAt: now, emergency };
+    v.node = from;
+  } else if (partial) {
     const times = ctx.router.edgeTimes(travel);
     const edgeMs = edgeTime(ctx, times, partial.from, partial.to);
     const rest = ctx.router.route(partial.to, target, travel);

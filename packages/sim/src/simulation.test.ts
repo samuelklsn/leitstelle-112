@@ -78,9 +78,14 @@ describe('Simulation – vollständiger Ablauf', () => {
     expect(
       sim.raw.shift.hilfsfristMeasured + sim.raw.shift.outcomes.keinPatient,
     ).toBeGreaterThanOrEqual(1);
-    // Alle Fahrzeuge kehren irgendwann auf die Wache zurück.
+    // Alle Fahrzeuge kehren irgendwann auf die Wache zurück – frei oder außer Dienst
+    // (Desinfektion, Flugwetter, Einsatz des Hubschraubers außerhalb).
     sim.run(3600);
-    expect(sim.raw.vehicles.every((v) => v.status === 2 && v.task === 'idle')).toBe(true);
+    for (const v of sim.raw.vehicles) {
+      expect(v.incidentId).toBeNull();
+      if (v.task === 'idle') expect(v.status).toBe(2);
+      else expect(v.task).toBe('service');
+    }
   });
 
   it('ein Bot-Disponent bewältigt eine Schicht mit hoher Hilfsfrist-Quote und guten Outcomes', () => {
@@ -256,7 +261,7 @@ describe('Simulation – Determinismus', () => {
     expect(() => Simulation.restore({ ...snap, contentHash: 'x' }, baseContent())).toThrow(
       RangeError,
     );
-    expect(() => Simulation.restore({ ...snap, version: 1 as 3 }, baseContent())).toThrow(
+    expect(() => Simulation.restore({ ...snap, version: 1 as 4 }, baseContent())).toThrow(
       RangeError,
     );
   });
@@ -356,14 +361,19 @@ describe('Konfiguration', () => {
 
   it('startet mit allen Fahrzeugen auf ihrer Wache – Status 2 oder außer Dienst', () => {
     const sim = newSim();
-    expect(sim.raw.vehicles).toHaveLength(28);
+    expect(sim.raw.vehicles).toHaveLength(29);
     expect(sim.raw.vehicles.every((v) => v.node === v.homeNode)).toBe(true);
-    // Dienstag, 7 Uhr: Tages-RTW, ITW und ein KTW beginnen erst um 8 Uhr.
-    const off = sim.raw.vehicles.filter((v) => v.status === 6).map((v) => v.id);
+    // Dienstag, 7 Uhr: Tages-RTW, ITW und ein KTW beginnen erst um 8 Uhr. Der Hubschrauber
+    // hängt vom Wetter ab und wird hier nicht betrachtet.
+    const off = sim.raw.vehicles
+      .filter((v) => v.status === 6 && v.typeId !== 'base:rth')
+      .map((v) => v.id);
     expect(off).toEqual(['base:rtw-1-83-3', 'base:ktw-1-85-2', 'base:itw-1-81-1']);
-    expect(sim.raw.vehicles.filter((v) => !off.includes(v.id)).every((v) => v.status === 2)).toBe(
-      true,
-    );
+    expect(
+      sim.raw.vehicles
+        .filter((v) => !off.includes(v.id) && v.typeId !== 'base:rth')
+        .every((v) => v.status === 2),
+    ).toBe(true);
   });
 });
 
