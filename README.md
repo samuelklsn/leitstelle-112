@@ -56,6 +56,8 @@ auf Leitung 2 klingelt schon der nächste Notruf.
 | **Disposition:** Vorschlag nach AAO und echter Fahrzeit           | **Lagekarte und Funk:** Anfahrt mit Sonderrechten, FMS-Status |
 | ![Zielklinik](docs/images/zielklinik.png)                         | ![Auswertung](docs/images/auswertung.png)                     |
 | **Sprechwunsch:** Zielklinik nach Befund und Fachabteilung        | **Schichtauswertung:** Hilfsfrist, Fehler, Outcome            |
+| ![Transportaufträge](docs/images/auftraege.png)                   | ![Kliniken](docs/images/kliniken.png)                         |
+| **Aufträge:** Krankentransporte mit Termin, Status 6 mit Grund    | **Kliniken:** Aufnahmeplätze und Abmeldungen je Abteilung     |
 
 ## Spielen
 
@@ -93,7 +95,8 @@ auf Leitung 2 klingelt schon der nächste Notruf.
 | M4 v0.1.0            | Speichern, Autosave, Auswertung, Tutorial, Tastatur                        | ✅                                                                 |
 | M5 Notrufannahme 2.0 | Strukturierte Abfrage, Fehl-, Scherz- und Doppelanrufe, Polizei-Übergaben  | ✅                                                                 |
 | M6 Feuerwehr         | Feuerwachen, B/TH-Stichworte, Lagemeldung, Nachforderung, Brandausbreitung | ✅                                                                 |
-| M7 – M12             | Logistik, Wetter, Mehrmonitor, MANV, Langzeitspiel, Editoren               | [geplant](https://github.com/samuelklsn/leitstelle-112/milestones) |
+| M7 RD-Logistik       | KTW/ITW, Krankentransporte, Klinikabmeldungen, Status 6, Pausen            | ✅                                                                 |
+| M8 – M12             | Wetter, Mehrmonitor, MANV, Langzeitspiel, Editoren                         | [geplant](https://github.com/samuelklsn/leitstelle-112/milestones) |
 
 ## Technik
 

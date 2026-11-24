@@ -10,16 +10,23 @@
 | FMS               | Funkmeldesystem: Statusmeldungen 0–9 der Fahrzeuge                                                   | `FmsStatus`           |
 | Hilfsfrist        | Zeit vom Notrufeingang bis zum Eintreffen des ersten Rettungsmittels                                 | `hilfsfrist`          |
 | ILS               | Integrierte Leitstelle für Rettungsdienst und Feuerwehr                                              | –                     |
-| KTW               | Krankentransportwagen (ab M7)                                                                        | –                     |
+| Abmeldung         | Klinik oder Fachabteilung nimmt vorübergehend keine Notfallpatienten auf                             | `isDepartmentOpen`    |
+| ITW               | Intensivtransportwagen: Verlegung beatmeter oder instabiler Patienten mit Intensivmediziner          | `base:itw`            |
+| KTP               | Krankentransport: Transport ohne Notfall, meist mit Termin                                           | `base:ktp`, `order`   |
+| KTW               | Krankentransportwagen: Krankentransporte und Verlegungen ohne Überwachung                            | `base:ktw`            |
 | Meldebild         | Was der Anrufer schildert (nicht unbedingt die wahre Lage)                                           | `reportKey`           |
 | NACA              | Schweregrad-Skala 0–7 (vom Notarzt erhoben). Ab 4 akute Lebensgefahr nicht ausgeschlossen, 7 tödlich | `naca`                |
+| NAW               | Notarztwagen: RTW mit Notarzt an Bord, transportiert selbst                                          | `base:naw`            |
 | NEF               | Notarzteinsatzfahrzeug: bringt den Notarzt zum Einsatzort (Rendezvous-System)                        | `base:nef`            |
 | Rendezvous-System | Notarzt und RTW fahren getrennt und treffen sich am Einsatzort                                       | –                     |
 | RTW               | Rettungswagen: Notfallversorgung und Transport                                                       | `base:rtw`            |
 | Sonderrechte      | Fahrt mit Blaulicht und Martinshorn (§ 35 und § 38 StVO)                                             | `emergency`           |
 | Sprechwunsch      | Status 5: Das Fahrzeug möchte die Leitstelle sprechen                                                | `requestDestination`  |
 | Stichwort         | Einsatzkategorie, die die AAO auslöst (z. B. „RD 2“)                                                 | `Keyword`             |
+| Transportklasse   | Wofür ein Fahrzeug Patienten fährt: Notfall, Krankentransport oder Intensiv                          | `transportClass`      |
 | Tracer-Diagnose   | Zeitkritische Leitdiagnose mit Zeitfenster (Schlaganfall, ACS, Polytrauma, Reanimation)              | `tracer`              |
+| Verlegung         | Transport von einer Klinik in eine andere                                                            | `fromHospitalId`      |
+| Vorhaltung        | Welche Fahrzeuge zu welchen Zeiten besetzt sind                                                      | `service`             |
 | Wahre Lage        | Die tatsächliche Situation hinter einem Notruf, zunächst verborgen                                   | `Truth`               |
 | Zielklinik        | Krankenhaus, das den Patienten aufnimmt                                                              | `hospitalId`          |
 
@@ -32,6 +39,6 @@
 | 3      | Einsatz übernommen / Anfahrt    | `toScene`                                 |
 | 4      | Am Einsatzort                   | `onScene`                                 |
 | 5      | Sprechwunsch                    | `awaitDestination`                        |
-| 6      | Nicht einsatzbereit             | ab M7 (Defekt, Desinfektion)              |
+| 6      | Nicht einsatzbereit             | `toService`, `service` (mit Grund)        |
 | 7      | Patient aufgenommen / Transport | `toHospital`                              |
 | 8      | Am Transportziel                | `handover`                                |

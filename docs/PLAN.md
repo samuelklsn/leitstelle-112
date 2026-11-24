@@ -55,22 +55,22 @@ Legende: **MVP** = Vertical Slice (v0.1), **1.0** = erste vollständige Version,
 
 ### 2.2 Disposition
 
-| Feature                                                                        |        MVP        |       1.0       | Später |
-| ------------------------------------------------------------------------------ | :---------------: | :-------------: | :----: |
-| Einsatzstichworte mit AAO-Vorschlag, Spieler kann überstimmen                  |         ●         |                 |        |
-| Vorschlag nächstes geeignetes Fahrzeug nach **Fahrzeit** (nicht Luftlinie)     |         ●         |                 |        |
-| RTW, NEF                                                                       |         ●         |                 |        |
-| KTW, ITW, NAW                                                                  |                   |        ●        |        |
-| RTH/ITH (Tagbetrieb, wetterabhängig, Landeplatz/Zwischenlandung)               |                   |        ●        |        |
-| Feuerwehr: HLF, LF, TLF, DLK, RW, ELW 1/2, GW-Typen                            |                   |        ●        |        |
-| SEG / Schnell-Einsatz-Gruppen, Alarmierung über Meldeempfänger mit Ausrückzeit |                   |        ●        |        |
-| Polizei als externe Lage (Anforderung, Eintreffen gemeldet)                    |                   |        ●        |        |
-| FMS-Status 0–9 inkl. Sprechwunsch (5) und priorisiertem Sprechwunsch (0)       | ● (1,2,3,4,6,7,8) | ● (vollständig) |        |
-| Funkverkehr als Textlog                                                        |         ●         |                 |        |
-| Nachalarmierung, Rückmeldungen von der Einsatzstelle ("Lage")                  |                   |        ●        |        |
-| Rendezvous-System Notarzt (NEF + RTW, NA-Begleitung, Nachforderung)            |                   |        ●        |        |
-| Nachbarschaftshilfe über Bereichsgrenzen                                       |                   |        ●        |        |
-| Gebietsabsicherung / Umsetzen von Fahrzeugen (Bedarfsplanung)                  |                   |        ●        |        |
+| Feature                                                                        |   MVP   |       1.0       | Später |
+| ------------------------------------------------------------------------------ | :-----: | :-------------: | :----: |
+| Einsatzstichworte mit AAO-Vorschlag, Spieler kann überstimmen                  |    ●    |                 |        |
+| Vorschlag nächstes geeignetes Fahrzeug nach **Fahrzeit** (nicht Luftlinie)     |    ●    |                 |        |
+| RTW, NEF                                                                       |    ●    |                 |        |
+| KTW, ITW, NAW                                                                  |         |        ●        |        |
+| RTH/ITH (Tagbetrieb, wetterabhängig, Landeplatz/Zwischenlandung)               |         |        ●        |        |
+| Feuerwehr: HLF, LF, TLF, DLK, RW, ELW 1/2, GW-Typen                            |         |        ●        |        |
+| SEG / Schnell-Einsatz-Gruppen, Alarmierung über Meldeempfänger mit Ausrückzeit |         |        ●        |        |
+| Polizei als externe Lage (Anforderung, Eintreffen gemeldet)                    |         |        ●        |        |
+| FMS-Status 0–9 inkl. Sprechwunsch (5) und priorisiertem Sprechwunsch (0)       | ● (1–8) | ● (vollständig) |        |
+| Funkverkehr als Textlog                                                        |    ●    |                 |        |
+| Nachalarmierung, Rückmeldungen von der Einsatzstelle ("Lage")                  |         |        ●        |        |
+| Rendezvous-System Notarzt (NEF + RTW, NA-Begleitung, Nachforderung)            |         |        ●        |        |
+| Nachbarschaftshilfe über Bereichsgrenzen                                       |         |        ●        |        |
+| Gebietsabsicherung / Umsetzen von Fahrzeugen (Bedarfsplanung)                  |         |        ●        |        |
 
 ### 2.3 Rettungsdienst-Logistik
 
@@ -344,7 +344,7 @@ Krankenhauses nie negativ; nach Pause ändert sich der Zustand nicht.
 
 ## 6. Meilensteine
 
-**Stand 2026-11-24:** M0–M4 abgeschlossen (v0.1.0, spielbarer Vertical Slice). Nächster Meilenstein: M5.
+**Stand 2026-11-24:** M0–M7 abgeschlossen (v0.4.0: Notrufannahme 2.0, Feuerwehr, RD-Logistik). Nächster Meilenstein: M8.
 
 Jeder Meilenstein endet lauffähig, getestet, committet, mit CHANGELOG-Eintrag und
 Zusammenfassung an den Product Owner.
