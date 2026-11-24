@@ -8,6 +8,7 @@ vehicleTypes:
   - {id: base:dlk, short: DLK, name: Drehleiter, canTransport: false, radioCode: 33}
   - {id: base:rw, short: RW, name: Rüstwagen, canTransport: false, radioCode: 52}
   - {id: base:tlf, short: TLF, name: Tanklöschfahrzeug, canTransport: false, radioCode: 24}
+  - {id: base:gwg, short: GW-G, name: Gerätewagen Gefahrgut, canTransport: false, radioCode: 59}
 
 stations:
   # Stadt mit hauptamtlicher Wachbereitschaft: kurze Ausrückzeit rund um die Uhr.
@@ -23,6 +24,7 @@ stations:
       - {id: base:dlk-1-33-1, callsign: Florian Brakenfeld 1/33-1, type: base:dlk}
       - {id: base:rw-1-52-1, callsign: Florian Brakenfeld 1/52-1, type: base:rw}
       - {id: base:tlf-1-24-1, callsign: Florian Brakenfeld 1/24-1, type: base:tlf}
+      - {id: base:gwg-1-59-1, callsign: Florian Brakenfeld 1/59-1, type: base:gwg}
   # Freiwillige Feuerwehren: Alarm über Meldeempfänger, Anfahrt zum Gerätehaus, Ausrücken.
   - id: base:ff-ellerbach
     name: Freiwillige Feuerwehr Ellerbach

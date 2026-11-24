@@ -13,6 +13,8 @@ import {
   type CallerKind,
   type CallerReport,
   type ErrorCode,
+  type MciPatient,
+  type TriageCategory,
   type FmsStatus,
   type Outcome,
   type Question,
@@ -76,6 +78,28 @@ export interface FindingView {
   readonly infectious: boolean;
 }
 
+/**
+ * Großlage, wie sie die Leitstelle kennt (ADR-0017): Nach der Lagemeldung die geschätzte Zahl,
+ * nach der Sichtung Kategorien und Verbleib jedes Patienten.
+ */
+export interface MciView {
+  readonly scenarioId: string;
+  /** Betroffene laut Lagemeldung (erst nach dem Erstbefund bekannt). */
+  readonly estimated?: number;
+  readonly triaged: boolean;
+  readonly autoDistribute: boolean;
+  readonly staging: boolean;
+  readonly patients: readonly {
+    readonly id: string;
+    readonly triage: TriageCategory;
+    readonly diagnosisId: string;
+    readonly needsTransport: boolean;
+    readonly state: MciPatient['state'];
+    readonly vehicleId?: string;
+    readonly hospitalId?: string;
+  }[];
+}
+
 /** Transportauftrag, wie ihn die Leitstelle angenommen hat (ADR-0015). */
 export interface OrderView {
   readonly templateId: string;
@@ -97,6 +121,7 @@ export interface IncidentView {
   readonly vehicleIds: readonly string[];
   readonly report: ReportView;
   readonly order?: OrderView;
+  readonly mci?: MciView;
   readonly doctorRequested: boolean;
   /** Laut Lage fehlen noch Kräfte (Nachforderung). */
   readonly unitsMissing: boolean;
@@ -127,6 +152,8 @@ export interface VehicleView {
   readonly service?: { readonly reason: ServiceReason; readonly until?: SimTime };
   /** Laut Dienstplan besetzt. */
   readonly onDuty: boolean;
+  /** Großlage: Patient an Bord bzw. in Versorgung. */
+  readonly mciPatientId?: string;
   /** Die Besatzung hat eine Pause beantragt. */
   readonly breakRequested: boolean;
   /** Tankfüllung in Prozent. */
@@ -204,6 +231,30 @@ export function buildView(sim: Simulation): GameView {
       status: i.status,
       vehicleIds: [...i.vehicleIds],
       report: reportView(i.report, QUESTIONS, false, false),
+      ...(i.truth.mci && i.assessed
+        ? {
+            mci: {
+              scenarioId: i.truth.mci.scenarioId,
+              estimated: i.truth.mci.patients.length,
+              triaged: i.truth.mci.triagedAt !== undefined,
+              autoDistribute: i.truth.mci.autoDistribute,
+              staging: i.truth.mci.staging,
+              // Kategorien und Verbleib erst nach der Sichtung.
+              patients:
+                i.truth.mci.triagedAt !== undefined
+                  ? i.truth.mci.patients.map((p) => ({
+                      id: p.id,
+                      triage: p.triage,
+                      diagnosisId: p.diagnosisId,
+                      needsTransport: p.needsTransport,
+                      state: p.state,
+                      ...(p.vehicleId !== undefined ? { vehicleId: p.vehicleId } : {}),
+                      ...(p.hospitalId !== undefined ? { hospitalId: p.hospitalId } : {}),
+                    }))
+                  : [],
+            },
+          }
+        : {}),
       ...(i.order
         ? {
             order: {
@@ -373,6 +424,7 @@ export function vehicleView(
         }
       : {}),
     onDuty: v.onDuty,
+    ...(v.mciPatientId !== undefined ? { mciPatientId: v.mciPatientId } : {}),
     breakRequested: v.breakRequestedAt !== undefined,
     fuelPercent: Math.round(v.fuel * 100),
   };
@@ -409,6 +461,7 @@ export interface WorldInfo {
   readonly transportOrders: readonly { id: string; name: string }[];
   readonly weather: readonly { id: string; name: string; symbol: string; flyable: boolean }[];
   readonly worldEvents: readonly { id: string; name: string }[];
+  readonly mciScenarios: readonly { id: string; name: string }[];
   readonly hilfsfrist: ContentBundle['settings']['hilfsfrist'];
   readonly shift: ContentBundle['settings']['shift'];
 }
@@ -446,6 +499,7 @@ export function buildWorldInfo(sim: Simulation): WorldInfo {
       flyable: w.flyable,
     })),
     worldEvents: c.worldEvents.map((e) => ({ id: e.id, name: e.name })),
+    mciScenarios: c.mciScenarios.map((s) => ({ id: s.id, name: s.name })),
     hilfsfrist: c.settings.hilfsfrist,
     shift: c.settings.shift,
   };

@@ -1,6 +1,7 @@
 import { pickCumulative, pickWeighted, rangeInt, type Ctx } from '../context';
 import { MS_PER_HOUR, MS_PER_MINUTE, TICK_MS, toCalendar } from '../time';
 import { callFactor, eventTown, mixWeights } from './world';
+import { createMciTruth, mciDueNow, pickMciScenario } from './mci';
 import {
   QUESTIONS,
   type CallKind,
@@ -37,6 +38,21 @@ export function generateCalls(ctx: Ctx): void {
     if (tutorialFirst && ctx.state.tick >= 5) p = 1;
     else p *= 0.3;
   }
+  // Großlage: selten, oder sofort als Übung (MANV-Übung im Startbildschirm, ADR-0017).
+  const drill =
+    ctx.config.drill === true && ctx.state.shift.callsReceived === 0 && ctx.state.tick >= 10;
+  if (drill || mciDueNow(ctx)) {
+    const scenario = pickMciScenario(ctx);
+    if (scenario) {
+      createCall(
+        ctx,
+        'emergency',
+        createMciTruth(ctx, pickAddress(ctx, scenario.outdoor), scenario),
+      );
+      return;
+    }
+  }
+  if (ctx.config.drill === true && ctx.state.shift.callsReceived === 0) return;
   if (!ctx.rng.calls.chance(p)) return;
   createCall(ctx, tutorialFirst ? 'emergency' : pickKind(ctx));
 }
@@ -56,7 +72,7 @@ function pickKind(ctx: Ctx): CallKind {
   return 'emergency';
 }
 
-export function createCall(ctx: Ctx, kind: CallKind = 'emergency'): CallState {
+export function createCall(ctx: Ctx, kind: CallKind = 'emergency', given?: Truth): CallState {
   const settings = ctx.content.bundle.settings.calls;
   let truth: Truth;
   let duplicateOf: string | undefined;
@@ -74,7 +90,7 @@ export function createCall(ctx: Ctx, kind: CallKind = 'emergency'): CallState {
       truth = createTruth(ctx);
     }
   } else if (kind === 'emergency') {
-    truth = createTruth(ctx);
+    truth = given ?? createTruth(ctx);
   } else {
     truth = createNonEmergencyTruth(ctx);
   }
@@ -115,11 +131,12 @@ export function createCall(ctx: Ctx, kind: CallKind = 'emergency'): CallState {
 
 /** Liegt der Einsatzort draußen (Verkehrsunfall, PKW-Brand, Ölspur …)? */
 export function isOutdoor(ctx: Ctx, truth: Truth): boolean {
+  if (truth.mci) return ctx.content.mciScenarios.get(truth.mci.scenarioId)?.outdoor ?? true;
   if (truth.fire) return ctx.content.fireScenarios.get(truth.fire.scenarioId)?.outdoor ?? false;
   return ctx.content.diagnoses.get(truth.diagnosisId)?.outdoor ?? false;
 }
 
-function pickAddress(ctx: Ctx, outdoor: boolean): number {
+export function pickAddress(ctx: Ctx, outdoor: boolean): number {
   const rng = ctx.rng.patients;
   const { world } = ctx;
   if (outdoor && world.roadAddressIds.length > 0 && rng.chance(0.5)) {
@@ -223,8 +240,9 @@ function createReport(ctx: Ctx, truth: Truth, kind: CallKind, source: CallSource
   const settings = ctx.content.bundle.settings.caller;
   const d = ctx.content.diagnoses.get(truth.diagnosisId);
   const scenario = truth.fire ? ctx.content.fireScenarios.get(truth.fire.scenarioId) : undefined;
+  const mciScenario = truth.mci ? ctx.content.mciScenarios.get(truth.mci.scenarioId) : undefined;
   const address = ctx.world.addresses[truth.addressId];
-  const reports = scenario?.reports ?? d?.reports;
+  const reports = mciScenario?.reports ?? scenario?.reports ?? d?.reports;
   if (!reports || !address) throw new Error('Inkonsistente Wahrheit');
   const outdoor = isOutdoor(ctx, truth);
   const official = source === '110';
@@ -282,6 +300,11 @@ function createReport(ctx: Ctx, truth: Truth, kind: CallKind, source: CallSource
   const breathless = ['breathing', 'allergy', 'fire_smoke'].includes(reportKey);
   if (breathless || truth.diagnosisId.includes('dyspnea') || truth.diagnosisId.includes('smoke')) {
     breathing = 'difficult';
+  }
+  // Großlage: Viele Betroffene – zu Bewusstsein und Atmung kann der Anrufer nichts Genaues sagen.
+  if (mciScenario && kind === 'emergency') {
+    conscious = 'unclear';
+    breathing = 'unclear';
   }
   // Feuerwehrlage ohne Verletzte: „Nein, verletzt ist niemand."
   if (scenario && !truth.patient && kind === 'emergency') {
@@ -428,4 +451,5 @@ export const ERROR_PENALTY = {
   hospitalClosed: 10,
   breakMissed: 10,
   unsuitableTransport: 15,
+  mciOverload: 15,
 } as const;

@@ -40,6 +40,7 @@ import {
   onFireDone,
   onFireEscalate,
   missingNeeds,
+  mciProgress,
   type Need,
   onDestinationTimeout,
   onHandoverDone,
@@ -73,6 +74,7 @@ import {
   syncClosures,
   updateWorld,
 } from './systems/world';
+import { onMciOnSite, onMciTriage, setMciOption } from './systems/mci';
 import { generateWorld } from './world/generator';
 import type { World } from './world/types';
 
@@ -395,6 +397,13 @@ export class Simulation {
         return grantBreak(ctx, command.vehicleId);
       case 'vehicle/resume':
         return resumeFromBreak(ctx, command.vehicleId);
+      case 'mci/autoDistribute':
+      case 'mci/staging':
+        return setMciOption(
+          this.state.incidents.find((i) => i.id === command.incidentId),
+          command.type === 'mci/staging' ? 'staging' : 'autoDistribute',
+          command.on,
+        );
     }
   }
 
@@ -447,6 +456,14 @@ export class Simulation {
     }
     if (p.kind === 'world/eventEnd') {
       onEventEnd(ctx, p.key);
+      return;
+    }
+    if (p.kind === 'mci/triage' || p.kind === 'mci/onSite') {
+      const incident = this.state.incidents.find((i) => i.id === p.incidentId);
+      if (!incident || incident.status === 'closed') return;
+      if (p.kind === 'mci/triage') onMciTriage(ctx, incident);
+      else onMciOnSite(ctx, incident);
+      mciProgress(ctx, incident);
       return;
     }
     const v = findVehicle(ctx, p.vehicleId);

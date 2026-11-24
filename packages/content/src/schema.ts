@@ -106,6 +106,11 @@ export const VehicleType = z.object({
   transportClass: z.enum(['notfall', 'krankentransport', 'intensiv']).optional(),
   /** Luftrettungsmittel (RTH): fliegt Luftlinie, nur bei Tageslicht und Flugwetter. */
   air: z.boolean().default(false),
+  /**
+   * Führungs- und Sonderrolle bei Großlagen (ADR-0017): Leitender Notarzt (sichtet), Organisatorischer
+   * Leiter (Bereitstellungsraum), Gerätewagen Sanität (versorgt Leichtverletzte vor Ort).
+   */
+  role: z.enum(['lna', 'orgl', 'gwsan']).optional(),
 });
 
 /** Dienstzeit eines Fahrzeugs (volle Stunden, Ortszeit); ohne Angabe rund um die Uhr. */
@@ -128,6 +133,8 @@ export const Station = z.object({
    * Anfahrt zum Gerätehaus, Ausrücken. Ohne Angabe gelten die allgemeinen Einstellungen.
    */
   turnout: z.object({ day: Range, night: Range }).optional(),
+  /** Reserve (SEG, Einsatzleitung): nur bei Großlagen vorgeschlagen. */
+  reserve: z.boolean().default(false),
   vehicles: z
     .array(
       z.object({
@@ -196,6 +203,8 @@ export const Keyword = z.object({
   aao: z.array(UnitNeed).min(1),
   /** Nur für Transportaufträge, nicht für die Notrufabfrage (ADR-0015). */
   planned: z.boolean().default(false),
+  /** Stichwort für einen Massenanfall von Verletzten oder eine Großlage (ADR-0017). */
+  mci: z.boolean().default(false),
 });
 
 export const Tracer = z.enum(['none', 'acs', 'stroke', 'trauma', 'cardiac_arrest']);
@@ -274,6 +283,43 @@ export const FireScenario = z.object({
   casualty: z.object({ diagnosis: Id, probability: Probability }).optional(),
   /** Ohne Kräfte vor Ort breitet sich die Lage nach dieser Zeit aus (Minuten ab Notruf). */
   escalation: z.object({ after: Range, to: Id }).optional(),
+});
+
+// ---------------------------------------------------------------- Großlagen (ADR-0017)
+
+/** Sichtungskategorien: T1 rot, T2 gelb, T3 grün, T4 blau/schwarz. */
+export const Triage = z.object({
+  red: z.number().nonnegative(),
+  yellow: z.number().nonnegative(),
+  green: z.number().nonnegative(),
+  black: z.number().nonnegative(),
+});
+
+/** Massenanfall von Verletzten bzw. seltene Großlage (Busunfall, Zugunglück, Gefahrgut …). */
+export const MciScenario = z.object({
+  id: Id,
+  name: z.string(),
+  weight: z.number().positive(),
+  /** Fachlich angemessenes Stichwort. */
+  keyword: Id,
+  reports: z.array(z.object({ key: z.string(), weight: z.number().positive() })).min(1),
+  outdoor: z.boolean().default(true),
+  /** Zahl der Betroffenen. */
+  casualties: Range,
+  /** Anteile der Sichtungskategorien. */
+  triage: Triage,
+  /** Anteil der Leichtverletzten, die ins Krankenhaus müssen (der Rest wird vor Ort versorgt). */
+  greenTransport: Probability.default(0.5),
+  /** Krankheitsbilder je Kategorie (bestimmen die Fachabteilung). */
+  diagnoses: z.object({
+    red: z.array(Id).min(1),
+    yellow: z.array(Id).min(1),
+    green: z.array(Id).min(1),
+  }),
+  /** Technische Rettung, Brandbekämpfung oder Gefahrgut: Kräfte und Arbeitszeit. */
+  fire: z.object({ needs: z.array(UnitNeed).min(1), workMinutes: Range }).optional(),
+  /** Häufigkeit je Wetterlage (z. B. Massenkarambolage bei Nebel und Glätte). */
+  weather: z.record(Id, z.number().nonnegative()).default({}),
 });
 
 // ---------------------------------------------------------------- Welt (ADR-0016)
@@ -476,6 +522,38 @@ export const Settings = z.object({
     .default({ amplitude: 0, phaseMinutes: [30, 90] }),
   /** Tageslicht je Monat (Januar … Dezember): Stunden [hell ab, dunkel ab], Ortszeit. */
   daylight: z.array(Range).length(12).optional(),
+  /** Großlagen (ADR-0017): Häufigkeit und Zeiten an der Einsatzstelle. */
+  mci: z
+    .object({
+      /** Wahrscheinlichkeit einer Großlage je Tag. */
+      perDay: Probability,
+      /** Sichtung mit Arzt bzw. nur durch Rettungsdienst-Besatzungen (Minuten). */
+      triageDoctorMinutes: Range,
+      triageCrewMinutes: Range,
+      /** Versorgung bis zur Transportfähigkeit je Kategorie (Minuten). */
+      loadRed: Range,
+      loadYellow: Range,
+      loadGreen: Range,
+      /** Ladeplätze an der Einsatzstelle; darüber hinaus stauen sich Fahrzeuge. */
+      loadingSlots: z.number().int().positive(),
+      congestionMinutes: z.number().nonnegative(),
+      /** Abruf aus dem Bereitstellungsraum (Minuten). */
+      stagingMinutes: z.number().nonnegative(),
+      /** Versorgung der Leichtverletzten vor Ort (Minuten). */
+      onSiteMinutes: Range,
+    })
+    .default({
+      perDay: 0,
+      triageDoctorMinutes: [6, 10],
+      triageCrewMinutes: [15, 25],
+      loadRed: [15, 25],
+      loadYellow: [10, 15],
+      loadGreen: [5, 10],
+      loadingSlots: 4,
+      congestionMinutes: 3,
+      stagingMinutes: 2,
+      onSiteMinutes: [25, 40],
+    }),
   /** Luftrettung: Reisegeschwindigkeit, Start- und Landezeit. */
   air: z
     .object({
@@ -521,6 +599,7 @@ export type Weather = z.infer<typeof Weather>;
 export type Climate = z.infer<typeof Climate>;
 export type WorldEvent = z.infer<typeof WorldEvent>;
 export type Holiday = z.infer<typeof Holiday>;
+export type MciScenario = z.infer<typeof MciScenario>;
 
 /** Vollständiger, validierter Inhaltsstand, den die Simulation erhält. */
 export interface ContentBundle {
@@ -536,5 +615,6 @@ export interface ContentBundle {
   readonly climate: readonly Climate[];
   readonly worldEvents: readonly WorldEvent[];
   readonly holidays: readonly Holiday[];
+  readonly mciScenarios: readonly MciScenario[];
   readonly settings: Settings;
 }

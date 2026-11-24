@@ -58,9 +58,11 @@ export function airMs(ctx: Ctx, from: number, to: number): number {
   return Math.round(flight + landing);
 }
 
-/** Feuerwehrfahrzeug = weder Transportmittel noch Notarzt. */
+/** Feuerwehrfahrzeug = weder Transportmittel noch Notarzt noch Führungs-/Sanitätsrolle. */
 export function isFireUnit(ctx: Ctx, v: VehicleState): boolean {
-  return !canTransport(ctx, v) && !isDoctor(ctx, v);
+  return (
+    !canTransport(ctx, v) && !isDoctor(ctx, v) && !ctx.content.vehicleTypes.get(v.typeId)?.role
+  );
 }
 
 /** Rettungsdienst-Fahrzeug (RTW, NEF, KTW …). */
