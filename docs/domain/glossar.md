@@ -1,38 +1,44 @@
 # Glossar
 
-| Begriff           | Bedeutung                                                                                            | Im Code               |
-| ----------------- | ---------------------------------------------------------------------------------------------------- | --------------------- |
-| AAO               | Alarm- und Ausrückeordnung: welche Fahrzeuge zu welchem Stichwort alarmiert werden                   | `Keyword.aao`         |
-| Ausrückzeit       | Zeit von der Alarmierung bis zum Losfahren (Status 3)                                                | `turnout`             |
-| Einsatz-Regie     | Schwankung des Aufkommens in Phasen innerhalb fester Grenzen (ADR-0014)                              | `director`            |
-| Disponent/in      | Fachkraft in der Leitstelle, die Notrufe annimmt und Einsätze führt                                  | –                     |
-| Einsatz           | Ein Ereignis, zu dem Kräfte alarmiert werden                                                         | `incident`            |
-| Erstbefund        | Erste Rückmeldung der Einsatzkräfte vor Ort                                                          | `assessed`, `finding` |
-| FMS               | Funkmeldesystem: Statusmeldungen 0–9 der Fahrzeuge                                                   | `FmsStatus`           |
-| Hilfsfrist        | Zeit vom Notrufeingang bis zum Eintreffen des ersten Rettungsmittels                                 | `hilfsfrist`          |
-| ILS               | Integrierte Leitstelle für Rettungsdienst und Feuerwehr                                              | –                     |
-| Abmeldung         | Klinik oder Fachabteilung nimmt vorübergehend keine Notfallpatienten auf                             | `isDepartmentOpen`    |
-| ITW               | Intensivtransportwagen: Verlegung beatmeter oder instabiler Patienten mit Intensivmediziner          | `base:itw`            |
-| KTP               | Krankentransport: Transport ohne Notfall, meist mit Termin                                           | `base:ktp`, `order`   |
-| KTW               | Krankentransportwagen: Krankentransporte und Verlegungen ohne Überwachung                            | `base:ktw`            |
-| Meldebild         | Was der Anrufer schildert (nicht unbedingt die wahre Lage)                                           | `reportKey`           |
-| NACA              | Schweregrad-Skala 0–7 (vom Notarzt erhoben). Ab 4 akute Lebensgefahr nicht ausgeschlossen, 7 tödlich | `naca`                |
-| NAW               | Notarztwagen: RTW mit Notarzt an Bord, transportiert selbst                                          | `base:naw`            |
-| NEF               | Notarzteinsatzfahrzeug: bringt den Notarzt zum Einsatzort (Rendezvous-System)                        | `base:nef`            |
-| Rendezvous-System | Notarzt und RTW fahren getrennt und treffen sich am Einsatzort                                       | –                     |
-| RTH               | Rettungshubschrauber: Notarzt aus der Luft, nur bei Tageslicht und Flugwetter                        | `base:rth`            |
-| RTW               | Rettungswagen: Notfallversorgung und Transport                                                       | `base:rtw`            |
-| Sperrung          | Gesperrter Straßenabschnitt (Baustelle, Veranstaltung), Fahrzeuge werden umgeleitet                  | `closure`             |
-| Sonderrechte      | Fahrt mit Blaulicht und Martinshorn (§ 35 und § 38 StVO)                                             | `emergency`           |
-| Sprechwunsch      | Status 5: Das Fahrzeug möchte die Leitstelle sprechen                                                | `requestDestination`  |
-| Stichwort         | Einsatzkategorie, die die AAO auslöst (z. B. „RD 2“)                                                 | `Keyword`             |
-| Transportklasse   | Wofür ein Fahrzeug Patienten fährt: Notfall, Krankentransport oder Intensiv                          | `transportClass`      |
-| Tracer-Diagnose   | Zeitkritische Leitdiagnose mit Zeitfenster (Schlaganfall, ACS, Polytrauma, Reanimation)              | `tracer`              |
-| Verlegung         | Transport von einer Klinik in eine andere                                                            | `fromHospitalId`      |
-| Vorhaltung        | Welche Fahrzeuge zu welchen Zeiten besetzt sind                                                      | `service`             |
-| Weltlage          | Wetter und laufende Ereignisse (Volksfest, Grippewelle, Silvester)                                   | `WorldState`          |
-| Wahre Lage        | Die tatsächliche Situation hinter einem Notruf, zunächst verborgen                                   | `Truth`               |
-| Zielklinik        | Krankenhaus, das den Patienten aufnimmt                                                              | `hospitalId`          |
+| Begriff             | Bedeutung                                                                                            | Im Code               |
+| ------------------- | ---------------------------------------------------------------------------------------------------- | --------------------- |
+| AAO                 | Alarm- und Ausrückeordnung: welche Fahrzeuge zu welchem Stichwort alarmiert werden                   | `Keyword.aao`         |
+| Ausrückzeit         | Zeit von der Alarmierung bis zum Losfahren (Status 3)                                                | `turnout`             |
+| Einsatz-Regie       | Schwankung des Aufkommens in Phasen innerhalb fester Grenzen (ADR-0014)                              | `director`            |
+| Disponent/in        | Fachkraft in der Leitstelle, die Notrufe annimmt und Einsätze führt                                  | –                     |
+| Einsatz             | Ein Ereignis, zu dem Kräfte alarmiert werden                                                         | `incident`            |
+| Erstbefund          | Erste Rückmeldung der Einsatzkräfte vor Ort                                                          | `assessed`, `finding` |
+| FMS                 | Funkmeldesystem: Statusmeldungen 0–9 der Fahrzeuge                                                   | `FmsStatus`           |
+| Hilfsfrist          | Zeit vom Notrufeingang bis zum Eintreffen des ersten Rettungsmittels                                 | `hilfsfrist`          |
+| ILS                 | Integrierte Leitstelle für Rettungsdienst und Feuerwehr                                              | –                     |
+| Bereitstellungsraum | Sammelpunkt, aus dem Fahrzeuge bei Großlagen einzeln abgerufen werden                                | `staging`             |
+| Abmeldung           | Klinik oder Fachabteilung nimmt vorübergehend keine Notfallpatienten auf                             | `isDepartmentOpen`    |
+| ITW                 | Intensivtransportwagen: Verlegung beatmeter oder instabiler Patienten mit Intensivmediziner          | `base:itw`            |
+| LNA                 | Leitender Notarzt: führt den Rettungsdienst bei Großlagen, sichtet                                   | `base:lna`            |
+| MANV                | Massenanfall von Verletzten                                                                          | `mci`                 |
+| OrgL                | Organisatorischer Leiter Rettungsdienst: Bereitstellungsraum, Transportorganisation                  | `base:orgl`           |
+| KTP                 | Krankentransport: Transport ohne Notfall, meist mit Termin                                           | `base:ktp`, `order`   |
+| KTW                 | Krankentransportwagen: Krankentransporte und Verlegungen ohne Überwachung                            | `base:ktw`            |
+| Meldebild           | Was der Anrufer schildert (nicht unbedingt die wahre Lage)                                           | `reportKey`           |
+| NACA                | Schweregrad-Skala 0–7 (vom Notarzt erhoben). Ab 4 akute Lebensgefahr nicht ausgeschlossen, 7 tödlich | `naca`                |
+| NAW                 | Notarztwagen: RTW mit Notarzt an Bord, transportiert selbst                                          | `base:naw`            |
+| NEF                 | Notarzteinsatzfahrzeug: bringt den Notarzt zum Einsatzort (Rendezvous-System)                        | `base:nef`            |
+| Rendezvous-System   | Notarzt und RTW fahren getrennt und treffen sich am Einsatzort                                       | –                     |
+| RTH                 | Rettungshubschrauber: Notarzt aus der Luft, nur bei Tageslicht und Flugwetter                        | `base:rth`            |
+| RTW                 | Rettungswagen: Notfallversorgung und Transport                                                       | `base:rtw`            |
+| Sperrung            | Gesperrter Straßenabschnitt (Baustelle, Veranstaltung), Fahrzeuge werden umgeleitet                  | `closure`             |
+| SEG                 | Schnelleinsatzgruppe: ehrenamtliche Reserve für Großlagen                                            | `reserve`             |
+| Sichtung            | Einteilung der Patienten in Kategorien T1 (rot) bis T4                                               | `triage`              |
+| Sonderrechte        | Fahrt mit Blaulicht und Martinshorn (§ 35 und § 38 StVO)                                             | `emergency`           |
+| Sprechwunsch        | Status 5: Das Fahrzeug möchte die Leitstelle sprechen                                                | `requestDestination`  |
+| Stichwort           | Einsatzkategorie, die die AAO auslöst (z. B. „RD 2“)                                                 | `Keyword`             |
+| Transportklasse     | Wofür ein Fahrzeug Patienten fährt: Notfall, Krankentransport oder Intensiv                          | `transportClass`      |
+| Tracer-Diagnose     | Zeitkritische Leitdiagnose mit Zeitfenster (Schlaganfall, ACS, Polytrauma, Reanimation)              | `tracer`              |
+| Verlegung           | Transport von einer Klinik in eine andere                                                            | `fromHospitalId`      |
+| Vorhaltung          | Welche Fahrzeuge zu welchen Zeiten besetzt sind                                                      | `service`             |
+| Weltlage            | Wetter und laufende Ereignisse (Volksfest, Grippewelle, Silvester)                                   | `WorldState`          |
+| Wahre Lage          | Die tatsächliche Situation hinter einem Notruf, zunächst verborgen                                   | `Truth`               |
+| Zielklinik          | Krankenhaus, das den Patienten aufnimmt                                                              | `hospitalId`          |
 
 ## FMS-Status im Spiel
 

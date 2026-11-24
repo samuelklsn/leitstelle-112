@@ -30,6 +30,7 @@ export type Dialog =
   | { readonly kind: 'saves' }
   | { readonly kind: 'help' }
   | { readonly kind: 'windows' }
+  | { readonly kind: 'mci'; readonly incidentId: string }
   | { readonly kind: 'keys' };
 
 /** Ansicht dieses Fensters (Mehrfenster, #50): Hauptfenster oder ein ausgelagerter Bereich. */

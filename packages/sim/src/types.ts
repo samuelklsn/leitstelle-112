@@ -26,6 +26,8 @@ export interface SimConfig {
   readonly callRateFactor: number;
   /** Trainingsmodus: erster Notruf nach wenigen Sekunden, danach ruhiger. */
   readonly tutorial: boolean;
+  /** MANV-Übung: Der erste Notruf meldet eine Großlage (ADR-0017). */
+  readonly drill?: boolean;
 }
 
 /** FMS-Status (Fahrzeugstatus-Meldesystem). */
@@ -47,6 +49,37 @@ export interface FireTruth {
   done: boolean;
 }
 
+/** Sichtungskategorie: 1 rot (sofort), 2 gelb (dringend), 3 grün (leicht), 4 tot bzw. ohne Chance. */
+export type TriageCategory = 1 | 2 | 3 | 4;
+
+/** Ein Betroffener einer Großlage (ADR-0017). */
+export interface MciPatient {
+  readonly id: string;
+  readonly triage: TriageCategory;
+  readonly diagnosisId: string;
+  readonly needsTransport: boolean;
+  state: 'waiting' | 'loading' | 'transport' | 'delivered' | 'onSite' | 'deceased';
+  vehicleId?: string;
+  hospitalId?: string;
+  deliveredAt?: SimTime;
+}
+
+/** Wahre Lage eines Massenanfalls von Verletzten. */
+export interface MciTruth {
+  readonly scenarioId: string;
+  readonly patients: MciPatient[];
+  /** Sichtung abgeschlossen (Kategorien für den Disponenten sichtbar). */
+  triagedAt?: SimTime;
+  /** Sichtung fertig ab … (wird früher, wenn ein Arzt eintrifft). */
+  triageDue?: SimTime;
+  /** Patientenverteilung übernimmt die Einsatzleitung nach Kapazität. */
+  autoDistribute: boolean;
+  /** Bereitstellungsraum: Fahrzeuge werden einzeln abgerufen, kein Stau an der Einsatzstelle. */
+  staging: boolean;
+  /** Leichtverletzte werden vor Ort versorgt ab … */
+  onSiteDue?: SimTime;
+}
+
 export interface Truth {
   /** Krankheitsbild – leer, wenn es (bei Feuerwehrlagen) keinen Patienten gibt. */
   readonly diagnosisId: string;
@@ -63,6 +96,7 @@ export interface Truth {
   /** Infektion: Das transportierende Fahrzeug muss danach desinfiziert werden. */
   readonly infectious: boolean;
   readonly fire?: FireTruth;
+  readonly mci?: MciTruth;
 }
 
 /** Was der Anrufer sagt – nicht immer richtig. */
@@ -136,7 +170,8 @@ export type ErrorCode =
   | 'transportLate'
   | 'hospitalClosed'
   | 'breakMissed'
-  | 'unsuitableTransport';
+  | 'unsuitableTransport'
+  | 'mciOverload';
 
 export type Outcome = 'gut' | 'beeintraechtigt' | 'verstorben' | 'keinPatient';
 
@@ -258,6 +293,8 @@ export interface VehicleState {
   breakRequestedAt?: SimTime;
   /** Dienstende während eines Einsatzes: Überstunden laufen seit … */
   overtimeSince?: SimTime;
+  /** Großlage: Patient, den dieses Fahrzeug versorgt bzw. transportiert. */
+  mciPatientId?: string;
 }
 
 /** Laufendes Ereignis der Weltlage (ADR-0016). */
@@ -343,6 +380,8 @@ export type ScheduledPayload =
   | { readonly kind: 'world/weather' }
   | { readonly kind: 'world/director' }
   | { readonly kind: 'world/eventEnd'; readonly key: string }
+  | { readonly kind: 'mci/triage'; readonly incidentId: string }
+  | { readonly kind: 'mci/onSite'; readonly incidentId: string }
   | { readonly kind: 'incident/callbackDone'; readonly incidentId: string }
   | { readonly kind: 'shift/end' }
   | { readonly kind: 'fire/escalate'; readonly callId: string }
@@ -388,7 +427,11 @@ export type SimCommand =
   /** Beantragte Pause genehmigen. */
   | { readonly type: 'vehicle/break'; readonly vehicleId: string }
   /** Pause vorzeitig beenden – das Fahrzeug ist sofort wieder einsatzbereit. */
-  | { readonly type: 'vehicle/resume'; readonly vehicleId: string };
+  | { readonly type: 'vehicle/resume'; readonly vehicleId: string }
+  /** Großlage: Patientenverteilung automatisch nach Kapazität (ADR-0017). */
+  | { readonly type: 'mci/autoDistribute'; readonly incidentId: string; readonly on: boolean }
+  /** Großlage: Bereitstellungsraum einrichten bzw. auflösen. */
+  | { readonly type: 'mci/staging'; readonly incidentId: string; readonly on: boolean };
 
 export type RejectReason =
   | 'unknownCall'
@@ -405,7 +448,8 @@ export type RejectReason =
   | 'unknownHospital'
   | 'notReleasable'
   | 'noBreakDue'
-  | 'notOnBreak';
+  | 'notOnBreak'
+  | 'notMci';
 
 /**
  * Ausgabe-Ereignisse. Keine Texte, nur Typ und Parameter; das UI übersetzt (CLAUDE.md, Regel 5).
@@ -510,7 +554,12 @@ export type RadioMessage =
   | 'grounded'
   | 'flyable'
   | 'externalMission'
-  | 'externalBack';
+  | 'externalBack'
+  | 'mciReport'
+  | 'triageDone'
+  | 'patientLoaded'
+  | 'greenTreated'
+  | 'stagingReady';
 
 export interface LoggedCommand {
   /** Tick, nach dem der Befehl angewendet wurde (Spielzeit dieses Ticks). */
@@ -519,7 +568,7 @@ export interface LoggedCommand {
 }
 
 /** Format-Version des Snapshots – bei inkompatiblen Änderungen erhöhen. */
-export const SNAPSHOT_VERSION = 4;
+export const SNAPSHOT_VERSION = 5;
 
 export interface SimSnapshot {
   readonly version: typeof SNAPSHOT_VERSION;

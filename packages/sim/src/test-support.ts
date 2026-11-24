@@ -138,9 +138,12 @@ function createFor(
   addressId: number,
 ): void {
   const fire = call.truth.fire;
-  const keywordId = fire
-    ? sim.content.fireScenarios.get(fire.scenarioId)?.keyword
-    : sim.content.diagnoses.get(call.truth.diagnosisId)?.keyword;
+  const mci = call.truth.mci;
+  const keywordId = mci
+    ? sim.content.mciScenarios.get(mci.scenarioId)?.keyword
+    : fire
+      ? sim.content.fireScenarios.get(fire.scenarioId)?.keyword
+      : sim.content.diagnoses.get(call.truth.diagnosisId)?.keyword;
   sim.submit({
     type: 'incident/create',
     callId: call.id,

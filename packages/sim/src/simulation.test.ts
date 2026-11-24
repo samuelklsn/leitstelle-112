@@ -261,7 +261,7 @@ describe('Simulation – Determinismus', () => {
     expect(() => Simulation.restore({ ...snap, contentHash: 'x' }, baseContent())).toThrow(
       RangeError,
     );
-    expect(() => Simulation.restore({ ...snap, version: 1 as 4 }, baseContent())).toThrow(
+    expect(() => Simulation.restore({ ...snap, version: 1 as 5 }, baseContent())).toThrow(
       RangeError,
     );
   });
@@ -274,9 +274,9 @@ describe('Simulation – Determinismus', () => {
     expect({ tick: sim.tick, hash: sim.hash(), calls: sh.callsReceived, incidents: sh.incidents })
       .toMatchInlineSnapshot(`
         {
-          "calls": 6,
-          "hash": "9950628e04d1c09f",
-          "incidents": 4,
+          "calls": 8,
+          "hash": "3d38fb1a85ec2408",
+          "incidents": 7,
           "tick": 7200,
         }
       `);
@@ -361,7 +361,7 @@ describe('Konfiguration', () => {
 
   it('startet mit allen Fahrzeugen auf ihrer Wache – Status 2 oder außer Dienst', () => {
     const sim = newSim();
-    expect(sim.raw.vehicles).toHaveLength(29);
+    expect(sim.raw.vehicles).toHaveLength(37);
     expect(sim.raw.vehicles.every((v) => v.node === v.homeNode)).toBe(true);
     // Dienstag, 7 Uhr: Tages-RTW, ITW und ein KTW beginnen erst um 8 Uhr. Der Hubschrauber
     // hängt vom Wetter ab und wird hier nicht betrachtet.

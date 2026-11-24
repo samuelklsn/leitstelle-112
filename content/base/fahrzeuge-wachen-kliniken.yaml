@@ -82,3 +82,19 @@ hospitals:
     position: [20700, 5100]
     departments: [geriatrie, psychiatrie]
     beds: {psychiatrie: 2}
+  # Kliniken der Nachbarkreise: weit weg, aber wichtig, wenn bei Großlagen alle Plätze im
+  # Landkreis belegt sind (Patientenverteilung, ADR-0017). Positionen am Rand der Karte.
+  - id: base:kl-halvern
+    name: Klinikum Halvern (Nachbarkreis)
+    short: Kl. Halvern
+    level: maximalversorgung
+    position: [25700, 1200]
+    departments: [innere, chirurgie, unfallchirurgie, neurologie, stroke, herzkatheter, paediatrie, intensiv]
+    beds: {innere: 8, chirurgie: 5, unfallchirurgie: 6, neurologie: 3, stroke: 3, herzkatheter: 3, paediatrie: 3, intensiv: 4}
+  - id: base:kl-wennbach
+    name: Klinik Wennbach (Nachbarkreis)
+    short: Kl. Wennbach
+    level: regelversorgung
+    position: [400, 19600]
+    departments: [innere, chirurgie, unfallchirurgie, gynaekologie]
+    beds: {innere: 5, chirurgie: 4, unfallchirurgie: 3, gynaekologie: 2}

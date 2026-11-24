@@ -17,6 +17,7 @@ import {
 } from './components/Overlays';
 import { BottomTabs, CallsPanel, VehiclePanel } from './components/Panels';
 import { KeysDialog, WindowsDialog } from './components/Settings';
+import { MciDialog } from './components/MciDialog';
 import css from './App.module.css';
 
 export function App() {
@@ -49,6 +50,7 @@ export function App() {
       {dialog?.kind === 'help' && <HelpDialog />}
       {dialog?.kind === 'windows' && <WindowsDialog />}
       {dialog?.kind === 'keys' && <KeysDialog />}
+      {dialog?.kind === 'mci' && <MciDialog incidentId={dialog.incidentId} />}
       <Notice />
     </div>
   );

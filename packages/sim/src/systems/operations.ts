@@ -1,5 +1,5 @@
 import { UNREACHABLE } from '@ls112/routing';
-import { rangeInt, travelContext, type Ctx } from '../context';
+import { fireSpec, rangeInt, travelContext, type Ctx } from '../context';
 import { MS_PER_MINUTE, toCalendar, type SimTime } from '../time';
 import type { ErrorCode, IncidentState, RadioMessage, RejectReason, VehicleState } from '../types';
 import { countError } from './calls';
@@ -10,6 +10,18 @@ import {
   occupyBed,
   orderPickupOnTime,
 } from './logistics';
+import {
+  mciAssign,
+  mciChooseHospital,
+  mciDelivered,
+  mciDone,
+  mciLoaded,
+  mciNeeds,
+  mciOnArrive,
+  mciOnAssessed,
+  mciRelease,
+  patientOf,
+} from './mci';
 import { closeIncident } from './outcome';
 import {
   accountDriving,
@@ -188,9 +200,16 @@ export function suggestVehicles(ctx: Ctx, incidentId: string): VehicleSuggestion
   };
   const list = ctx.state.vehicles.map((v) => ({ v, eta: eta(v) }));
   const recommended = new Set<string>();
+  const large = keyword?.mci === true || (incident.assessed && incident.truth.mci !== undefined);
   for (const need of missingNeeds(ctx, incident)) {
     list
-      .filter((x) => x.eta !== undefined && !recommended.has(x.v.id) && fits(need, x.v))
+      .filter(
+        (x) =>
+          x.eta !== undefined &&
+          !recommended.has(x.v.id) &&
+          fits(need, x.v) &&
+          (large || !ctx.content.reserveVehicles.has(x.v.id)),
+      )
       .sort((a, b) => (a.eta ?? 0) - (b.eta ?? 0) || a.v.id.localeCompare(b.v.id))
       .slice(0, need.count)
       .forEach((x) => recommended.add(x.v.id));
@@ -233,8 +252,11 @@ export function missingNeeds(ctx: Ctx, incident: IncidentState): Need[] {
     }
     return subtractUnits(needs, assigned);
   }
-  // Rettungsdienst: ein Transportmittel bzw. ein Notarzt deckt den Bedarf – bis der Transport läuft.
-  if (truth.patient && incident.hospitalId === undefined) {
+  // Großlage: Bedarf aus Sichtung und Patientenzahl (ADR-0017).
+  if (truth.mci) {
+    needs.push(...mciNeeds(ctx, incident, assigned));
+  } else if (truth.patient && incident.hospitalId === undefined) {
+    // Rettungsdienst: ein Transportmittel bzw. ein Notarzt deckt den Bedarf – bis der Transport läuft.
     const transport = ctx.content.bundle.vehicleTypes
       .filter((x) => transportClassOf(ctx, x.id) === 'notfall')
       .map((x) => x.id);
@@ -248,9 +270,9 @@ export function missingNeeds(ctx: Ctx, incident: IncidentState): Need[] {
   }
   // Feuerwehr: Kräftebedarf der aktuellen (ggf. ausgebreiteten) Lage.
   if (truth.fire && !truth.fire.done) {
-    const scenario = ctx.content.fireScenarios.get(truth.fire.scenarioId);
+    const spec = fireSpec(ctx.content, truth.fire.scenarioId);
     const fireUnits = assigned.filter((v) => isFireUnit(ctx, v));
-    needs.push(...subtractUnits(scenario?.needs ?? [], fireUnits));
+    needs.push(...subtractUnits(spec?.needs ?? [], fireUnits));
   }
   return needs;
 }
@@ -269,11 +291,15 @@ export function suggestHospitals(ctx: Ctx, vehicleId: string): HospitalSuggestio
   const v = findVehicle(ctx, vehicleId);
   const incident = v?.incidentId ? findIncident(ctx, v.incidentId) : undefined;
   if (!v || !incident) return [];
-  const dept = ctx.content.diagnoses.get(incident.truth.diagnosisId)?.department;
+  // Großlage: Fachabteilung des Patienten, den dieses Fahrzeug fährt.
+  const patient = patientOf(incident, v);
+  const dept = ctx.content.diagnoses.get(
+    patient?.diagnosisId ?? incident.truth.diagnosisId,
+  )?.department;
   const emergency = transportIsEmergency(ctx, incident);
   const tree = ctx.router.timesFrom(currentNode(v, ctx.state.time), travelContext(ctx, emergency));
   // Bei vitaler Bedrohung gilt die Aufnahmepflicht – dann zählt nur die nächste geeignete Klinik.
-  const vital = incident.truth.naca >= VITAL_NACA;
+  const vital = patient ? patient.triage === 1 : incident.truth.naca >= VITAL_NACA;
   const from = currentNode(v, ctx.state.time);
   const list = ctx.content.bundle.hospitals.map((h) => ({
     hospitalId: h.id,
@@ -454,6 +480,12 @@ function arriveAtScene(ctx: Ctx, v: VehicleState): void {
     const delay = rangeInt(ctx.rng.crews, ASSESSMENT_SECONDS) * 1000;
     ctx.schedule(ctx.state.time + delay, { kind: 'vehicle/assessed', vehicleId: v.id, seq });
   }
+  if (incident.truth.mci) {
+    mciOnArrive(ctx, incident, v);
+    checkFireWork(ctx, incident);
+    mciProgress(ctx, incident);
+    return;
+  }
   scheduleSceneDone(ctx, incident);
   checkFireWork(ctx, incident);
 }
@@ -503,7 +535,7 @@ function deteriorate(ctx: Ctx, incident: IncidentState): void {
 function checkFireWork(ctx: Ctx, incident: IncidentState): void {
   const fire = incident.truth.fire;
   if (!fire || fire.done || fire.workUntil !== undefined || !incident.assessed) return;
-  const scenario = ctx.content.fireScenarios.get(fire.scenarioId);
+  const scenario = fireSpec(ctx.content, fire.scenarioId);
   if (!scenario) return;
   const onScene = incident.vehicleIds
     .map((id) => findVehicle(ctx, id))
@@ -531,6 +563,7 @@ export function onFireDone(ctx: Ctx, incidentId: string, escalations: number): v
   for (const o of units) releaseVehicle(ctx, o, 'released');
   // Eingeklemmte Person ist befreit: Jetzt kann der Rettungsdienst transportieren.
   scheduleSceneDone(ctx, incident);
+  if (incident.truth.mci) mciProgress(ctx, incident);
   maybeClose(ctx, incident);
 }
 
@@ -626,10 +659,16 @@ export function onAssessed(ctx: Ctx, v: VehicleState): void {
     return;
   }
 
+  // Großlage: Lagemeldung mit geschätzter Zahl der Betroffenen, Sichtung beginnt.
+  if (incident.truth.mci) {
+    mciOnAssessed(ctx, incident, v);
+    checkFireWork(ctx, incident);
+    return;
+  }
   const fire = incident.truth.fire;
   if (fire) {
     // Lagemeldung der Feuerwehr bzw. des ersten Fahrzeugs: was brennt, was fehlt.
-    const scenario = ctx.content.fireScenarios.get(fire.scenarioId);
+    const scenario = fireSpec(ctx.content, fire.scenarioId);
     const units = incident.vehicleIds
       .map((id) => findVehicle(ctx, id))
       .filter((o): o is VehicleState => !!o && isFireUnit(ctx, o));
@@ -703,7 +742,7 @@ export function onAssessed(ctx: Ctx, v: VehicleState): void {
  */
 function scheduleSceneDone(ctx: Ctx, incident: IncidentState): void {
   if (incident.treatmentDoneAt !== undefined || !incident.assessed || incident.locating) return;
-  if (!incident.truth.patient) return;
+  if (!incident.truth.patient || incident.truth.mci) return;
   // Eingeklemmte Person: Erst nach der technischen Rettung transportfähig.
   const fire = incident.truth.fire;
   if (fire && !fire.done && ctx.content.fireScenarios.get(fire.scenarioId)?.kind === 'th') return;
@@ -730,7 +769,23 @@ export function onSceneDone(ctx: Ctx, v: VehicleState): void {
     startOrderTransport(ctx, incident, v);
     return;
   }
-  if (!incident.truth.transport) {
+  if (incident.truth.mci) {
+    // Patient transportfähig: Verteilung durch die Einsatzleitung oder Sprechwunsch.
+    const p = mciLoaded(incident, v);
+    if (p && incident.truth.mci.autoDistribute) {
+      const from = currentNode(v, ctx.state.time);
+      const tree = ctx.router.timesFrom(from, travelContext(ctx, p.triage === 1));
+      const target = mciChooseHospital(ctx, incident, p, (id) =>
+        isAir(ctx, v)
+          ? airMs(ctx, from, ctx.content.hospitalNode.get(id) ?? 0)
+          : (tree.dist[ctx.content.hospitalNode.get(id) ?? 0] ?? UNREACHABLE),
+      );
+      if (target) {
+        startTransport(ctx, v, target);
+        return;
+      }
+    }
+  } else if (!incident.truth.transport) {
     radio(ctx, v, 'noTransport');
     for (const id of [...incident.vehicleIds]) {
       const o = findVehicle(ctx, id);
@@ -795,6 +850,10 @@ function startOrderTransport(ctx: Ctx, incident: IncidentState, v: VehicleState)
 function startTransport(ctx: Ctx, v: VehicleState, hospitalId: string): void {
   const incident = v.incidentId ? findIncident(ctx, v.incidentId) : undefined;
   if (!incident) return;
+  if (incident.truth.mci) {
+    startMciTransport(ctx, incident, v, hospitalId);
+    return;
+  }
   const hospital = ctx.content.hospitals.get(hospitalId);
   const dept = ctx.content.diagnoses.get(incident.truth.diagnosisId)?.department;
   if (hospital && dept && !hospital.departments.includes(dept))
@@ -847,11 +906,51 @@ function startTransport(ctx: Ctx, v: VehicleState, hospitalId: string): void {
   }
 }
 
+/**
+ * Großlage: Jeder Transport fährt einen Patienten. Abgemeldete Abteilungen und Überlastung zählen
+ * je Patient; die übrigen Fahrzeuge bleiben an der Einsatzstelle.
+ */
+function startMciTransport(
+  ctx: Ctx,
+  incident: IncidentState,
+  v: VehicleState,
+  hospitalId: string,
+): void {
+  const p = patientOf(incident, v);
+  const hospital = ctx.content.hospitals.get(hospitalId);
+  const dept = ctx.content.diagnoses.get(p?.diagnosisId ?? '')?.department;
+  if (p) p.hospitalId = hospitalId;
+  if (hospital && dept && !hospital.departments.includes(dept))
+    addIncidentError(ctx, incident, 'unsuitableHospital');
+  if (
+    hospital &&
+    dept &&
+    hospital.departments.includes(dept) &&
+    !isDepartmentOpen(ctx, hospitalId, dept) &&
+    ctx.content.bundle.hospitals.some(
+      (h) =>
+        h.id !== hospitalId && h.departments.includes(dept) && isDepartmentOpen(ctx, h.id, dept),
+    )
+  ) {
+    addIncidentError(ctx, incident, 'mciOverload');
+  }
+  delete v.requestSince;
+  v.hospitalId = hospitalId;
+  v.status = 7;
+  drive(ctx, v, ctx.content.hospitalNode.get(hospitalId) ?? v.node, p?.triage === 1, 'toHospital');
+  radio(ctx, v, 'status');
+  mciProgress(ctx, incident);
+}
+
 function arriveAtHospital(ctx: Ctx, v: VehicleState): void {
   const incident = v.incidentId ? findIncident(ctx, v.incidentId) : undefined;
   const seq = newTask(v, 'handover');
   setStatus(ctx, v, 8);
-  if (incident && canTransport(ctx, v) && incident.hospitalArrivalAt === undefined) {
+  if (incident?.truth.mci) {
+    const p = mciDelivered(ctx, incident, v);
+    const dept = ctx.content.diagnoses.get(p?.diagnosisId ?? '')?.department;
+    if (v.hospitalId && dept) occupyBed(ctx, v.hospitalId, dept);
+  } else if (incident && canTransport(ctx, v) && incident.hospitalArrivalAt === undefined) {
     incident.hospitalArrivalAt = ctx.state.time;
     // Ein Notfallpatient belegt einen Aufnahmeplatz der Fachabteilung.
     const dept = ctx.content.diagnoses.get(incident.truth.diagnosisId)?.department;
@@ -891,6 +990,8 @@ export function releaseVehicle(
 ): void {
   const incident = v.incidentId ? findIncident(ctx, v.incidentId) : undefined;
   if (incident) incident.vehicleIds = incident.vehicleIds.filter((id) => id !== v.id);
+  if (incident?.truth.mci) mciRelease(incident, v);
+  delete v.mciPatientId;
   v.incidentId = null;
   v.hospitalId = null;
   delete v.requestSince;
@@ -905,13 +1006,42 @@ export function releaseVehicle(
  * Ein Einsatz ist erledigt, wenn kein Fahrzeug mehr gebunden ist, der Patient versorgt bzw. in
  * der Klinik ist und die Feuerwehrlage abgearbeitet ist. Fehlt noch etwas, ist er wieder offen.
  */
+/**
+ * Großlage: freie Fahrzeuge bekommen Patienten; wer nicht mehr gebraucht wird, rückt ein. Sind
+ * alle Patienten versorgt (und die Feuerwehr fertig), endet der Einsatz.
+ */
+export function mciProgress(ctx: Ctx, incident: IncidentState): void {
+  const mci = incident.truth.mci;
+  if (!mci || incident.status === 'closed') return;
+  mciAssign(ctx, incident);
+  if (mci.triagedAt === undefined) return;
+  const here = incident.vehicleIds
+    .map((id) => findVehicle(ctx, id))
+    .filter((o): o is VehicleState => !!o && o.task === 'onScene');
+  const transportLeft = mci.patients.some((p) => p.needsTransport && p.state === 'waiting');
+  const redLeft = mci.patients.some(
+    (p) => p.triage === 1 && (p.state === 'waiting' || p.state === 'loading'),
+  );
+  const done = mciDone(mci);
+  const fireDone = !incident.truth.fire || incident.truth.fire.done;
+  for (const o of here) {
+    if (o.mciPatientId !== undefined) continue;
+    if (done && (fireDone || !isFireUnit(ctx, o))) releaseVehicle(ctx, o, 'released');
+    else if (canTransport(ctx, o) && !transportLeft) releaseVehicle(ctx, o, 'secondUnitNotNeeded');
+    else if (isDoctorOnly(ctx, o) && !redLeft && !transportLeft)
+      releaseVehicle(ctx, o, 'doctorNotNeeded');
+  }
+  maybeClose(ctx, incident);
+}
+
 function maybeClose(ctx: Ctx, incident: IncidentState): void {
   if (incident.vehicleIds.length > 0 || incident.status !== 'active') return;
   const t = incident.truth;
-  const patientDone =
-    !t.patient ||
-    incident.hospitalArrivalAt !== undefined ||
-    (incident.assessed && !t.transport && !incident.order);
+  const patientDone = t.mci
+    ? mciDone(t.mci)
+    : !t.patient ||
+      incident.hospitalArrivalAt !== undefined ||
+      (incident.assessed && !t.transport && !incident.order);
   const fireDone = !t.fire || t.fire.done;
   if (incident.assessed && patientDone && fireDone) closeIncident(ctx, incident);
   else incident.status = 'open';

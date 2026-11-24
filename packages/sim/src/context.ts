@@ -4,7 +4,9 @@ import type {
   FireScenario,
   Hospital,
   Keyword,
+  MciScenario,
   Service,
+  UnitNeed,
   Station,
   TransportOrder,
   VehicleType,
@@ -48,6 +50,22 @@ export interface ContentIndex {
   readonly worldEvents: ReadonlyMap<string, WorldEvent>;
   /** Hausadressen je Ort (Einsatzorte bei Ereignissen wie dem Volksfest). */
   readonly townHouses: ReadonlyMap<string, readonly number[]>;
+  readonly mciScenarios: ReadonlyMap<string, MciScenario>;
+  /** Fahrzeuge von Reserve-Standorten (SEG, Einsatzleitung). */
+  readonly reserveVehicles: ReadonlySet<string>;
+}
+
+/**
+ * Kräftebedarf und Arbeitszeit der Feuerwehr für eine Lage – aus einer Feuerwehrlage oder dem
+ * technischen Teil einer Großlage (ADR-0017).
+ */
+export function fireSpec(
+  content: ContentIndex,
+  scenarioId: string,
+): { needs: readonly UnitNeed[]; workMinutes: readonly [number, number] } | undefined {
+  const fire = content.fireScenarios.get(scenarioId);
+  if (fire) return fire;
+  return content.mciScenarios.get(scenarioId)?.fire;
 }
 
 export function indexContent(bundle: ContentBundle, world: World): ContentIndex {
@@ -87,6 +105,10 @@ export function indexContent(bundle: ContentBundle, world: World): ContentIndex 
     weather: byId(bundle.weather),
     worldEvents: byId(bundle.worldEvents),
     townHouses: housesByTown(world),
+    mciScenarios: byId(bundle.mciScenarios),
+    reserveVehicles: new Set(
+      bundle.stations.filter((s) => s.reserve).flatMap((s) => s.vehicles.map((v) => v.id)),
+    ),
   };
 }
 

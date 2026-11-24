@@ -35,6 +35,18 @@ settings:
     destinationTimeoutSeconds: 180
     callbackSeconds: [60, 120]
   caller: {wrongHouseNumber: 0.06, missingTown: 0.12, misjudge: 0.2}
+  # Großlagen (ADR-0017): im Mittel etwa alle zwei bis drei Wochen eine – sonst wären sie nicht selten.
+  mci:
+    perDay: 0.05
+    triageDoctorMinutes: [6, 10]
+    triageCrewMinutes: [15, 25]
+    loadRed: [15, 25]
+    loadYellow: [10, 15]
+    loadGreen: [5, 10]
+    loadingSlots: 4
+    congestionMinutes: 3
+    stagingMinutes: 2
+    onSiteMinutes: [25, 40]
   # Wetterlagen halten 3–8 Stunden; mit 40 % bleibt das Wetter beim Wechsel gleich.
   weather: {changeHours: [3, 8], persistence: 0.4}
   # Einsatz-Regie: Aufkommen schwankt in Phasen von 30–90 Minuten um höchstens ± 25 %.

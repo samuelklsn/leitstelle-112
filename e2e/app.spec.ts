@@ -67,8 +67,8 @@ test('Startbildschirm und Tutorial', async () => {
   await page.getByTestId('start-tutorial').click();
   await expect(page.getByTestId('tutorial-coach')).toBeVisible();
   await expect(page.getByTestId('start-screen')).toBeHidden();
-  // 13 Rettungsdienst- (RTW, NEF, KTW, ITW), ein Hubschrauber und 15 Feuerwehrfahrzeuge.
-  await expect(page.getByTestId('vehicle-row')).toHaveCount(29);
+  // Rettungsdienst, Hubschrauber, Einsatzleitung, SEG und 16 Feuerwehrfahrzeuge.
+  await expect(page.getByTestId('vehicle-row')).toHaveCount(37);
   await expect(page.getByTestId('weather-chip')).toBeVisible();
 });
 
@@ -209,6 +209,35 @@ test('Tastenbelegung ändern und Diagnosepaket erstellen', async () => {
   await page.getByTestId('create-diagnostics').click();
   await expect.poll(() => readdirSync(userData).filter((f) => f.endsWith('.zip')).length).toBe(1);
   await page.keyboard.press('Escape');
+});
+
+test('MANV-Übung: Großlage melden, alarmieren, Sichtung abwarten', async () => {
+  await page.getByTestId('menu-new').click();
+  await page.getByTestId('start-preset').selectOption('drill');
+  await page.getByTestId('start-free').click();
+  await expect(page.getByTestId('call-row').first()).toBeVisible({ timeout: 30_000 });
+  await page.keyboard.press('F2');
+  await page.getByTestId('ask-all').click();
+  await expect(page.getByTestId('take-address')).toBeEnabled({ timeout: 30_000 });
+  await expect(page.getByTestId('typing')).toHaveCount(0, { timeout: 90_000 });
+  await page.getByTestId('take-address').click();
+  await page.getByTestId('address-results').locator('button').first().click();
+  await page.getByTestId('keyword-MANV2').click();
+  await page.getByTestId('create-incident').click();
+  await expect(page.getByTestId('alarm')).toBeEnabled();
+  await page.getByTestId('alarm').click();
+  await page.getByTestId('btn-speed-10').click();
+  // Lagemeldung nach dem Eintreffen, dann Sichtung durch den Leitenden Notarzt.
+  await expect(page.getByTestId('open-mci')).toBeVisible({ timeout: 180_000 });
+  await page.getByTestId('open-mci').click();
+  await expect(page.getByTestId('mci-dialog')).toBeVisible();
+  // Der Haken folgt dem Zustand des Sim-Hosts – erst klicken, dann auf die Rückmeldung warten.
+  await page.getByTestId('mci-auto').click();
+  await expect(page.getByTestId('mci-auto')).toBeChecked();
+  await expect(page.getByTestId('mci-patients')).toBeVisible({ timeout: 240_000 });
+  await shot('manv');
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('mci-dialog')).toBeHidden();
 });
 
 test('stellt die Simulation nach einem Absturz aus dem Autosave wieder her', async () => {

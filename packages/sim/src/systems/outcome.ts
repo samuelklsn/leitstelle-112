@@ -20,6 +20,12 @@ export function closeIncident(ctx: Ctx, incident: IncidentState): void {
   const d = ctx.content.diagnoses.get(incident.truth.diagnosisId);
   const shift = ctx.state.shift;
 
+  if (incident.truth.mci) {
+    closeMci(ctx, incident);
+    pruneClosed(ctx);
+    return;
+  }
+
   if (incident.order) {
     // Transportauftrag: Bewertet wird die Pünktlichkeit der Abholung, nicht der Patient.
     const tolerance = ctx.content.bundle.settings.transports.toleranceMinutes * MS_PER_MINUTE;
@@ -94,6 +100,74 @@ export function closeIncident(ctx: Ctx, incident: IncidentState): void {
 
   ctx.emit({ type: 'incident/closed', at: ctx.state.time, incidentId: incident.id, outcome });
   pruneClosed(ctx);
+}
+
+/** Punkte je Patient einer Großlage (weniger als ein Einzelnotfall, dafür viele). */
+const MCI_POINTS: Record<Outcome, number> = {
+  gut: 40,
+  beeintraechtigt: 15,
+  verstorben: 0,
+  keinPatient: 0,
+};
+
+/**
+ * Großlage (ADR-0017): Bewertet wird jeder Patient. Schwerverletzte brauchen die Klinik innerhalb
+ * der „goldenen Stunde“, Mittelschwere innerhalb von zwei Stunden. Die Hilfsfrist zählt einmal.
+ */
+function closeMci(ctx: Ctx, incident: IncidentState): void {
+  const mci = incident.truth.mci;
+  if (!mci) return;
+  const shift = ctx.state.shift;
+  const hf = ctx.content.bundle.settings.hilfsfrist;
+  const realCall = incident.callKind === 'emergency' && incident.duplicateOf === undefined;
+  if (realCall && incident.firstArrivalAt !== undefined) {
+    const responseMs = incident.firstArrivalAt - incident.receivedAt;
+    shift.hilfsfristMeasured++;
+    shift.totalResponseMs += responseMs;
+    if (responseMs <= hf.minutes * MS_PER_MINUTE) shift.hilfsfristMet++;
+    else shift.score -= 20;
+  }
+  const fire = incident.truth.fire;
+  if (realCall && fire && incident.firstFireArrivalAt !== undefined) {
+    shift.fireMeasured++;
+    if (incident.firstFireArrivalAt - incident.receivedAt <= hf.fireMinutes * MS_PER_MINUTE)
+      shift.fireMet++;
+    else shift.score -= 20;
+  }
+  // Großlage ohne Großlagen-Stichwort alarmiert: viel zu wenige Kräfte.
+  if (realCall && !ctx.content.keywords.get(incident.keywordId)?.mci)
+    addError(ctx, incident, 'undertriage');
+
+  let worst: Outcome = 'gut';
+  const rng = ctx.rng.outcome;
+  for (const p of mci.patients) {
+    let outcome: Outcome;
+    const minutes =
+      p.deliveredAt !== undefined
+        ? (p.deliveredAt - incident.receivedAt) / MS_PER_MINUTE
+        : Infinity;
+    if (p.state === 'deceased' || p.triage === 4) outcome = 'verstorben';
+    else if (p.triage === 1) {
+      // Überleben sinkt nach der ersten Stunde deutlich (Annahme, docs/domain/manv.md).
+      const survive = Math.min(0.95, Math.max(0.3, 0.95 - 0.01 * Math.max(0, minutes - 60)));
+      outcome = !rng.chance(survive) ? 'verstorben' : minutes <= 60 ? 'gut' : 'beeintraechtigt';
+      if (outcome === 'verstorben') shift.score -= 30;
+    } else if (p.triage === 2) {
+      outcome = minutes <= 120 ? 'gut' : 'beeintraechtigt';
+    } else {
+      outcome = p.state === 'onSite' || p.state === 'delivered' ? 'gut' : 'beeintraechtigt';
+    }
+    shift.outcomes[outcome]++;
+    shift.score += MCI_POINTS[outcome];
+    if (SEVERITY[outcome] > SEVERITY[worst]) worst = outcome;
+  }
+  incident.outcome = worst;
+  ctx.emit({
+    type: 'incident/closed',
+    at: ctx.state.time,
+    incidentId: incident.id,
+    outcome: worst,
+  });
 }
 
 function pruneClosed(ctx: Ctx): void {

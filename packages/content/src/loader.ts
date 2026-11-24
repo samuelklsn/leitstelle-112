@@ -6,6 +6,7 @@ import {
   FireScenario,
   Holiday,
   Hospital,
+  MciScenario,
   Keyword,
   RegionConfig,
   Settings,
@@ -57,6 +58,7 @@ const FileSchema = z
     climate: z.array(Climate).optional(),
     worldEvents: z.array(WorldEvent).optional(),
     holidays: z.array(Holiday).optional(),
+    mciScenarios: z.array(MciScenario).optional(),
     settings: Settings.optional(),
   })
   .strict();
@@ -77,6 +79,7 @@ export function loadContent(files: readonly ContentFile[]): ContentBundle {
     climate: [] as Climate[],
     worldEvents: [] as WorldEvent[],
     holidays: [] as Holiday[],
+    mciScenarios: [] as MciScenario[],
     settings: undefined as Settings | undefined,
   };
 
@@ -113,6 +116,7 @@ export function loadContent(files: readonly ContentFile[]): ContentBundle {
     merged.climate.push(...(data.climate ?? []));
     merged.worldEvents.push(...(data.worldEvents ?? []));
     merged.holidays.push(...(data.holidays ?? []));
+    merged.mciScenarios.push(...(data.mciScenarios ?? []));
   }
 
   if (!merged.region)
@@ -311,6 +315,22 @@ export function checkReferences(c: ContentBundle): ContentProblem[] {
     for (const v of s.vehicles)
       if ((airTypes.has(v.type) || v.service?.daylight) && !c.settings.daylight)
         problems.push({ file: 'stations', path: v.id, message: 'Tageslicht-Tabelle fehlt' });
+  // Großlagen (ADR-0017).
+  unique(
+    'mciScenarios',
+    c.mciScenarios.map((s) => s.id),
+  );
+  for (const s of c.mciScenarios) {
+    if (!keywords.has(s.keyword))
+      problems.push({ file: 'mciScenarios', path: s.id, message: `Unbekanntes Stichwort ${s.keyword}` });
+    for (const d of [...s.diagnoses.red, ...s.diagnoses.yellow, ...s.diagnoses.green])
+      if (!diagnosisIds.has(d))
+        problems.push({ file: 'mciScenarios', path: s.id, message: `Unbekanntes Krankheitsbild ${d}` });
+    if (s.fire) checkNeeds('mciScenarios', s.id, s.fire.needs);
+    for (const w of Object.keys(s.weather))
+      if (!weatherIds.has(w))
+        problems.push({ file: 'mciScenarios', path: s.id, message: `Unbekanntes Wetter ${w}` });
+  }
   if (c.diagnoses.length === 0)
     problems.push({ file: 'diagnoses', path: '', message: 'Keine Krankheitsbilder definiert' });
   return problems;

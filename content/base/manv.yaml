@@ -1,0 +1,180 @@
+# Massenanfall von Verletzten (MANV) und seltene Großlagen (ADR-0017).
+# Stichworte, Führungskräfte, Schnelleinsatzgruppe (SEG) und Szenarien. Alle Zahlen sind Annahmen
+# für ein glaubwürdiges Spiel, siehe docs/domain/manv.md. Kein reales Alarmierungs- oder
+# MANV-Konzept eines Landkreises.
+
+vehicleTypes:
+  # Leitender Notarzt und Organisatorischer Leiter im Kommandowagen (Rufbereitschaft).
+  - {id: base:lna, short: LNA, name: Leitender Notarzt, canTransport: false, radioCode: 1, role: lna}
+  - {id: base:orgl, short: OrgL, name: Organisatorischer Leiter Rettungsdienst, canTransport: false, radioCode: 2, role: orgl}
+  # Gerätewagen Sanität der SEG: Behandlungsplatz für Leichtverletzte vor Ort.
+  - {id: base:gwsan, short: GW-San, name: Gerätewagen Sanität, canTransport: false, radioCode: 58, role: gwsan}
+
+stations:
+  - id: base:el-rd
+    name: Einsatzleitung Rettungsdienst (Rufbereitschaft)
+    kind: notarztstandort
+    position: [13700, 10750]
+    reserve: true
+    turnout: {day: [300, 480], night: [420, 660]}
+    vehicles:
+      - {id: base:lna-1, callsign: Rettung Brakenfeld 1/01-1, type: base:lna}
+      - {id: base:orgl-1, callsign: Rettung Brakenfeld 1/02-1, type: base:orgl}
+  # Schnelleinsatzgruppe aus Ehrenamtlichen: Alarm über Meldeempfänger, lange Ausrückzeit.
+  - id: base:seg-brakenfeld
+    name: SEG Sanität Brakenfeld
+    kind: rettungswache
+    position: [12900, 9100]
+    reserve: true
+    turnout: {day: [600, 900], night: [780, 1200]}
+    vehicles:
+      - {id: base:seg-rtw-1, callsign: Sanität Brakenfeld 1/83-11, type: base:rtw}
+      - {id: base:seg-rtw-2, callsign: Sanität Brakenfeld 1/83-12, type: base:rtw}
+      - {id: base:seg-ktw-1, callsign: Sanität Brakenfeld 1/85-11, type: base:ktw}
+      - {id: base:seg-ktw-2, callsign: Sanität Brakenfeld 1/85-12, type: base:ktw}
+      - {id: base:gwsan-1, callsign: Sanität Brakenfeld 1/58-1, type: base:gwsan}
+
+keywords:
+  - id: base:manv1
+    code: MANV 1
+    name: Massenanfall von Verletzten bis 10 Personen
+    description: Mehrere Verletzte, Sichtung durch den Leitenden Notarzt
+    priority: 1
+    emergency: true
+    mci: true
+    aao:
+      - {type: base:rtw, count: 4}
+      - {type: base:nef, count: 2, alternatives: [base:rth]}
+      - {type: base:lna, count: 1}
+      - {type: base:orgl, count: 1}
+  - id: base:manv2
+    code: MANV 2
+    name: Massenanfall von Verletzten bis 20 Personen
+    description: Viele Verletzte, Schnelleinsatzgruppe und Behandlungsplatz
+    priority: 1
+    emergency: true
+    mci: true
+    aao:
+      - {type: base:rtw, count: 6}
+      - {type: base:ktw, count: 2, alternatives: [base:rtw]}
+      - {type: base:nef, count: 3, alternatives: [base:rth]}
+      - {type: base:lna, count: 1}
+      - {type: base:orgl, count: 1}
+      - {type: base:gwsan, count: 1}
+      - {type: base:hlf, count: 2, alternatives: [base:lf]}
+      - {type: base:rw, count: 1}
+  - id: base:manv3
+    code: MANV 3
+    name: Massenanfall von Verletzten über 20 Personen
+    description: Großschadenslage, alle verfügbaren Kräfte und Nachbarbereiche
+    priority: 1
+    emergency: true
+    mci: true
+    aao:
+      - {type: base:rtw, count: 8}
+      - {type: base:ktw, count: 4, alternatives: [base:rtw]}
+      - {type: base:nef, count: 4, alternatives: [base:rth]}
+      - {type: base:lna, count: 1}
+      - {type: base:orgl, count: 1}
+      - {type: base:gwsan, count: 1}
+      - {type: base:elw1, count: 1}
+      - {type: base:hlf, count: 3, alternatives: [base:lf]}
+      - {type: base:rw, count: 1}
+  - id: base:b4
+    code: B 4
+    name: Großbrand mit Menschenleben in Gefahr
+    description: Großbrand mit mehreren Verletzten
+    priority: 1
+    emergency: true
+    mci: true
+    aao:
+      - {type: base:elw1, count: 1}
+      - {type: base:hlf, count: 3, alternatives: [base:lf]}
+      - {type: base:dlk, count: 2}
+      - {type: base:tlf, count: 1}
+      - {type: base:rtw, count: 3}
+      - {type: base:nef, count: 2, alternatives: [base:rth]}
+      - {type: base:lna, count: 1}
+      - {type: base:orgl, count: 1}
+  - id: base:abc1
+    code: ABC 1
+    name: Gefahrstoffaustritt mit Verletzten
+    description: Gefahrgut, Dekontamination, mehrere Atemwegsreizungen
+    priority: 1
+    emergency: true
+    mci: true
+    aao:
+      - {type: base:elw1, count: 1}
+      - {type: base:hlf, count: 2, alternatives: [base:lf]}
+      - {type: base:gwg, count: 1}
+      - {type: base:rtw, count: 3}
+      - {type: base:nef, count: 1, alternatives: [base:rth]}
+      - {type: base:lna, count: 1}
+      - {type: base:orgl, count: 1}
+
+mciScenarios:
+  - id: base:mci-bus
+    name: Busunfall auf der Landstraße
+    weight: 3
+    keyword: base:manv2
+    reports: [{key: mci_bus, weight: 1}]
+    casualties: [9, 18]
+    triage: {red: 0.15, yellow: 0.3, green: 0.5, black: 0.05}
+    greenTransport: 0.5
+    diagnoses: {red: [base:traffic-injury], yellow: [base:traffic-injury, base:fall], green: [base:fall]}
+    fire: {needs: [{type: base:hlf, count: 2, alternatives: [base:lf]}, {type: base:rw, count: 1}], workMinutes: [60, 120]}
+  - id: base:mci-pileup
+    name: Massenkarambolage auf der Autobahn
+    weight: 2
+    keyword: base:manv1
+    reports: [{key: mci_pileup, weight: 1}]
+    casualties: [5, 11]
+    triage: {red: 0.2, yellow: 0.35, green: 0.4, black: 0.05}
+    greenTransport: 0.6
+    diagnoses: {red: [base:traffic-injury], yellow: [base:traffic-injury], green: [base:fall]}
+    fire: {needs: [{type: base:hlf, count: 2, alternatives: [base:lf]}, {type: base:rw, count: 1}], workMinutes: [60, 150]}
+    weather: {base:nebel: 6, base:glaette: 6, base:schnee: 4, base:regen: 1.5}
+  - id: base:mci-train
+    name: Zugunglück an einem Bahnübergang
+    weight: 0.5
+    keyword: base:manv3
+    reports: [{key: mci_train, weight: 1}]
+    casualties: [20, 35]
+    triage: {red: 0.12, yellow: 0.28, green: 0.55, black: 0.05}
+    greenTransport: 0.4
+    diagnoses: {red: [base:traffic-injury], yellow: [base:traffic-injury, base:fall], green: [base:fall]}
+    fire: {needs: [{type: base:elw1, count: 1}, {type: base:hlf, count: 3, alternatives: [base:lf]}, {type: base:rw, count: 1}], workMinutes: [120, 240]}
+  - id: base:mci-fire
+    name: Großbrand in einem Mehrfamilienhaus
+    weight: 2
+    keyword: base:b4
+    outdoor: false
+    reports: [{key: mci_fire, weight: 1}]
+    casualties: [5, 12]
+    triage: {red: 0.15, yellow: 0.35, green: 0.45, black: 0.05}
+    greenTransport: 0.4
+    diagnoses: {red: [base:smoke-inhalation], yellow: [base:smoke-inhalation], green: [base:smoke-inhalation]}
+    fire: {needs: [{type: base:elw1, count: 1}, {type: base:hlf, count: 3, alternatives: [base:lf]}, {type: base:dlk, count: 2}, {type: base:tlf, count: 1}], workMinutes: [90, 180]}
+  - id: base:mci-hazmat
+    name: Chlorgasaustritt im Hallenbad
+    weight: 1
+    keyword: base:abc1
+    outdoor: false
+    reports: [{key: mci_hazmat, weight: 1}]
+    casualties: [8, 20]
+    triage: {red: 0.05, yellow: 0.3, green: 0.65, black: 0}
+    greenTransport: 0.5
+    diagnoses: {red: [base:smoke-inhalation], yellow: [base:smoke-inhalation], green: [base:smoke-inhalation]}
+    fire: {needs: [{type: base:elw1, count: 1}, {type: base:hlf, count: 2, alternatives: [base:lf]}, {type: base:gwg, count: 1}], workMinutes: [90, 150]}
+  - id: base:mci-evacuation
+    name: Evakuierung eines Pflegeheims nach Stromausfall
+    weight: 1
+    keyword: base:manv2
+    outdoor: false
+    reports: [{key: mci_evacuation, weight: 1}]
+    casualties: [12, 25]
+    triage: {red: 0.04, yellow: 0.26, green: 0.7, black: 0}
+    greenTransport: 0.7
+    diagnoses: {red: [base:dyspnea], yellow: [base:dyspnea, base:exsiccosis], green: [base:exsiccosis]}
+    fire: {needs: [{type: base:hlf, count: 1, alternatives: [base:lf]}], workMinutes: [90, 180]}
+    weather: {base:hitze: 3, base:gewitter: 3}

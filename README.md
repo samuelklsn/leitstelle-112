@@ -58,6 +58,8 @@ auf Leitung 2 klingelt schon der nächste Notruf.
 | **Sprechwunsch:** Zielklinik nach Befund und Fachabteilung        | **Schichtauswertung:** Hilfsfrist, Fehler, Outcome            |
 | ![Transportaufträge](docs/images/auftraege.png)                   | ![Kliniken](docs/images/kliniken.png)                         |
 | **Aufträge:** Krankentransporte mit Termin, Status 6 mit Grund    | **Kliniken:** Aufnahmeplätze und Abmeldungen je Abteilung     |
+| ![MANV-Übersicht](docs/images/manv.png)                           | ![Fenster und Layouts](docs/images/fenster.png)               |
+| **MANV:** Sichtung, Verbleib, Patientenverteilung                 | **Mehrere Bildschirme:** Fenster und Layouts                  |
 
 ## Spielen
 
@@ -104,22 +106,23 @@ nichts automatisch versendet – das Paket kann einem
 
 ## Stand und Roadmap
 
-**v0.6.0:** Mehrere Fenster und Bildschirme, eigene Tastenbelegung, Diagnosepaket. **v0.5.0:** Wetter, Feiertage, Ereignisse, Rettungshubschrauber. **v0.4.0:** Krankentransporte, Klinikabmeldungen, Pausen. **v0.3.0:** Feuerwehr mit Brand- und Hilfeleistungslagen, die sich ausbreiten. **v0.2.0:** strukturierte Notrufabfrage mit Fehl-, Scherz- und Doppelanrufen. **Seit v0.1.0:** Rettungsdienst im fiktiven Landkreis Brakenfeld. Dazu gehören
+**v0.7.0:** Massenanfall von Verletzten und Großlagen. **v0.6.0:** Mehrere Fenster und Bildschirme, eigene Tastenbelegung, Diagnosepaket. **v0.5.0:** Wetter, Feiertage, Ereignisse, Rettungshubschrauber. **v0.4.0:** Krankentransporte, Klinikabmeldungen, Pausen. **v0.3.0:** Feuerwehr mit Brand- und Hilfeleistungslagen, die sich ausbreiten. **v0.2.0:** strukturierte Notrufabfrage mit Fehl-, Scherz- und Doppelanrufen. **Seit v0.1.0:** Rettungsdienst im fiktiven Landkreis Brakenfeld. Dazu gehören
 7 Orte, 3 Rettungswachen, 2 Notarztstandorte, 2 Krankenhäuser, 4 Stichworte und
 14 Krankheitsbilder, außerdem Tutorial, Speichern und Laden sowie die Schichtauswertung.
 
-| Meilenstein          | Inhalt                                                                     | Stand                                                              |
-| -------------------- | -------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| M1 Fundament         | Monorepo, CI, Electron, deterministischer Simulationskern                  | ✅                                                                 |
-| M2 Welt & Routing    | Landkreis-Generator, Straßengraph, Fahrzeitmodell, Offline-Karte           | ✅                                                                 |
-| M3 Vertical Slice    | Notruf → Disposition → Anfahrt → Befund → Transport → Krankenhaus          | ✅                                                                 |
-| M4 v0.1.0            | Speichern, Autosave, Auswertung, Tutorial, Tastatur                        | ✅                                                                 |
-| M5 Notrufannahme 2.0 | Strukturierte Abfrage, Fehl-, Scherz- und Doppelanrufe, Polizei-Übergaben  | ✅                                                                 |
-| M6 Feuerwehr         | Feuerwachen, B/TH-Stichworte, Lagemeldung, Nachforderung, Brandausbreitung | ✅                                                                 |
-| M7 RD-Logistik       | KTW/ITW, Krankentransporte, Klinikabmeldungen, Status 6, Pausen            | ✅                                                                 |
-| M8 Welt-Dynamik      | Wetter, Feiertage, Sommerzeit, Ereignisse, Sperrungen, Regie, RTH          | ✅                                                                 |
-| M9 Mehrfenster       | Fenster je Ansicht, Layout-Profile, Tastenbelegung, Diagnosepaket          | ✅                                                                 |
-| M10 – M12            | MANV, Langzeitspiel, Editoren                                              | [geplant](https://github.com/samuelklsn/leitstelle-112/milestones) |
+| Meilenstein          | Inhalt                                                                      | Stand                                                              |
+| -------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| M1 Fundament         | Monorepo, CI, Electron, deterministischer Simulationskern                   | ✅                                                                 |
+| M2 Welt & Routing    | Landkreis-Generator, Straßengraph, Fahrzeitmodell, Offline-Karte            | ✅                                                                 |
+| M3 Vertical Slice    | Notruf → Disposition → Anfahrt → Befund → Transport → Krankenhaus           | ✅                                                                 |
+| M4 v0.1.0            | Speichern, Autosave, Auswertung, Tutorial, Tastatur                         | ✅                                                                 |
+| M5 Notrufannahme 2.0 | Strukturierte Abfrage, Fehl-, Scherz- und Doppelanrufe, Polizei-Übergaben   | ✅                                                                 |
+| M6 Feuerwehr         | Feuerwachen, B/TH-Stichworte, Lagemeldung, Nachforderung, Brandausbreitung  | ✅                                                                 |
+| M7 RD-Logistik       | KTW/ITW, Krankentransporte, Klinikabmeldungen, Status 6, Pausen             | ✅                                                                 |
+| M8 Welt-Dynamik      | Wetter, Feiertage, Sommerzeit, Ereignisse, Sperrungen, Regie, RTH           | ✅                                                                 |
+| M9 Mehrfenster       | Fenster je Ansicht, Layout-Profile, Tastenbelegung, Diagnosepaket           | ✅                                                                 |
+| M10 MANV             | Großlagen, Sichtung, LNA/OrgL/SEG, Bereitstellungsraum, Patientenverteilung | ✅                                                                 |
+| M11 – M12            | Langzeitspiel, Editoren                                                     | [geplant](https://github.com/samuelklsn/leitstelle-112/milestones) |
 
 ## Technik
 

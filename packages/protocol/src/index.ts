@@ -49,7 +49,7 @@ export const PROTOCOL_VERSION = 2;
 export type GameMode = 'free' | 'tutorial';
 
 /** Spielbeginn: heute oder eine Jahreszeit bzw. die Silvesternacht (ADR-0016). */
-export const START_PRESETS = ['today', 'winter', 'summer', 'newYear'] as const;
+export const START_PRESETS = ['today', 'winter', 'summer', 'newYear', 'drill'] as const;
 export type StartPreset = (typeof START_PRESETS)[number];
 
 export type Query =
@@ -216,6 +216,11 @@ export function parseSimCommand(c: unknown): SimCommand | undefined {
     case 'vehicle/break':
     case 'vehicle/resume':
       return isId(c.vehicleId) ? { type: c.type, vehicleId: c.vehicleId } : undefined;
+    case 'mci/autoDistribute':
+    case 'mci/staging':
+      return isId(c.incidentId) && typeof c.on === 'boolean'
+        ? { type: c.type, incidentId: c.incidentId, on: c.on }
+        : undefined;
     default:
       return undefined;
   }
