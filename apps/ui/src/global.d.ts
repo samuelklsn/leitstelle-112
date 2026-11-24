@@ -14,6 +14,8 @@ interface Ls112Bridge {
   saveLayout(name: string): Promise<boolean>;
   deleteLayout(name: string): Promise<boolean>;
   createDiagnostics(): Promise<string | null>;
+  openModsFolder(): Promise<boolean>;
+  saveModFile(modId: string, fileName: string, data: unknown): Promise<boolean>;
 }
 
 interface Window {

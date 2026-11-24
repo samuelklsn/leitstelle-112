@@ -12,6 +12,7 @@ import {
   PROTOCOL_VERSION,
   parseClientMessage,
   type GameMode,
+  type ModStatusView,
   type StartPreset,
   type HostMessage,
   type HostState,
@@ -45,6 +46,12 @@ export interface HostOptions {
   /** Spielbeginn für ein neues Spiel (Schichtbeginn heute). */
   readonly startTime: (preset?: StartPreset) => number;
   readonly callRateFactor?: number;
+  /** Status der Mods beim Start (ADR-0019). */
+  readonly mods?: readonly ModStatusView[];
+  /** Inhalte samt Mods neu laden (nach dem Speichern im Editor). */
+  readonly reloadContent?: () => { content: ContentBundle; mods: readonly ModStatusView[] };
+  /** Startzeit eines Trainingsszenarios: Stunde und optional Monat (ADR-0019). */
+  readonly scenarioStart?: (hour: number, month?: number) => number;
 }
 
 /** Wie oft der Zustand höchstens an die Fenster geht (ADR-0005: bis 10 Hz). */
@@ -70,7 +77,13 @@ export class SimHost {
   private dirty = true;
   private lastAutosaveAt: number;
 
+  /** Aktuelle Inhalte; nach einem Neuladen gelten sie für neue Spiele. */
+  private content: ContentBundle;
+  private mods: readonly ModStatusView[];
+
   constructor(private readonly options: HostOptions) {
+    this.content = options.content;
+    this.mods = options.mods ?? [];
     this.sim = this.createSim('free');
     this.world = buildWorldInfo(this.sim);
     this.lastAutosaveAt = this.sim.time;
@@ -88,11 +101,30 @@ export class SimHost {
     });
     port.postMessage({ type: 'welcome', protocol: PROTOCOL_VERSION, seed: this.sim.config.seed });
     port.postMessage({ type: 'world', world: this.world });
+    port.postMessage({ type: 'mods', mods: this.mods });
     port.postMessage({ type: 'state', state: this.state() });
   }
 
-  newGame(mode: GameMode, start?: StartPreset): void {
-    this.sim = this.createSim(mode, start);
+  /** Inhalte samt Mods neu laden; das laufende Spiel bleibt unverändert. */
+  reloadContent(): void {
+    if (!this.options.reloadContent) return;
+    try {
+      const next = this.options.reloadContent();
+      this.content = next.content;
+      this.mods = next.mods;
+      this.broadcast({ type: 'mods', mods: this.mods });
+      this.options.log.info({ mods: this.mods.length }, 'Inhalte neu geladen');
+    } catch (error) {
+      this.options.log.error({ err: error }, 'Inhalte konnten nicht neu geladen werden');
+    }
+  }
+
+  newGame(
+    mode: GameMode,
+    start?: StartPreset,
+    extra: { scenario?: string; hilfsfrist?: string } = {},
+  ): void {
+    this.sim = this.createSim(mode, start, extra);
     this.challenge =
       mode === 'free' && start === 'daily' ? this.options.dailySeed?.().date : undefined;
     this.refreshWorld();
@@ -110,7 +142,7 @@ export class SimHost {
     const stored = this.options.store?.read(id);
     if (!stored) return false;
     try {
-      this.sim = Simulation.restore(stored.snapshot, this.options.content);
+      this.sim = Simulation.restore(stored.snapshot, this.content);
     } catch (error) {
       this.options.log.error({ err: error, id }, 'Spielstand nicht ladbar');
       return false;
@@ -135,7 +167,7 @@ export class SimHost {
         name,
         snapshot: this.sim.snapshot(),
         commands: this.sim.commandLog(),
-        region: this.options.content.region.name,
+        region: this.content.region.name,
         shiftIndex: this.sim.raw.shift.index,
         mode: this.mode,
       });
@@ -196,7 +228,35 @@ export class SimHost {
     }
   }
 
-  private createSim(mode: GameMode, start?: StartPreset): Simulation {
+  private createSim(
+    mode: GameMode,
+    start?: StartPreset,
+    extra: { scenario?: string; hilfsfrist?: string } = {},
+  ): Simulation {
+    const scenario =
+      mode === 'free' && extra.scenario !== undefined
+        ? this.content.scenarios.find((s) => s.id === extra.scenario)
+        : undefined;
+    const preset =
+      extra.hilfsfrist !== undefined &&
+      this.content.hilfsfristPresets.some((p) => p.id === extra.hilfsfrist)
+        ? extra.hilfsfrist
+        : undefined;
+    if (scenario) {
+      return Simulation.create(
+        defaultConfig({
+          seed: this.options.newSeed() >>> 0,
+          startTime:
+            this.options.scenarioStart?.(scenario.startHour, scenario.month) ??
+            this.options.startTime('today'),
+          callRateFactor: (this.options.callRateFactor ?? 1) * scenario.callRateFactor,
+          tutorial: false,
+          scenarioId: scenario.id,
+          ...(preset !== undefined ? { hilfsfristPreset: preset } : {}),
+        }),
+        this.content,
+      );
+    }
     return Simulation.create(
       defaultConfig({
         seed:
@@ -209,8 +269,9 @@ export class SimHost {
         tutorial: mode === 'tutorial',
         // MANV-Übung: Der erste Notruf meldet eine Großlage (ADR-0017).
         ...(mode === 'free' && start === 'drill' ? { drill: true } : {}),
+        ...(preset !== undefined ? { hilfsfristPreset: preset } : {}),
       }),
-      this.options.content,
+      this.content,
     );
   }
 
@@ -264,7 +325,10 @@ export class SimHost {
         port.postMessage({ type: 'reply', id: msg.id, result: this.answer(msg.query) });
         return;
       case 'game/new':
-        this.newGame(msg.mode, msg.start);
+        this.newGame(msg.mode, msg.start, {
+          ...(msg.scenario !== undefined ? { scenario: msg.scenario } : {}),
+          ...(msg.hilfsfrist !== undefined ? { hilfsfrist: msg.hilfsfrist } : {}),
+        });
         return;
       case 'save/write':
         if (!this.save('manual', msg.name)) port.postMessage({ type: 'error', code: 'saveFailed' });

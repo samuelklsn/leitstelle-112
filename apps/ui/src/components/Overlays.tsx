@@ -47,6 +47,12 @@ export function StartScreen() {
   const newGame = useSim((s) => s.newGame);
   const openDialog = useSim((s) => s.openDialog);
   const [start, setStart] = useState<StartPreset>('today');
+  const [scenario, setScenario] = useState('');
+  const [hilfsfrist, setHilfsfrist] = useState('');
+  const extra = {
+    ...(scenario ? { scenario } : {}),
+    ...(hilfsfrist ? { hilfsfrist } : {}),
+  };
   return (
     <div className={ov.start} data-testid="start-screen">
       <div className={ov.startInner}>
@@ -65,7 +71,7 @@ export function StartScreen() {
             type="button"
             className={ov.card}
             onClick={() => {
-              newGame('free', start);
+              newGame('free', start, extra);
             }}
             data-testid="start-free"
             autoFocus
@@ -112,6 +118,44 @@ export function StartScreen() {
             ))}
           </select>
         </label>
+        {world && world.scenarios.length > 0 && (
+          <label className={ov.startPreset}>
+            {t('start.scenario')}
+            <select
+              value={scenario}
+              onChange={(e) => {
+                setScenario(e.target.value);
+              }}
+              data-testid="start-scenario"
+            >
+              <option value="">{t('start.noScenario')}</option>
+              {world.scenarios.map((s) => (
+                <option key={s.id} value={s.id} title={s.description}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+        {world && world.hilfsfristPresets.length > 0 && (
+          <label className={ov.startPreset}>
+            {t('start.hilfsfrist')}
+            <select
+              value={hilfsfrist}
+              onChange={(e) => {
+                setHilfsfrist(e.target.value);
+              }}
+              data-testid="start-hilfsfrist"
+            >
+              <option value="">{world.hilfsfrist.label}</option>
+              {world.hilfsfristPresets.map((p) => (
+                <option key={p.id} value={p.id} title={p.source}>
+                  {p.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
         <p className={ov.disclaimer}>{t('start.disclaimer')}</p>
       </div>
     </div>
@@ -195,6 +239,36 @@ function CareerSection() {
   );
 }
 
+/** Trainingsszenario: Ziele erreicht? (ADR-0019) */
+function ScenarioGoals({ quota, errors }: { quota: number; errors: number }) {
+  const { t } = useTranslation();
+  const world = useSim((s) => s.world);
+  const id = useSim((s) => s.host?.view.scenario?.id);
+  const scenario = world?.scenarios.find((x) => x.id === id);
+  if (!scenario) return null;
+  const goals: [string, boolean][] = [];
+  if (scenario.goals.hilfsfristQuota !== undefined)
+    goals.push([
+      t('scenario.goalQuota', { percent: Math.round(scenario.goals.hilfsfristQuota * 100) }),
+      quota >= scenario.goals.hilfsfristQuota * 100,
+    ]);
+  if (scenario.goals.maxErrors !== undefined)
+    goals.push([
+      t('scenario.goalErrors', { count: scenario.goals.maxErrors }),
+      errors <= scenario.goals.maxErrors,
+    ]);
+  return (
+    <div className={css.section} data-testid="scenario-goals">
+      <span className={css.label}>{t('scenario.title', { name: scenario.name })}</span>
+      {goals.map(([text, ok]) => (
+        <div key={text} className={ok ? css.ok : css.bad}>
+          {ok ? '✓' : '✗'} {text}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 /** Tages-Herausforderung: lokale Bestleistung je Datum (nichts wird versendet). */
 function ChallengeLine({ score }: { score: number }) {
   const { t } = useTranslation();
@@ -228,7 +302,9 @@ export function EvaluationDialog({ shift }: { shift: ShiftStats | undefined }) {
   const L = lookup(world);
   const quota =
     s.hilfsfristMeasured > 0 ? Math.round((100 * s.hilfsfristMet) / s.hilfsfristMeasured) : 100;
-  const target = Math.round(world.hilfsfrist.targetQuota * 100);
+  // Geltende Regel des Spiels (Preset eines Landes oder Vorgabe der Region).
+  const hf = useSim.getState().host?.view.hilfsfrist ?? world.hilfsfrist;
+  const target = Math.round(hf.targetQuota * 100);
   const errors = Object.entries(s.errors).filter(([, n]) => n > 0);
   const rating =
     quota >= target && errors.length <= 2 ? 'excellent' : quota >= target - 15 ? 'good' : 'poor';
@@ -254,6 +330,7 @@ export function EvaluationDialog({ shift }: { shift: ShiftStats | undefined }) {
       }
     >
       <div className={ov.rating}>{t(`evaluation.rating.${rating}`)}</div>
+      <ScenarioGoals quota={quota} errors={errors.reduce((n, [, c]) => n + c, 0)} />
       <ChallengeLine score={s.score} />
       <div className={css.kpis}>
         <div className={css.kpi}>
@@ -299,10 +376,7 @@ export function EvaluationDialog({ shift }: { shift: ShiftStats | undefined }) {
             total: s.hilfsfristMeasured,
             quota,
           })}{' '}
-          ·{' '}
-          <span className={css.hint}>
-            {t('evaluation.target', { label: world.hilfsfrist.label })}
-          </span>
+          · <span className={css.hint}>{t('evaluation.target', { label: hf.label })}</span>
         </div>
         <div className={css.bar}>
           <div

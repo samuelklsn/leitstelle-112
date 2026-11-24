@@ -12,6 +12,7 @@ import {
   type SimCommand,
   type SimEvent,
   type Speed,
+  type ModStatusView,
   type StartPreset,
   type WorldInfo,
 } from '@ls112/protocol';
@@ -31,6 +32,9 @@ export type Dialog =
   | { readonly kind: 'help' }
   | { readonly kind: 'windows' }
   | { readonly kind: 'mci'; readonly incidentId: string }
+  | { readonly kind: 'mods' }
+  | { readonly kind: 'scenarioEditor' }
+  | { readonly kind: 'stationEditor' }
   | { readonly kind: 'keys' };
 
 /** Ansicht dieses Fensters (Mehrfenster, #50): Hauptfenster oder ein ausgelagerter Bereich. */
@@ -72,7 +76,16 @@ interface SimStore {
   query: (query: Query) => Promise<QueryResult>;
   togglePause: () => void;
   setSpeed: (speed: Speed) => void;
-  newGame: (mode: GameMode, start?: StartPreset) => void;
+  newGame: (
+    mode: GameMode,
+    start?: StartPreset,
+    extra?: { scenario?: string; hilfsfrist?: string },
+  ) => void;
+  /** Geladene und übersprungene Mods (ADR-0019). */
+  mods: readonly ModStatusView[];
+  /** Kartenauswahl für Editoren: nächster Klick auf die Karte liefert Koordinaten. */
+  mapPick: ((x: number, y: number) => void) | null;
+  setMapPick: (pick: ((x: number, y: number) => void) | null) => void;
   openDialog: (dialog: Dialog | null) => void;
   selectIncident: (id: string | null) => void;
   focusVehicle: (id: string | null) => void;
@@ -125,8 +138,8 @@ export const useSim = create<SimStore>((set, get) => ({
   setSpeed: (speed) => {
     get().send({ type: 'clock/setSpeed', speed });
   },
-  newGame: (mode, start) => {
-    get().send({ type: 'game/new', mode, ...(start ? { start } : {}) });
+  newGame: (mode, start, extra = {}) => {
+    get().send({ type: 'game/new', mode, ...(start ? { start } : {}), ...extra });
     set({ events: [], dialog: null, selectedIncidentId: null });
   },
   openDialog: (dialog) => {
@@ -158,6 +171,11 @@ export const useSim = create<SimStore>((set, get) => ({
   setCapturingKey: (on) => {
     set({ capturingKey: on });
   },
+  mods: [],
+  mapPick: null,
+  setMapPick: (pick) => {
+    set({ mapPick: pick });
+  },
   bottomTab: 'incidents',
   setBottomTab: (tab) => {
     set({ bottomTab: tab });
@@ -171,6 +189,9 @@ function handleHostMessage(message: HostMessage): void {
       return;
     case 'world':
       useSim.setState({ world: message.world });
+      return;
+    case 'mods':
+      useSim.setState({ mods: message.mods });
       return;
     case 'state': {
       const prev = useSim.getState().host;

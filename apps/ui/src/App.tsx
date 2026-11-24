@@ -18,6 +18,7 @@ import {
 import { BottomTabs, CallsPanel, VehiclePanel } from './components/Panels';
 import { KeysDialog, WindowsDialog } from './components/Settings';
 import { MciDialog } from './components/MciDialog';
+import { ModsDialog, ScenarioEditor, StationEditor } from './components/Editors';
 import css from './App.module.css';
 
 export function App() {
@@ -51,6 +52,9 @@ export function App() {
       {dialog?.kind === 'windows' && <WindowsDialog />}
       {dialog?.kind === 'keys' && <KeysDialog />}
       {dialog?.kind === 'mci' && <MciDialog incidentId={dialog.incidentId} />}
+      {dialog?.kind === 'mods' && <ModsDialog />}
+      {dialog?.kind === 'scenarioEditor' && <ScenarioEditor />}
+      {dialog?.kind === 'stationEditor' && <StationEditor />}
       <Notice />
     </div>
   );
@@ -149,6 +153,15 @@ function Header({ secondary = false }: { secondary?: boolean }) {
             data-testid="menu-keys"
           >
             {t('menu.keys')}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              openDialog({ kind: 'mods' });
+            }}
+            data-testid="menu-mods"
+          >
+            {t('menu.mods')}
           </button>
         </nav>
       )}
