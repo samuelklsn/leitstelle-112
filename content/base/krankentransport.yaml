@@ -1,0 +1,95 @@
+# Transportaufträge (ADR-0015): Krankentransporte, Verlegungen und Intensivverlegungen.
+# Aufträge kommen über die Krankentransport-Rufnummer, aus Praxen, Kliniken und Pflegeheimen,
+# meist mit Termin. Anteile, Zeiten und Vorlaufzeiten sind Annahmen (docs/domain/logistik.md).
+keywords:
+  - id: base:ktp
+    code: KTP
+    name: Krankentransport
+    description: Sitzend oder liegend, ohne Überwachung, mit Termin
+    priority: 3
+    emergency: false
+    planned: true
+    aao: [{type: base:ktw, count: 1}]
+  - id: base:vl
+    code: VL
+    name: Verlegung mit Überwachung
+    description: Dringende Verlegung in eine Fachabteilung, RTW mit Monitoring
+    priority: 2
+    emergency: false
+    planned: true
+    aao: [{type: base:rtw, count: 1}]
+  - id: base:itv
+    code: ITV
+    name: Intensivverlegung
+    description: Beatmeter oder kreislaufinstabiler Patient, ITW mit Intensivmediziner
+    priority: 2
+    emergency: false
+    planned: true
+    aao: [{type: base:itw, count: 1}]
+
+transportOrders:
+  - id: base:einweisung
+    name: Einweisung zur stationären Aufnahme
+    weight: 4
+    keyword: base:ktp
+    toHospitals: [base:kk-brakenfeld, base:kl-ellerbach]
+    leadMinutes: [20, 150]
+    pickupMinutes: [8, 15]
+    handoverMinutes: [8, 12]
+    naca: [1, 2]
+    ageRange: [55, 95]
+    infectious: 0.04
+  - id: base:entlassung
+    name: Entlassung nach Hause oder ins Pflegeheim
+    weight: 4
+    keyword: base:ktp
+    fromHospitals: [base:kk-brakenfeld, base:kl-ellerbach, base:fk-tannrode]
+    leadMinutes: [30, 120]
+    pickupMinutes: [10, 20]
+    handoverMinutes: [5, 10]
+    naca: [1, 1]
+    ageRange: [60, 98]
+  - id: base:ambulant
+    name: Fahrt zur ambulanten Behandlung (Dialyse, Bestrahlung)
+    weight: 3
+    keyword: base:ktp
+    toHospitals: [base:kk-brakenfeld]
+    leadMinutes: [60, 240]
+    pickupMinutes: [6, 12]
+    handoverMinutes: [5, 8]
+    naca: [1, 2]
+    ageRange: [45, 90]
+  - id: base:geriatrie
+    name: Verlegung in die Geriatrie
+    weight: 1
+    keyword: base:ktp
+    fromHospitals: [base:kk-brakenfeld, base:kl-ellerbach]
+    toHospitals: [base:fk-tannrode]
+    leadMinutes: [60, 180]
+    pickupMinutes: [10, 15]
+    handoverMinutes: [10, 15]
+    naca: [1, 2]
+    ageRange: [75, 98]
+  - id: base:verlegung-herz
+    name: Dringende Verlegung zur Herzkatheteruntersuchung
+    weight: 1
+    keyword: base:vl
+    fromHospitals: [base:kl-ellerbach]
+    toHospitals: [base:kk-brakenfeld]
+    leadMinutes: [0, 10]
+    pickupMinutes: [10, 15]
+    handoverMinutes: [10, 15]
+    naca: [3, 4]
+    ageRange: [45, 90]
+  - id: base:verlegung-intensiv
+    name: Intensivverlegung (Beatmung)
+    weight: 0.6
+    keyword: base:itv
+    fromHospitals: [base:kl-ellerbach]
+    toHospitals: [base:kk-brakenfeld]
+    leadMinutes: [20, 60]
+    pickupMinutes: [20, 30]
+    handoverMinutes: [15, 25]
+    naca: [4, 5]
+    ageRange: [40, 90]
+    infectious: 0.2

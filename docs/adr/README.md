@@ -21,3 +21,4 @@ Entscheidung bekommt ein neues ADR, das alte wird auf „Abgelöst" gesetzt. Nac
 | [0012](0012-logging-crash-reports.md)            | Logging und Crash-Reports                            | Angenommen |
 | [0013](0013-lizenz.md)                           | Lizenz: GPL-3.0 für Code, CC BY-SA 4.0 für Inhalte   | Angenommen |
 | [0014](0014-endlosspiel-prozedurale-vielfalt.md) | Endlosspiel und prozedurale Vielfalt                 | Angenommen |
+| [0015](0015-rd-logistik.md)                      | Rettungsdienst-Logistik                              | Angenommen |

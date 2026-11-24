@@ -17,10 +17,21 @@ export function baseContent(): ContentBundle {
 
 export const SHIFT_START = simTimeFrom(2026, 11, 24, 7, 0, 0);
 
+let testCached: ContentBundle | undefined;
+/** Basisinhalte ohne vorbestellte Aufträge – Tests legen ihre Einsätze gezielt selbst an. */
+export function testContent(): ContentBundle {
+  const base = baseContent();
+  testCached ??= {
+    ...base,
+    settings: { ...base.settings, transports: { ...base.settings.transports, preBooked: 0 } },
+  };
+  return testCached;
+}
+
 export function newSim(overrides: Partial<SimConfig> = {}): Simulation {
   return Simulation.create(
     defaultConfig({ seed: 1, startTime: SHIFT_START, ...overrides }),
-    baseContent(),
+    testContent(),
   );
 }
 
@@ -81,12 +92,24 @@ export function botAct(sim: Simulation, options: BotOptions = {}): number {
   }
   for (const incident of s.incidents) {
     if (incident.status === 'closed') continue;
+    // Aufträge erst kurz vor dem Termin und nur alle 30 Takte prüfen – wie ein Disponent, der
+    // die Auftragsliste im Blick behält. Spart Routenberechnungen für wartende Aufträge.
+    if (incident.order && (incident.order.dueAt - s.time > 45 * 60_000 || s.tick % 30 !== 0))
+      continue;
+    if (sim.missingNeeds(incident.id).length === 0) continue;
     const ids = sim
       .suggestVehicles(incident.id)
       .filter((x) => x.recommended)
       .map((x) => x.vehicleId);
     if (ids.length > 0) {
       sim.submit({ type: 'incident/dispatch', incidentId: incident.id, vehicleIds: ids });
+      n++;
+    }
+  }
+  // Pausen genehmigt der Bot, sobald sie beantragt sind (das Fahrzeug ist dann frei).
+  for (const v of s.vehicles) {
+    if (v.breakRequestedAt !== undefined && v.incidentId === null && !v.service) {
+      sim.submit({ type: 'vehicle/break', vehicleId: v.id });
       n++;
     }
   }

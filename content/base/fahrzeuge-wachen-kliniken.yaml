@@ -1,8 +1,12 @@
 # Fahrzeugtypen, Rettungswachen und Krankenhäuser des Vertical Slice.
 # Funkrufnamen folgen dem verbreiteten Schema „Rufname Ort Wache/Kennzahl-Nummer".
 vehicleTypes:
-  - {id: base:rtw, short: RTW, name: Rettungswagen, canTransport: true, doctor: false, radioCode: 83}
+  - {id: base:rtw, short: RTW, name: Rettungswagen, canTransport: true, doctor: false, radioCode: 83, transportClass: notfall}
   - {id: base:nef, short: NEF, name: Notarzteinsatzfahrzeug, canTransport: false, doctor: true, radioCode: 82}
+  - {id: base:ktw, short: KTW, name: Krankentransportwagen, canTransport: true, doctor: false, radioCode: 85, transportClass: krankentransport}
+  - {id: base:itw, short: ITW, name: Intensivtransportwagen, canTransport: true, doctor: false, radioCode: 81, transportClass: intensiv}
+  # Notarztwagen: RTW mit Notarzt an Bord. Im Landkreis nicht stationiert, für Mods und Regionen.
+  - {id: base:naw, short: NAW, name: Notarztwagen, canTransport: true, doctor: true, radioCode: 84, transportClass: notfall}
 
 stations:
   - id: base:rw-brakenfeld
@@ -12,12 +16,17 @@ stations:
     vehicles:
       - {id: base:rtw-1-83-1, callsign: Rettung Brakenfeld 1/83-1, type: base:rtw}
       - {id: base:rtw-1-83-2, callsign: Rettung Brakenfeld 1/83-2, type: base:rtw}
+      # Tages-RTW: verstärkt den Bereich zu den Stunden mit dem höchsten Aufkommen.
+      - {id: base:rtw-1-83-3, callsign: Rettung Brakenfeld 1/83-3, type: base:rtw, service: {from: 8, to: 20}}
+      - {id: base:ktw-1-85-1, callsign: Rettung Brakenfeld 1/85-1, type: base:ktw, service: {from: 7, to: 19}}
+      - {id: base:ktw-1-85-2, callsign: Rettung Brakenfeld 1/85-2, type: base:ktw, service: {from: 8, to: 16, weekdaysOnly: true}}
   - id: base:na-brakenfeld
     name: Notarztstandort Kreisklinikum
     kind: notarztstandort
     position: [13850, 10950]
     vehicles:
       - {id: base:nef-1-82-1, callsign: Rettung Brakenfeld 1/82-1, type: base:nef}
+      - {id: base:itw-1-81-1, callsign: Rettung Brakenfeld 1/81-1, type: base:itw, service: {from: 8, to: 20}}
   - id: base:rw-ellerbach
     name: Rettungswache Ellerbach
     kind: rettungswache
@@ -25,6 +34,7 @@ stations:
     vehicles:
       - {id: base:rtw-2-83-1, callsign: Rettung Ellerbach 2/83-1, type: base:rtw}
       - {id: base:rtw-2-83-2, callsign: Rettung Ellerbach 2/83-2, type: base:rtw}
+      - {id: base:ktw-2-85-1, callsign: Rettung Ellerbach 2/85-1, type: base:ktw, service: {from: 7, to: 17, weekdaysOnly: true}}
   - id: base:na-ellerbach
     name: Notarztstandort Klinik Ellerbach
     kind: notarztstandort
@@ -37,7 +47,29 @@ stations:
     position: [21100, 4500]
     vehicles:
       - {id: base:rtw-3-83-1, callsign: Rettung Tannrode 3/83-1, type: base:rtw}
+      - {id: base:ktw-3-85-1, callsign: Rettung Tannrode 3/85-1, type: base:ktw, service: {from: 7, to: 15, weekdaysOnly: true}}
 
+# beds: freie Aufnahmeplätze für Notfallpatienten je Abteilung (Annahme, docs/domain/logistik.md).
 hospitals:
-  - {id: base:kk-brakenfeld, name: Kreisklinikum Brakenfeld, short: KK Brakenfeld, level: schwerpunktversorgung, position: [13900, 10900], departments: [innere, chirurgie, unfallchirurgie, neurologie, stroke, herzkatheter, paediatrie, gynaekologie, intensiv]}
-  - {id: base:kl-ellerbach, name: Klinik Ellerbach, short: Kl. Ellerbach, level: grundversorgung, position: [5000, 14800], departments: [innere, chirurgie, psychiatrie]}
+  - id: base:kk-brakenfeld
+    name: Kreisklinikum Brakenfeld
+    short: KK Brakenfeld
+    level: schwerpunktversorgung
+    position: [13900, 10900]
+    departments: [innere, chirurgie, unfallchirurgie, neurologie, stroke, herzkatheter, paediatrie, gynaekologie, intensiv]
+    beds: {innere: 6, chirurgie: 4, unfallchirurgie: 4, neurologie: 3, stroke: 2, herzkatheter: 2, paediatrie: 3, gynaekologie: 3, intensiv: 2}
+  - id: base:kl-ellerbach
+    name: Klinik Ellerbach
+    short: Kl. Ellerbach
+    level: grundversorgung
+    position: [5000, 14800]
+    departments: [innere, chirurgie, psychiatrie]
+    beds: {innere: 4, chirurgie: 3, psychiatrie: 2}
+  # Fachklinik ohne Notaufnahme für internistische Notfälle: Geriatrie und Psychiatrie.
+  - id: base:fk-tannrode
+    name: Fachklinik am Tannenhang
+    short: FK Tannrode
+    level: grundversorgung
+    position: [20700, 5100]
+    departments: [geriatrie, psychiatrie]
+    beds: {psychiatrie: 2}

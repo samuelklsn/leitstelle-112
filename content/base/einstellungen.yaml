@@ -33,3 +33,27 @@ settings:
     destinationTimeoutSeconds: 180
     callbackSeconds: [60, 120]
   caller: {wrongHouseNumber: 0.06, missingTown: 0.12, misjudge: 0.2}
+  # Transportaufträge (Krankentransport, Verlegung). Annahme: tagsüber etwa so viele wie
+  # Notrufe, nachts kaum welche (docs/domain/logistik.md).
+  transports:
+    ratePer100k: 1.6
+    hourlyProfile: [0.1, 0.05, 0.05, 0.05, 0.05, 0.1, 0.4, 1.2, 1.9, 2.0, 2.0, 1.8,
+                    1.6, 1.7, 1.7, 1.5, 1.2, 0.9, 0.6, 0.4, 0.3, 0.2, 0.15, 0.1]
+    toleranceMinutes: 15
+    # Am Vortag bestellt: Termine in den ersten drei Stunden der Schicht.
+    preBooked: 5
+    preBookedMinutes: [20, 180]
+  # Verfügbarkeit von Fahrzeugen, Besatzungen und Kliniken (Annahmen, docs/domain/logistik.md).
+  logistics:
+    disinfectionMinutes: [30, 50]
+    fuelHours: 8
+    refuelMinutes: [10, 15]
+    defectPerMission: 0.008
+    defectHours: [1, 3]
+    crewChangeHours: [7, 19]
+    breakAfterHours: 6
+    breakMinutes: 30
+    bedReleasePerHour: 0.45
+    bedOtherPerHour: 0.35
+    closurePerDay: 0.35
+    closureHours: [1, 3]

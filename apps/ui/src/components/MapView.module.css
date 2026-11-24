@@ -173,3 +173,8 @@
       0 0 0 14px rgb(255 90 82 / 0);
   }
 }
+
+/* Transportaufträge: geplant, deshalb ruhiger als Notfälle. */
+.incidentOrder {
+  background: #4f6f8f;
+}

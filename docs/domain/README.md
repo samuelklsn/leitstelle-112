@@ -14,4 +14,5 @@ die Issue-Vorlage „Fachliches Feedback“.
 | [auswertung.md](auswertung.md)               | Hilfsfrist, Patientenoutcome, Fehler, Punkte         |
 | [zeit.md](zeit.md)                           | Spielzeit, Kalender, Schichten                       |
 | [feuerwehr.md](feuerwehr.md)                 | Feuerwachen, Stichworte, Lagemeldung, Ausbreitung    |
+| [logistik.md](logistik.md)                   | Krankentransport, Kliniken, Dienst, Pausen, Status 6 |
 | [region-brakenfeld.md](region-brakenfeld.md) | Der fiktive Landkreis und seine Vorhaltung           |

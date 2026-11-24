@@ -48,7 +48,7 @@ function pickKind(ctx: Ctx): CallKind {
   if (r < k.misdial + k.prank) return 'prank';
   if (r < k.misdial + k.prank + k.info) return 'info';
   const recent = ctx.state.incidents.some(
-    (i) => i.status !== 'closed' && ctx.state.time - i.receivedAt < DUPLICATE_WINDOW_MS,
+    (i) => !i.order && i.status !== 'closed' && ctx.state.time - i.receivedAt < DUPLICATE_WINDOW_MS,
   );
   if (recent && rng.chance(k.duplicate)) return 'duplicate';
   return 'emergency';
@@ -60,7 +60,8 @@ export function createCall(ctx: Ctx, kind: CallKind = 'emergency'): CallState {
   let duplicateOf: string | undefined;
   if (kind === 'duplicate') {
     const candidates = ctx.state.incidents.filter(
-      (i) => i.status !== 'closed' && ctx.state.time - i.receivedAt < DUPLICATE_WINDOW_MS,
+      (i) =>
+        !i.order && i.status !== 'closed' && ctx.state.time - i.receivedAt < DUPLICATE_WINDOW_MS,
     );
     const original = candidates[ctx.rng.calls.nextInt(0, Math.max(0, candidates.length - 1))];
     if (original) {
@@ -127,7 +128,7 @@ function pickAddress(ctx: Ctx, outdoor: boolean): number {
 
 type PatientPart = Pick<
   Truth,
-  'diagnosisId' | 'age' | 'sex' | 'naca' | 'needsDoctor' | 'transport' | 'onSceneMs'
+  'diagnosisId' | 'age' | 'sex' | 'naca' | 'needsDoctor' | 'transport' | 'onSceneMs' | 'infectious'
 >;
 
 /** Patient nach Krankheitsbild – für Rettungsdienst-Notrufe und Verletzte bei Feuerwehrlagen. */
@@ -145,6 +146,7 @@ function patientFrom(ctx: Ctx, diagnosisId: string): PatientPart {
     needsDoctor: naca >= 5 || rng.chance(d.doctorNeeded),
     transport: rng.chance(d.transport),
     onSceneMs: rangeInt(rng, d.onSceneMinutes) * MS_PER_MINUTE,
+    infectious: rng.chance(d.infectious),
   };
 }
 
@@ -168,6 +170,7 @@ function createFireTruth(ctx: Ctx): Truth {
     needsDoctor: false,
     transport: false,
     onSceneMs: 0,
+    infectious: false,
     fire,
   };
 }
@@ -202,6 +205,7 @@ function createNonEmergencyTruth(ctx: Ctx): Truth {
     needsDoctor: false,
     transport: false,
     onSceneMs: 5 * MS_PER_MINUTE,
+    infectious: false,
   };
 }
 
@@ -414,4 +418,8 @@ export const ERROR_PENALTY = {
   prankDispatched: 10,
   nonEmergencyDispatched: 10,
   fireSpread: 20,
+  transportLate: 10,
+  hospitalClosed: 10,
+  breakMissed: 10,
+  unsuitableTransport: 15,
 } as const;

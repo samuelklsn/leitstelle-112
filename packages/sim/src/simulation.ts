@@ -51,6 +51,20 @@ import {
   type HospitalSuggestion,
   type VehicleSuggestion,
 } from './systems/operations';
+import {
+  generateOrders,
+  grantBreak,
+  HOSPITAL_UPDATE_MS,
+  initialHospitals,
+  initVehicleLogistics,
+  onHospitalReopen,
+  onHospitalUpdate,
+  onOrderExpire,
+  onServiceDone,
+  resumeFromBreak,
+  seedPreBookedOrders,
+  updateLogistics,
+} from './systems/logistics';
 import { generateWorld } from './world/generator';
 import type { World } from './world/types';
 
@@ -95,6 +109,10 @@ function newShift(index: number, startedAt: number): ShiftStats {
     hilfsfristMet: 0,
     fireMeasured: 0,
     fireMet: 0,
+    ordersReceived: 0,
+    ordersDone: 0,
+    ordersOnTime: 0,
+    overtimeMs: 0,
     totalResponseMs: 0,
     outcomes: { gut: 0, beeintraechtigt: 0, verstorben: 0, keinPatient: 0 },
     errors: {},
@@ -178,6 +196,7 @@ export class Simulation {
       calls: [],
       incidents: [],
       vehicles: [],
+      hospitals: {},
       shift: newShift(1, config.startTime),
       shiftHistory: [],
     };
@@ -191,7 +210,11 @@ export class Simulation {
       contentHash(content),
     );
     sim.state.vehicles = sim.initialVehicles();
+    for (const v of sim.state.vehicles) initVehicleLogistics(sim.ctx, v);
+    sim.state.hospitals = initialHospitals(sim.ctx);
+    seedPreBookedOrders(sim.ctx);
     sim.queue.schedule(sim.nextShiftEnd(config.startTime), { kind: 'shift/end' });
+    sim.queue.schedule(config.startTime + HOSPITAL_UPDATE_MS, { kind: 'hospital/update' });
     return sim;
   }
 
@@ -256,7 +279,9 @@ export class Simulation {
     ) {
       this.handleScheduled(due.payload);
     }
+    updateLogistics(this.ctx);
     generateCalls(this.ctx);
+    generateOrders(this.ctx);
     return this.takeEvents();
   }
 
@@ -341,6 +366,10 @@ export class Simulation {
         return assignDestination(ctx, command.vehicleId, command.hospitalId);
       case 'vehicle/release':
         return releaseCommand(ctx, command.vehicleId);
+      case 'vehicle/break':
+        return grantBreak(ctx, command.vehicleId);
+      case 'vehicle/resume':
+        return resumeFromBreak(ctx, command.vehicleId);
     }
   }
 
@@ -370,6 +399,18 @@ export class Simulation {
       this.endShift();
       return;
     }
+    if (p.kind === 'hospital/update') {
+      onHospitalUpdate(ctx);
+      return;
+    }
+    if (p.kind === 'hospital/reopen') {
+      onHospitalReopen(ctx, p.hospitalId, p.department);
+      return;
+    }
+    if (p.kind === 'order/expire') {
+      onOrderExpire(ctx, p.incidentId);
+      return;
+    }
     const v = findVehicle(ctx, p.vehicleId);
     // Veraltete Ereignisse einer abgebrochenen Aufgabe ignorieren.
     if (v?.taskSeq !== p.seq) return;
@@ -392,6 +433,9 @@ export class Simulation {
       case 'vehicle/handoverDone':
         onHandoverDone(ctx, v);
         return;
+      case 'vehicle/serviceDone':
+        onServiceDone(ctx, v);
+        return;
     }
   }
 
@@ -411,6 +455,11 @@ export class Simulation {
         route: null,
         hospitalId: null,
         busyMs: 0,
+        // Startwerte setzt initVehicleLogistics (Tank, Dienstplan, Besatzung).
+        fuel: 1,
+        onDuty: true,
+        crewSince: this.state.time,
+        breakTakenMs: 0,
       }));
     });
   }

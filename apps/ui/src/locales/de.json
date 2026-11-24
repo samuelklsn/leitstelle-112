@@ -33,7 +33,9 @@
     "map": "Lagekarte",
     "vehicles": "Fahrzeugstatus",
     "incidents": "Einsätze",
-    "radio": "Funk"
+    "radio": "Funk",
+    "orders": "Aufträge",
+    "hospitals": "Kliniken"
   },
   "calls": {
     "empty": "Keine wartenden Notrufe",
@@ -145,7 +147,8 @@
     "fire_roof": "Der Dachstuhl brennt lichterloh, man sieht es von weitem!",
     "th_oil": "Auf der Straße ist eine lange Ölspur, die Autos rutschen schon.",
     "th_tree": "Ein Baum ist auf die Fahrbahn gestürzt, da kommt keiner mehr durch.",
-    "th_trapped": "Unfall! Ein Auto ist gegen einen Baum, der Fahrer ist eingeklemmt und kommt nicht raus!"
+    "th_trapped": "Unfall! Ein Auto ist gegen einen Baum, der Fahrer ist eingeklemmt und kommt nicht raus!",
+    "order": "Transportauftrag"
   },
   "keyword": {
     "pick": "Stichwort wählen"
@@ -167,7 +170,8 @@
     "suitable": "geeignet",
     "unsuitable": "Fachabteilung fehlt",
     "assign": "Zuweisen",
-    "waiting": "Sprechwunsch seit {{duration}}"
+    "waiting": "Sprechwunsch seit {{duration}}",
+    "closed": "abgemeldet"
   },
   "incidents": {
     "empty": "Keine Einsätze",
@@ -208,11 +212,18 @@
     "awaitDestination": "wartet auf Zielklinik",
     "toHospital": "Transport",
     "handover": "Übergabe",
-    "returning": "Rückfahrt"
+    "returning": "Rückfahrt",
+    "toService": "Rückfahrt (außer Dienst)",
+    "service": "außer Dienst"
   },
   "vehicles": {
     "release": "Abbestellen",
-    "destination": "Zielklinik"
+    "destination": "Zielklinik",
+    "until": "bis {{time}}",
+    "serviceHours": "Dienst {{from}}–{{to}} Uhr",
+    "grantBreak": "Pause",
+    "breakHint": "Die Besatzung bittet um ihre Pause (Arbeitszeitschutz). Genehmigen: 30 Minuten Status 6 auf der Wache.",
+    "endBreak": "Pause beenden"
   },
   "radio": {
     "status": "Status {{status}} – {{text}}",
@@ -234,7 +245,19 @@
     "fireReport": "Lagemeldung: Lage wie gemeldet, Kräfte ausreichend.",
     "requestUnits": "Lagemeldung: Lage größer als gemeldet – erbitten weitere Kräfte nach!",
     "fireUnderControl": "Feuer aus bzw. Einsatzstelle abgearbeitet, rücken ein.",
-    "fireSpread": "Achtung: Brand hat sich ausgebreitet!"
+    "fireSpread": "Achtung: Brand hat sich ausgebreitet!",
+    "patientPickedUp": "Patient übernommen, fahren zum Ziel.",
+    "disinfection": "Infektionstransport – fahren zur Desinfektion, Status 6.",
+    "disinfected": "Desinfektion abgeschlossen, wieder einsatzbereit.",
+    "defect": "Fahrzeugdefekt! Wir sind nicht einsatzbereit, Werkstatt verständigt.",
+    "repaired": "Fahrzeug repariert, wieder einsatzbereit.",
+    "refuel": "Fahren tanken, Status 6.",
+    "refueled": "Aufgetankt, wieder einsatzbereit.",
+    "requestBreak": "Bitten um unsere Pause.",
+    "breakStart": "Beginnen Pause auf der Wache.",
+    "breakEnd": "Pause beendet, einsatzbereit.",
+    "offDuty": "Dienstende, melden uns ab.",
+    "onDuty": "Dienstbeginn, einsatzbereit."
   },
   "events": {
     "call/incoming": "Notruf {{id}} klingelt",
@@ -246,7 +269,10 @@
     "command/rejected": "Nicht möglich: {{reason}}",
     "shift/ended": "Schichtwechsel – Auswertung der Schicht {{index}}",
     "call/answer": "Anrufer {{id}} antwortet ({{question}})",
-    "call/linked": "Meldung {{id}} dem Einsatz {{incident}} zugeordnet"
+    "call/linked": "Meldung {{id}} dem Einsatz {{incident}} zugeordnet",
+    "hospital/full": "{{hospital}} meldet {{department}} ab: keine Aufnahmekapazität.",
+    "hospital/closure": "{{hospital}} meldet {{department}} ab: Geräteausfall.",
+    "hospital/open": "{{hospital}}: {{department}} wieder aufnahmebereit."
   },
   "reason": {
     "unknownCall": "Notruf nicht mehr vorhanden",
@@ -261,7 +287,9 @@
     "notAwaitingDestination": "Fahrzeug wartet nicht auf eine Zielklinik",
     "unknownHospital": "Krankenhaus unbekannt",
     "notReleasable": "Fahrzeug kann jetzt nicht abbestellt werden",
-    "lineBusy": "Sie führen bereits ein Gespräch"
+    "lineBusy": "Sie führen bereits ein Gespräch",
+    "noBreakDue": "Keine Pause beantragt.",
+    "notOnBreak": "Das Fahrzeug ist nicht in der Pause."
   },
   "outcome": {
     "gut": "gut versorgt",
@@ -283,7 +311,11 @@
     "duplicateIncident": "Doppelmeldung als neuer Einsatz angelegt",
     "prankDispatched": "Scherzanruf alarmiert",
     "nonEmergencyDispatched": "Fehl- oder Auskunftsanruf alarmiert",
-    "fireSpread": "Brand hat sich ausgebreitet, bevor die Feuerwehr da war"
+    "fireSpread": "Brand hat sich ausgebreitet, bevor die Feuerwehr da war",
+    "transportLate": "Transportauftrag zu spät abgeholt",
+    "hospitalClosed": "Patient in abgemeldete Abteilung gebracht",
+    "breakMissed": "Besatzung ohne Pause (Arbeitszeitverstoß)",
+    "unsuitableTransport": "Ungeeignetes Fahrzeug für den Transportauftrag"
   },
   "evaluation": {
     "title": "Schichtauswertung",
@@ -307,7 +339,10 @@
       "good": "Solide Schicht",
       "poor": "Da ist noch Luft nach oben"
     },
-    "fire": "Feuerwehr ≤ 10 Min."
+    "fire": "Feuerwehr ≤ 10 Min.",
+    "orders": "Transporte pünktlich",
+    "ordersValue": "{{onTime}} von {{done}} Aufträgen pünktlich abgeholt ({{received}} eingegangen)",
+    "overtime": "Überstunden der Besatzungen"
   },
   "saves": {
     "title": "Spielstände",
@@ -331,11 +366,12 @@
   "help": {
     "title": "Tastatur und Ablauf",
     "flow": "Notruf annehmen → abfragen (Wo? Was? Bewusstsein? Atmung?) → Adresse und Stichwort erfassen – oder Fehlanruf beenden bzw. Doppelmeldung zuordnen → Fahrzeuge alarmieren → Sprechwünsche bearbeiten.",
+    "logistics": "Nebenbei laufen Transportaufträge mit Termin ein (Reiter „Aufträge“): rechtzeitig einen KTW schicken – ein RTW geht auch, fehlt dann aber für Notfälle. Im Reiter „Kliniken“ sehen Sie, welche Abteilung sich abgemeldet hat. Besatzungen bitten nach sechs Stunden um ihre Pause; genehmigen Sie sie, wenn die Lage es zulässt.",
     "keys": {
       "space": "Pause / Weiter",
       "speed": "Zeitraffer 1× / 2× / 5× / 10×",
       "f2": "Ältesten Notruf annehmen",
-      "f3": "Einsatz ohne Kräfte disponieren",
+      "f3": "Einsatz ohne Kräfte disponieren (Notfälle vor Aufträgen)",
       "f4": "Ältesten Sprechwunsch (Zielklinik) bearbeiten",
       "enter": "Vorschlag bestätigen (Alarmieren, Zuweisen)",
       "ctrlEnter": "Einsatz anlegen (in der Notrufmaske)",
@@ -392,5 +428,49 @@
     "conscious": "Ist die Person wach und ansprechbar?",
     "breathing": "Atmet die Person normal?",
     "callback": "Unter welcher Nummer erreichen wir Sie?"
+  },
+  "service": {
+    "disinfection": "Desinfektion",
+    "defect": "Defekt – Werkstatt",
+    "refuel": "Tanken",
+    "break": "Pause",
+    "offDuty": "Dienstende"
+  },
+  "orders": {
+    "empty": "Keine Transportaufträge.",
+    "overdue": "überfällig",
+    "soon": "bald",
+    "infectious": "Infektion",
+    "onTime": "pünktlich",
+    "late": "verspätet",
+    "transporting": "Transport",
+    "in": "in {{duration}}",
+    "since": "seit {{duration}}"
+  },
+  "hospitals": {
+    "open": "aufnahmebereit",
+    "full": "abgemeldet – keine Aufnahmekapazität",
+    "fullShort": "voll",
+    "closedUntil": "abgemeldet (Geräteausfall) bis {{time}}",
+    "closedShort": "bis {{time}}"
+  },
+  "department": {
+    "innere": "Innere",
+    "chirurgie": "Chirurgie",
+    "unfallchirurgie": "Unfallchirurgie",
+    "neurologie": "Neurologie",
+    "stroke": "Stroke Unit",
+    "herzkatheter": "Herzkatheter",
+    "paediatrie": "Pädiatrie",
+    "gynaekologie": "Gynäkologie",
+    "psychiatrie": "Psychiatrie",
+    "intensiv": "Intensiv",
+    "geriatrie": "Geriatrie"
+  },
+  "level": {
+    "grundversorgung": "Grundversorgung",
+    "regelversorgung": "Regelversorgung",
+    "schwerpunktversorgung": "Schwerpunktversorgung",
+    "maximalversorgung": "Maximalversorgung"
   }
 }

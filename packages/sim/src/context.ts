@@ -4,7 +4,9 @@ import type {
   FireScenario,
   Hospital,
   Keyword,
+  Service,
   Station,
+  TransportOrder,
   VehicleType,
 } from '@ls112/content';
 import { nearestNode, type Router, type TravelContext } from '@ls112/routing';
@@ -34,6 +36,11 @@ export interface ContentIndex {
   readonly population: number;
   /** Fahrzeugtypen, die einen Notarzt mitbringen. */
   readonly doctorTypes: ReadonlySet<string>;
+  readonly transportOrders: ReadonlyMap<string, TransportOrder>;
+  /** Dienstzeiten je Fahrzeug (nur Fahrzeuge, die nicht rund um die Uhr besetzt sind). */
+  readonly vehicleService: ReadonlyMap<string, Service>;
+  /** Nächste Adresse je Klinik – Abholort bei Verlegungen und Entlassungen. */
+  readonly hospitalAddress: ReadonlyMap<string, number>;
 }
 
 export function indexContent(bundle: ContentBundle, world: World): ContentIndex {
@@ -61,7 +68,30 @@ export function indexContent(bundle: ContentBundle, world: World): ContentIndex 
     stationNode: new Map(bundle.stations.map((s) => [s.id, snap(s.position)])),
     population: bundle.region.towns.reduce((s, t) => s + t.population, 0),
     doctorTypes: new Set(bundle.vehicleTypes.filter((t) => t.doctor).map((t) => t.id)),
+    transportOrders: byId(bundle.transportOrders),
+    vehicleService: new Map(
+      bundle.stations.flatMap((s) =>
+        s.vehicles.flatMap((v) => (v.service ? [[v.id, v.service] as const] : [])),
+      ),
+    ),
+    hospitalAddress: new Map(
+      bundle.hospitals.map((h) => [h.id, nearestAddress(world, h.position)] as const),
+    ),
   };
+}
+
+function nearestAddress(world: World, [x, y]: readonly [number, number]): number {
+  let best = 0;
+  let bestD = Number.POSITIVE_INFINITY;
+  for (const a of world.addresses) {
+    if (a.kind !== 'house') continue;
+    const d = (a.x - x) * (a.x - x) + (a.y - y) * (a.y - y);
+    if (d < bestD) {
+      bestD = d;
+      best = a.id;
+    }
+  }
+  return best;
 }
 
 /** Alles, was die Systeme eines Ticks brauchen. Der Zustand wird hier direkt verändert. */

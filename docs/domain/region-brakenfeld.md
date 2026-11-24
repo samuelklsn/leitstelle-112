@@ -31,18 +31,21 @@ Ergebnis: rund 1.300 Kreuzungen, 2.000 Straßenstücke, 15.000 Hausadressen und
 
 ## Vorhaltung
 
-| Standort                         | Fahrzeuge              |
-| -------------------------------- | ---------------------- |
-| Rettungswache Brakenfeld         | RTW 1/83-1, RTW 1/83-2 |
-| Notarztstandort Kreisklinikum    | NEF 1/82-1             |
-| Rettungswache Ellerbach          | RTW 2/83-1, RTW 2/83-2 |
-| Notarztstandort Klinik Ellerbach | NEF 2/82-1             |
-| Rettungswache Tannrode           | RTW 3/83-1             |
+| Standort                         | Fahrzeuge (Dienstzeit, wenn nicht rund um die Uhr)                                          |
+| -------------------------------- | ------------------------------------------------------------------------------------------- |
+| Rettungswache Brakenfeld         | RTW 1/83-1, RTW 1/83-2, Tages-RTW 1/83-3 (8–20), KTW 1/85-1 (7–19), KTW 1/85-2 (Mo–Fr 8–16) |
+| Notarztstandort Kreisklinikum    | NEF 1/82-1, ITW 1/81-1 (8–20)                                                               |
+| Rettungswache Ellerbach          | RTW 2/83-1, RTW 2/83-2, KTW 2/85-1 (Mo–Fr 7–17)                                             |
+| Notarztstandort Klinik Ellerbach | NEF 2/82-1                                                                                  |
+| Rettungswache Tannrode           | RTW 3/83-1, KTW 3/85-1 (Mo–Fr 7–15)                                                         |
 
 | Krankenhaus              | Versorgungsstufe | Fachabteilungen                                                                                             |
 | ------------------------ | ---------------- | ----------------------------------------------------------------------------------------------------------- |
 | Kreisklinikum Brakenfeld | Schwerpunkt      | Innere, Chirurgie, Unfallchirurgie, Neurologie, Stroke Unit, Herzkatheter, Pädiatrie, Gynäkologie, Intensiv |
 | Klinik Ellerbach         | Grundversorgung  | Innere, Chirurgie, Psychiatrie                                                                              |
+| Fachklinik am Tannenhang | Fachklinik       | Geriatrie, Psychiatrie (keine Notaufnahme für internistische Notfälle)                                      |
+
+Aufnahmeplätze je Abteilung und ihre Abmeldungen beschreibt [logistik.md](logistik.md).
 
 **Bewusste Schwäche:** Oberwiesel im Nordosten liegt 10–11 Minuten Fahrzeit von der nächsten Wache
 entfernt. Damit ist die Hilfsfrist dort kaum einzuhalten, wie in vielen echten Flächenkreisen. Die

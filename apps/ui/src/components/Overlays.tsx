@@ -154,6 +154,14 @@ export function EvaluationDialog({ shift }: { shift: ShiftStats | undefined }) {
           </strong>
         </div>
         <div className={css.kpi}>
+          <span>{t('evaluation.orders')}</span>
+          <strong>
+            {s.ordersDone > 0
+              ? `${Math.round((100 * s.ordersOnTime) / s.ordersDone).toString()} %`
+              : '–'}
+          </strong>
+        </div>
+        <div className={css.kpi}>
           <span>{t('evaluation.response')}</span>
           <strong>
             {formatDuration(s.hilfsfristMeasured ? s.totalResponseMs / s.hilfsfristMeasured : 0)}
@@ -194,6 +202,17 @@ export function EvaluationDialog({ shift }: { shift: ShiftStats | undefined }) {
           <div>
             {s.callsReceived} {t('evaluation.calls')} · {s.incidents} {t('evaluation.incidents')} ·{' '}
             {formatDuration(duration)} h
+          </div>
+          <div>
+            {t('evaluation.ordersValue', {
+              onTime: s.ordersOnTime,
+              done: s.ordersDone,
+              received: s.ordersReceived,
+            })}
+          </div>
+          <div>
+            {t('evaluation.overtime')}:{' '}
+            <strong className={css.mono}>{formatDuration(s.overtimeMs)}</strong>
           </div>
           <span className={css.label}>{t('evaluation.outcomes')}</span>
           {(['gut', 'beeintraechtigt', 'verstorben', 'keinPatient'] as const).map((o) => (
@@ -347,6 +366,7 @@ export function HelpDialog() {
       }}
     >
       <p>{t('help.flow')}</p>
+      <p>{t('help.logistics')}</p>
       <table className={css.table}>
         <tbody>
           {keys.map(([k, id]) => (

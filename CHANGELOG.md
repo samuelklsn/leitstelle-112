@@ -6,6 +6,35 @@ Versionierung nach [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+## [0.4.0] – 2026-11-24 – Rettungsdienst-Logistik (M7)
+
+### Hinzugefügt
+
+- **Neue Fahrzeuge:** 4 KTW, ein ITW und ein Tages-RTW. Der NAW ist als Fahrzeugtyp für Mods und
+  andere Regionen vorhanden. Nur Notfall-Rettungsmittel (RTW, NAW) transportieren Notfallpatienten
+  und zählen für die Hilfsfrist.
+- **Transportaufträge** im neuen Reiter „Aufträge“: Einweisungen, Entlassungen, Dialysefahrten,
+  Verlegungen mit Überwachung und Intensivverlegungen, jeweils mit Abholtermin. Zum Schichtbeginn
+  liegen vorbestellte Aufträge vor. Pünktlichkeit wird bewertet, liegengebliebene Aufträge werden
+  storniert.
+- **Kliniken melden sich ab:** Aufnahmeplätze je Fachabteilung, Abmeldung bei Vollbelegung oder
+  Geräteausfall, neuer Reiter „Kliniken“. Der Zielklinik-Vorschlag umgeht abgemeldete Abteilungen;
+  bei vitaler Bedrohung gilt die Aufnahmepflicht.
+- **Fachklinik am Tannenhang** (Geriatrie, Psychiatrie) als dritte Klinik.
+- **Status 6 mit Grund:** Desinfektion nach Infektionstransporten, Defekte, Tanken, Pausen und
+  Dienstende. Das Fahrzeug fährt zur Wache und ist danach wieder verfügbar.
+- **Dienstzeiten, Besatzungswechsel und Pausen:** Fahrzeuge mit Vorhaltezeiten, Wechsel um 7 und
+  19 Uhr, Überstunden bei Einsätzen über das Schichtende. Besatzungen bitten nach sechs Stunden um
+  ihre Pause; der Disponent genehmigt sie oder beendet sie vorzeitig.
+- **Auswertung:** pünktliche Transporte, Überstunden und vier neue Fehlerarten.
+- F3 disponiert Notfälle vor Transportaufträgen.
+- ADR-0015 und Fachdoku `docs/domain/logistik.md` mit allen Annahmen.
+
+### Geändert
+
+- Spielstände haben die Snapshot-Version 3. Spielstände aus 0.3.0 lassen sich nicht laden.
+- Fahrzeug-Hilfsfunktionen liegen in `packages/sim/src/systems/vehicles.ts`.
+
 ## [0.3.0] – 2026-11-24 – Feuerwehr (M6)
 
 ### Hinzugefügt
@@ -151,7 +180,8 @@ eigentlichen Sinn – das kommt ab M2/M3.
 - Nach einem Absturz startet die Simulation neu beim Schichtbeginn; Autosave folgt in M4.
 - Der Installer wird nur in der CI gebaut (Richtlinie des Entwicklungsrechners, PLAN Kapitel 9).
 
-[Unreleased]: https://github.com/samuelklsn/leitstelle-112/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/samuelklsn/leitstelle-112/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/samuelklsn/leitstelle-112/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/samuelklsn/leitstelle-112/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/samuelklsn/leitstelle-112/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/samuelklsn/leitstelle-112/compare/v0.0.1...v0.1.0

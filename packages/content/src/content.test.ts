@@ -10,10 +10,15 @@ describe('Basisinhalte', () => {
     const c = loadContentFromDirs(BASE);
     expect(c.region.towns.length).toBeGreaterThanOrEqual(5);
     const vehicles = c.stations.flatMap((s) => s.vehicles);
-    expect(vehicles.filter((v) => v.type === "base:rtw" || v.type === "base:nef")).toHaveLength(7);
+    expect(vehicles.filter((v) => v.type === 'base:rtw' || v.type === 'base:nef')).toHaveLength(8);
+    expect(vehicles.filter((v) => v.type === 'base:ktw')).toHaveLength(4);
+    expect(vehicles.some((v) => v.service !== undefined)).toBe(true);
     expect(vehicles.length).toBeGreaterThan(15);
     expect(c.fireScenarios.length).toBeGreaterThanOrEqual(8);
-    expect(c.hospitals).toHaveLength(2);
+    expect(c.hospitals).toHaveLength(3);
+    expect(c.hospitals.every((h) => Object.keys(h.beds).length > 0)).toBe(true);
+    expect(c.transportOrders.length).toBeGreaterThanOrEqual(5);
+    expect(c.keywords.filter((k) => k.planned).map((k) => k.code)).toEqual(['KTP', 'VL', 'ITV']);
     expect(c.keywords.map((k) => k.code)).toContain('RD 2');
     expect(c.diagnoses.length).toBeGreaterThanOrEqual(12);
   });

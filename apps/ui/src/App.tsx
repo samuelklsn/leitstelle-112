@@ -73,6 +73,7 @@ function Header() {
           onClick={() => {
             openDialog({ kind: 'start' });
           }}
+          data-testid="menu-new"
         >
           {t('menu.new')}
         </button>

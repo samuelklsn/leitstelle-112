@@ -15,6 +15,7 @@ import {
   type FmsStatus,
   type Outcome,
   type Question,
+  type ServiceReason,
   type ShiftStats,
   type VehicleState,
   type VehicleTask,
@@ -70,6 +71,19 @@ export interface FindingView {
   readonly naca: number;
   readonly needsDoctor: boolean;
   readonly transport: boolean;
+  /** Infektionsverdacht: Das Transportmittel muss danach desinfiziert werden. */
+  readonly infectious: boolean;
+}
+
+/** Transportauftrag, wie ihn die Leitstelle angenommen hat (ADR-0015). */
+export interface OrderView {
+  readonly templateId: string;
+  readonly dueAt: SimTime;
+  readonly fromHospitalId?: string;
+  readonly toHospitalId?: string;
+  readonly toAddressId?: number;
+  readonly pickedUpAt?: SimTime;
+  readonly infectious: boolean;
 }
 
 export interface IncidentView {
@@ -81,6 +95,7 @@ export interface IncidentView {
   readonly status: 'open' | 'active' | 'closed';
   readonly vehicleIds: readonly string[];
   readonly report: ReportView;
+  readonly order?: OrderView;
   readonly doctorRequested: boolean;
   /** Laut Lage fehlen noch Kräfte (Nachforderung). */
   readonly unitsMissing: boolean;
@@ -107,6 +122,29 @@ export interface VehicleView {
   readonly emergency: boolean;
   /** Ankunftszeit am aktuellen Fahrtziel. */
   readonly etaAt?: SimTime;
+  /** Außer Dienst mit Grund (FMS 6). */
+  readonly service?: { readonly reason: ServiceReason; readonly until?: SimTime };
+  /** Laut Dienstplan besetzt. */
+  readonly onDuty: boolean;
+  /** Die Besatzung hat eine Pause beantragt. */
+  readonly breakRequested: boolean;
+  /** Tankfüllung in Prozent. */
+  readonly fuelPercent: number;
+}
+
+export interface DepartmentView {
+  readonly department: string;
+  /** Freie Aufnahmeplätze (undefined = ohne Kapazitätsgrenze). */
+  readonly free?: number;
+  readonly capacity?: number;
+  readonly open: boolean;
+  /** Abgemeldet wegen Geräteausfall bis … */
+  readonly closedUntil?: SimTime;
+}
+
+export interface HospitalView {
+  readonly id: string;
+  readonly departments: readonly DepartmentView[];
 }
 
 export interface GameView {
@@ -116,6 +154,7 @@ export interface GameView {
   readonly calls: readonly CallView[];
   readonly incidents: readonly IncidentView[];
   readonly vehicles: readonly VehicleView[];
+  readonly hospitals: readonly HospitalView[];
   readonly shift: ShiftStats;
   readonly lastShift: ShiftStats | null;
 }
@@ -148,6 +187,22 @@ export function buildView(sim: Simulation): GameView {
       status: i.status,
       vehicleIds: [...i.vehicleIds],
       report: reportView(i.report, QUESTIONS, false, false),
+      ...(i.order
+        ? {
+            order: {
+              templateId: i.order.templateId,
+              dueAt: i.order.dueAt,
+              ...(i.order.fromHospitalId !== undefined
+                ? { fromHospitalId: i.order.fromHospitalId }
+                : {}),
+              ...(i.order.toHospitalId !== undefined ? { toHospitalId: i.order.toHospitalId } : {}),
+              ...(i.order.toAddressId !== undefined ? { toAddressId: i.order.toAddressId } : {}),
+              ...(i.order.pickedUpAt !== undefined ? { pickedUpAt: i.order.pickedUpAt } : {}),
+              // Isolationspflicht steht im Transportschein – beim Auftrag bekannt.
+              infectious: i.truth.infectious,
+            },
+          }
+        : {}),
       doctorRequested: i.doctorRequested,
       unitsMissing: i.assessed && i.status !== 'closed' && sim.missingNeeds(i.id).length > 0,
       locating: i.locating,
@@ -163,6 +218,7 @@ export function buildView(sim: Simulation): GameView {
               naca: i.truth.naca,
               needsDoctor: i.truth.needsDoctor,
               transport: i.truth.transport,
+              infectious: i.truth.infectious,
             },
           }
         : {}),
@@ -172,6 +228,25 @@ export function buildView(sim: Simulation): GameView {
       ...(i.outcome !== undefined ? { outcome: i.outcome } : {}),
     })),
     vehicles: s.vehicles.map((v) => vehicleView(v, s.time, graph.x, graph.y)),
+    hospitals: sim.content.bundle.hospitals.map((h) => {
+      const hs = s.hospitals[h.id];
+      return {
+        id: h.id,
+        departments: h.departments.map((dept): DepartmentView => {
+          const cap = h.beds[dept];
+          const free = hs?.free[dept];
+          const closed = hs?.closedUntil[dept];
+          const closedNow = closed !== undefined && closed > s.time;
+          return {
+            department: dept,
+            ...(free !== undefined ? { free } : {}),
+            ...(cap !== undefined ? { capacity: cap } : {}),
+            open: !closedNow && (free === undefined || free > 0),
+            ...(closedNow ? { closedUntil: closed } : {}),
+          };
+        }),
+      };
+    }),
     shift: s.shift,
     lastShift: s.shiftHistory.at(-1) ?? null,
   };
@@ -252,6 +327,17 @@ export function vehicleView(
     moving,
     emergency: v.route?.emergency ?? false,
     ...(etaAt !== undefined ? { etaAt } : {}),
+    ...(v.service
+      ? {
+          service: {
+            reason: v.service.reason,
+            ...(v.service.until !== undefined ? { until: v.service.until } : {}),
+          },
+        }
+      : {}),
+    onDuty: v.onDuty,
+    breakRequested: v.breakRequestedAt !== undefined,
+    fuelPercent: Math.round(v.fuel * 100),
   };
 }
 
@@ -283,6 +369,7 @@ export interface WorldInfo {
   readonly keywords: ContentBundle['keywords'];
   readonly diagnoses: readonly { id: string; name: string }[];
   readonly fireScenarios: readonly { id: string; name: string; kind: 'brand' | 'th' }[];
+  readonly transportOrders: readonly { id: string; name: string }[];
   readonly hilfsfrist: ContentBundle['settings']['hilfsfrist'];
   readonly shift: ContentBundle['settings']['shift'];
 }
@@ -312,6 +399,7 @@ export function buildWorldInfo(sim: Simulation): WorldInfo {
     keywords: c.keywords,
     diagnoses: c.diagnoses.map((d) => ({ id: d.id, name: d.name })),
     fireScenarios: c.fireScenarios.map((s) => ({ id: s.id, name: s.name, kind: s.kind })),
+    transportOrders: c.transportOrders.map((o) => ({ id: o.id, name: o.name })),
     hilfsfrist: c.settings.hilfsfrist,
     shift: c.settings.shift,
   };

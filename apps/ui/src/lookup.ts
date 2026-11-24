@@ -10,15 +10,22 @@ export interface Lookup {
   streetName(id: number): string;
   addressLabel(id: number): string;
   address(id: number): StaticAddress | undefined;
-  vehicle(
-    id: string,
-  ):
-    | { callsign: string; short: string; type: string; stationId: string; doctor: boolean }
+  vehicle(id: string):
+    | {
+        callsign: string;
+        short: string;
+        type: string;
+        stationId: string;
+        doctor: boolean;
+        /** Dienstzeit, falls nicht rund um die Uhr besetzt. */
+        service?: { from: number; to: number; weekdaysOnly: boolean };
+      }
     | undefined;
   hospitalName(id: string | null | undefined): string;
   keywordCode(id: string): string;
   diagnosisName(id: string): string;
   fireScenarioName(id: string): string;
+  orderName(id: string): string;
   toLonLat(x: number, y: number): [number, number];
   searchAddresses(text: string, limit?: number): StaticAddress[];
 }
@@ -57,6 +64,7 @@ export function lookup(world: WorldInfo): Lookup {
             type: type?.short ?? '?',
             stationId: s.id,
             doctor: type?.doctor ?? false,
+            ...(v.service ? { service: v.service } : {}),
           },
         ] as const;
       }),
@@ -66,6 +74,7 @@ export function lookup(world: WorldInfo): Lookup {
   const keywords = new Map(world.keywords.map((k) => [k.id, k.code]));
   const diagnoses = new Map(world.diagnoses.map((d) => [d.id, d.name]));
   const fireScenarios = new Map(world.fireScenarios.map((s) => [s.id, s.name]));
+  const orders = new Map(world.transportOrders.map((o) => [o.id, o.name]));
   const addresses = world.addresses;
 
   const label = (a: StaticAddress): string => {
@@ -90,6 +99,7 @@ export function lookup(world: WorldInfo): Lookup {
     keywordCode: (id) => keywords.get(id) ?? '?',
     diagnosisName: (id) => diagnoses.get(id) ?? '?',
     fireScenarioName: (id) => fireScenarios.get(id) ?? '?',
+    orderName: (id) => orders.get(id) ?? '?',
     toLonLat: (x, y) => [
       world.geo.originLon + x / world.geo.metersPerDegLon,
       world.geo.originLat + y / world.geo.metersPerDegLat,

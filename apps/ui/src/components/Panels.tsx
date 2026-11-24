@@ -6,6 +6,7 @@ import { formatDuration, formatTimeOfDay } from '../format';
 import { lookup, type Lookup } from '../lookup';
 import { useSim, type LogEntry } from '../sim-store';
 import { FmsChip } from './FmsChip';
+import { HospitalPanel, OrderList } from './Logistics';
 import css from './Panels.module.css';
 
 /** Notrufe sollen schnell angenommen werden; ab diesen Wartezeiten wird die Zeile auffällig. */
@@ -108,10 +109,13 @@ export function IncidentList() {
   const openDialog = useSim((s) => s.openDialog);
   if (!world) return null;
   const L = lookup(world);
-  const sorted = [...incidents].sort(
-    (a, b) =>
-      Number(a.status === 'closed') - Number(b.status === 'closed') || b.receivedAt - a.receivedAt,
-  );
+  const sorted = incidents
+    .filter((i) => !i.order)
+    .sort(
+      (a, b) =>
+        Number(a.status === 'closed') - Number(b.status === 'closed') ||
+        b.receivedAt - a.receivedAt,
+    );
   return (
     <div className={css.body}>
       {sorted.length === 0 && <div className={css.empty}>{t('incidents.empty')}</div>}
@@ -238,6 +242,12 @@ export function VehiclePanel() {
                 onRelease={() => {
                   command({ type: 'vehicle/release', vehicleId: v.id });
                 }}
+                onBreak={() => {
+                  command({ type: 'vehicle/break', vehicleId: v.id });
+                }}
+                onResume={() => {
+                  command({ type: 'vehicle/resume', vehicleId: v.id });
+                }}
                 onSelect={() => {
                   if (v.incidentId) select(v.incidentId);
                 }}
@@ -257,6 +267,8 @@ function VehicleRow(props: {
   t: TFunction;
   onDestination: () => void;
   onRelease: () => void;
+  onBreak: () => void;
+  onResume: () => void;
   onSelect: () => void;
 }) {
   const { v, L, now, t } = props;
@@ -264,7 +276,7 @@ function VehicleRow(props: {
   const releasable = v.incidentId !== null && ['turnout', 'toScene', 'onScene'].includes(v.task);
   return (
     <div
-      className={`${css.vehicleRow ?? ''} ${v.status === 5 ? (css.vehicleRequest ?? '') : ''}`}
+      className={`${css.vehicleRow ?? ''} ${v.status === 5 ? (css.vehicleRequest ?? '') : ''} ${v.status === 6 ? (css.vehicleOff ?? '') : ''}`}
       onClick={props.onSelect}
       data-testid="vehicle-row"
     >
@@ -273,7 +285,19 @@ function VehicleRow(props: {
         <strong>{info?.type}</strong> <span className={css.mono}>{info?.short}</span>
       </div>
       <div className={css.vehicleTask}>
-        {t(`task.${v.task}`)}
+        {v.service ? t(`service.${v.service.reason}`) : t(`task.${v.task}`)}
+        {v.service?.until !== undefined && (
+          <span className={css.meta}>
+            {' '}
+            · {t('vehicles.until', { time: formatTimeOfDay(v.service.until) })}
+          </span>
+        )}
+        {v.service?.reason === 'offDuty' && info?.service && (
+          <span className={css.meta}>
+            {' '}
+            · {t('vehicles.serviceHours', { from: info.service.from, to: info.service.to })}
+          </span>
+        )}
         {v.incidentId && <span className={css.meta}> · {v.incidentId}</span>}
         {v.hospitalId && <span className={css.meta}> → {L.hospitalName(v.hospitalId)}</span>}
         {v.moving && v.etaAt !== undefined && (
@@ -291,6 +315,32 @@ function VehicleRow(props: {
           data-testid="destination-btn"
         >
           {t('vehicles.destination')}
+        </button>
+      )}
+      {v.breakRequested && !v.service && (
+        <button
+          type="button"
+          className={`${css.smallBtn ?? ''} ${css.smallWarn ?? ''}`}
+          title={t('vehicles.breakHint')}
+          onClick={(e) => {
+            e.stopPropagation();
+            props.onBreak();
+          }}
+          data-testid="break-btn"
+        >
+          {t('vehicles.grantBreak')}
+        </button>
+      )}
+      {v.service?.reason === 'break' && (
+        <button
+          type="button"
+          className={css.smallBtn}
+          onClick={(e) => {
+            e.stopPropagation();
+            props.onResume();
+          }}
+        >
+          {t('vehicles.endBreak')}
         </button>
       )}
       {releasable && (
@@ -335,13 +385,20 @@ export function RadioLog() {
 function logClass(e: LogEntry): string | undefined {
   if (e.type === 'radio') {
     if (
-      ['requestDoctor', 'requestDestination', 'wrongLocation', 'requestTransport'].includes(
-        e.message,
-      )
+      [
+        'requestDoctor',
+        'requestDestination',
+        'wrongLocation',
+        'requestTransport',
+        'defect',
+      ].includes(e.message)
     )
       return css.logAlarm;
+    if (['requestBreak', 'disinfection', 'refuel', 'offDuty'].includes(e.message))
+      return css.logWarn;
     return css.logRadio;
   }
+  if (e.type === 'hospital/status') return e.open ? css.logOk : css.logWarn;
   if (e.type === 'call/abandoned' || e.type === 'command/rejected') return css.logAlarm;
   if (e.type === 'call/incoming') return css.logWarn;
   if (e.type === 'incident/closed' || e.type === 'call/accepted') return css.logOk;
@@ -376,19 +433,42 @@ function describe(e: LogEntry, L: Lookup, t: TFunction): string {
       return t('events.call/answer', { id: e.callId, question: t(`question.${e.question}`) });
     case 'call/linked':
       return t('events.call/linked', { id: e.callId, incident: e.incidentId });
+    case 'hospital/status':
+      return t(`events.hospital/${e.open ? 'open' : e.reason}`, {
+        hospital: L.hospitalName(e.hospitalId),
+        department: t(`department.${e.department}`),
+      });
   }
 }
 
+const TABS = ['incidents', 'orders', 'hospitals', 'radio'] as const;
+type Tab = (typeof TABS)[number];
+
 export function BottomTabs() {
   const { t } = useTranslation();
-  const [tab, setTab] = useState<'incidents' | 'radio'>('incidents');
+  const [tab, setTab] = useState<Tab>('incidents');
   const open = useSim(
-    (s) => (s.host?.view.incidents ?? []).filter((i) => i.status !== 'closed').length,
+    (s) =>
+      (s.host?.view.incidents ?? EMPTY).filter((i) => !i.order && i.status !== 'closed').length,
   );
+  const orders = useSim(
+    (s) => (s.host?.view.incidents ?? EMPTY).filter((i) => i.order && i.status === 'open').length,
+  );
+  const closedDepts = useSim((s) =>
+    (s.host?.view.hospitals ?? EMPTY).reduce(
+      (n, h) => n + h.departments.filter((d) => !d.open).length,
+      0,
+    ),
+  );
+  const counts: Partial<Record<Tab, number>> = {
+    incidents: open,
+    orders,
+    hospitals: closedDepts,
+  };
   return (
     <section className={`${css.panel ?? ''} ${css.bottom ?? ''}`}>
       <header className={css.tabs} role="tablist">
-        {(['incidents', 'radio'] as const).map((k) => (
+        {TABS.map((k) => (
           <button
             type="button"
             role="tab"
@@ -401,11 +481,20 @@ export function BottomTabs() {
             data-testid={`tab-${k}`}
           >
             {t(`panel.${k}`)}
-            {k === 'incidents' && <span className={css.count}>{open}</span>}
+            {counts[k] !== undefined && (
+              <span
+                className={`${css.count ?? ''} ${k === 'hospitals' && closedDepts > 0 ? (css.countWarn ?? '') : ''}`}
+              >
+                {counts[k]}
+              </span>
+            )}
           </button>
         ))}
       </header>
-      {tab === 'incidents' ? <IncidentList /> : <RadioLog />}
+      {tab === 'incidents' && <IncidentList />}
+      {tab === 'orders' && <OrderList />}
+      {tab === 'hospitals' && <HospitalPanel />}
+      {tab === 'radio' && <RadioLog />}
     </section>
   );
 }

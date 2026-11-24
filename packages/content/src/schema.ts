@@ -99,6 +99,19 @@ export const VehicleType = z.object({
   doctor: z.boolean().default(false),
   /** Funkrufname-Kennzahl, z. B. 83 für RTW. */
   radioCode: z.number().int().min(1).max(99),
+  /**
+   * Wofür das Fahrzeug Patienten transportiert (ADR-0015): Nur `notfall` fährt Notfallpatienten
+   * und zählt für die Hilfsfrist; `krankentransport` (KTW) und `intensiv` (ITW) für Aufträge.
+   */
+  transportClass: z.enum(['notfall', 'krankentransport', 'intensiv']).optional(),
+});
+
+/** Dienstzeit eines Fahrzeugs (volle Stunden, Ortszeit); ohne Angabe rund um die Uhr. */
+export const Service = z.object({
+  from: z.number().int().min(0).max(23),
+  to: z.number().int().min(1).max(24),
+  /** Nur montags bis freitags besetzt. */
+  weekdaysOnly: z.boolean().default(false),
 });
 
 export const Station = z.object({
@@ -118,6 +131,7 @@ export const Station = z.object({
         /** Funkrufname, z. B. „Rettung Brakenfeld 1/83-1". */
         callsign: z.string(),
         type: Id,
+        service: Service.optional(),
       }),
     )
     .min(1),
@@ -134,6 +148,7 @@ export const Department = z.enum([
   'gynaekologie',
   'psychiatrie',
   'intensiv',
+  'geriatrie',
 ]);
 
 export const Hospital = z.object({
@@ -148,6 +163,11 @@ export const Hospital = z.object({
   ]),
   position: Point,
   departments: z.array(Department).min(1),
+  /**
+   * Freie Aufnahmeplätze für Notfallpatienten je Abteilung (ADR-0015). Abteilungen ohne Angabe
+   * nehmen immer auf. Ist kein Platz frei, meldet sich die Abteilung ab.
+   */
+  beds: z.partialRecord(Department, z.number().int().min(1)).default({}),
 });
 
 // ---------------------------------------------------------------- Einsätze
@@ -170,6 +190,8 @@ export const Keyword = z.object({
   emergency: z.boolean(),
   /** Alarm- und Ausrückeordnung: Fahrzeugtypen und Anzahl. */
   aao: z.array(UnitNeed).min(1),
+  /** Nur für Transportaufträge, nicht für die Notrufabfrage (ADR-0015). */
+  planned: z.boolean().default(false),
 });
 
 export const Tracer = z.enum(['none', 'acs', 'stroke', 'trauma', 'cardiac_arrest']);
@@ -199,6 +221,32 @@ export const Diagnosis = z.object({
   reports: z.array(z.object({ key: z.string(), weight: z.number().positive() })).min(1),
   /** Kommt nur als Verletzter einer Feuerwehrlage vor, nicht als eigener Notruf. */
   onlyAsCasualty: z.boolean().default(false),
+  /** Wahrscheinlichkeit einer Infektion, nach der das Fahrzeug desinfiziert werden muss. */
+  infectious: Probability.default(0),
+});
+
+/**
+ * Vorlage für einen Transportauftrag (Krankentransport, Verlegung, Intensivverlegung). Aufträge
+ * kommen nicht über die 112, sondern von Praxen, Kliniken und Pflegeheimen – oft mit Termin.
+ */
+export const TransportOrder = z.object({
+  id: Id,
+  name: z.string(),
+  weight: z.number().positive(),
+  /** Stichwort mit der AAO, z. B. KTP mit KTW. */
+  keyword: Id,
+  /** Abholung zu Hause (Wohnadresse) oder in einer dieser Kliniken. */
+  fromHospitals: z.array(Id).default([]),
+  /** Ziel: eine dieser Kliniken – ohne Angabe nach Hause (Entlassung). */
+  toHospitals: z.array(Id).default([]),
+  /** Der Auftrag geht so lange vor dem Abholtermin ein (Minuten; 0 = sofort). */
+  leadMinutes: Range,
+  /** Patient übernehmen bzw. übergeben (Minuten). */
+  pickupMinutes: Range,
+  handoverMinutes: Range,
+  naca: Range,
+  ageRange: Range,
+  infectious: Probability.default(0),
 });
 
 /**
@@ -275,6 +323,64 @@ export const Settings = z.object({
     destinationTimeoutSeconds: z.number().positive(),
     callbackSeconds: Range,
   }),
+  /** Transportaufträge (ADR-0015). */
+  transports: z
+    .object({
+      /** Aufträge je Stunde und 100.000 Einwohner im Tagesmittel. */
+      ratePer100k: z.number().nonnegative(),
+      hourlyProfile: z.array(z.number().nonnegative()).length(24),
+      /** Pünktlich ist, wer spätestens so viele Minuten nach dem Termin abholt. */
+      toleranceMinutes: z.number().positive(),
+      /** Am Vortag bestellte Aufträge, die zum Spielbeginn schon in der Liste stehen. */
+      preBooked: z.number().int().nonnegative().default(0),
+      /** Termine der vorbestellten Aufträge ab Spielbeginn (Minuten). */
+      preBookedMinutes: Range.default([20, 180]),
+    })
+    .default({
+      ratePer100k: 0,
+      hourlyProfile: Array.from({ length: 24 }, () => 1),
+      toleranceMinutes: 15,
+      preBooked: 0,
+      preBookedMinutes: [20, 180],
+    }),
+  /** Verfügbarkeit von Fahrzeugen und Besatzungen (ADR-0015). */
+  logistics: z
+    .object({
+      /** Desinfektion nach Infektionstransport auf der Wache (Minuten). */
+      disinfectionMinutes: Range,
+      /** Fahrstunden, die eine Tankfüllung reicht; unter 25 % wird getankt. */
+      fuelHours: z.number().positive(),
+      refuelMinutes: Range,
+      /** Wahrscheinlichkeit eines Defekts je Einsatz und Dauer der Reparatur (Stunden). */
+      defectPerMission: Probability,
+      defectHours: Range,
+      /** Besatzungen wechseln zu diesen Stunden (24-Stunden-Fahrzeuge). */
+      crewChangeHours: z.array(z.number().int().min(0).max(23)).min(1),
+      /** Pause nach so vielen Stunden Dienst beantragen; Dauer in Minuten. */
+      breakAfterHours: z.number().positive(),
+      breakMinutes: z.number().int().positive(),
+      /** Aufnahmeplätze: Anteil, der je Stunde wieder frei wird. */
+      bedReleasePerHour: Probability,
+      /** Belegung durch andere (Selbsteinweiser, Nachbarbereiche) je Abteilung und Stunde. */
+      bedOtherPerHour: z.number().nonnegative(),
+      /** Kurzfristige Abmeldung einer Abteilung (Geräteausfall) je Klinik und Tag, Dauer (h). */
+      closurePerDay: Probability,
+      closureHours: Range,
+    })
+    .default({
+      disinfectionMinutes: [30, 50],
+      fuelHours: 8,
+      refuelMinutes: [10, 15],
+      defectPerMission: 0,
+      defectHours: [1, 3],
+      crewChangeHours: [7, 19],
+      breakAfterHours: 6,
+      breakMinutes: 30,
+      bedReleasePerHour: 0.5,
+      bedOtherPerHour: 0,
+      closurePerDay: 0,
+      closureHours: [1, 3],
+    }),
   caller: z.object({
     /** Wahrscheinlichkeiten für ungenaue Adressangaben. */
     wrongHouseNumber: Probability,
@@ -297,6 +403,8 @@ export type Tracer = z.infer<typeof Tracer>;
 export type Settings = z.infer<typeof Settings>;
 export type FireScenario = z.infer<typeof FireScenario>;
 export type UnitNeed = z.infer<typeof UnitNeed>;
+export type TransportOrder = z.infer<typeof TransportOrder>;
+export type Service = z.infer<typeof Service>;
 
 /** Vollständiger, validierter Inhaltsstand, den die Simulation erhält. */
 export interface ContentBundle {
@@ -307,5 +415,6 @@ export interface ContentBundle {
   readonly keywords: readonly Keyword[];
   readonly diagnoses: readonly Diagnosis[];
   readonly fireScenarios: readonly FireScenario[];
+  readonly transportOrders: readonly TransportOrder[];
   readonly settings: Settings;
 }

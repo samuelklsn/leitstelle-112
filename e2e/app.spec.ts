@@ -66,8 +66,8 @@ test('Startbildschirm und Tutorial', async () => {
   await page.getByTestId('start-tutorial').click();
   await expect(page.getByTestId('tutorial-coach')).toBeVisible();
   await expect(page.getByTestId('start-screen')).toBeHidden();
-  // 7 Rettungsdienst- und 15 Feuerwehrfahrzeuge.
-  await expect(page.getByTestId('vehicle-row')).toHaveCount(22);
+  // 13 Rettungsdienst- (RTW, NEF, KTW, ITW) und 15 Feuerwehrfahrzeuge.
+  await expect(page.getByTestId('vehicle-row')).toHaveCount(28);
 });
 
 test('Takt, Pause und Zeitraffer', async () => {
@@ -146,6 +146,29 @@ test('Auswertung zeigt die laufende Schicht', async () => {
   await expect(page.getByTestId('evaluation')).toBeVisible();
   await shot('auswertung');
   await page.keyboard.press('Escape');
+  await page.getByTestId('btn-pause').click();
+});
+
+test('Logistik: Transportaufträge, Kliniken und Status 6', async () => {
+  // Freies Spiel: Zum Schichtbeginn liegen vorbestellte Krankentransporte vor.
+  await page.getByTestId('menu-new').click();
+  await page.getByTestId('start-free').click();
+  await expect(page.getByTestId('start-screen')).toBeHidden();
+  await page.getByTestId('tab-orders').click();
+  await expect(page.getByTestId('order-row')).toHaveCount(5);
+  await page.getByTestId('order-row').first().getByRole('button').click();
+  await expect(page.getByTestId('dispatch-dialog')).toBeVisible();
+  await page.getByTestId('alarm').click();
+  await expect(page.getByTestId('dispatch-dialog')).toBeHidden();
+  // Tages-RTW, ITW und ein KTW beginnen erst um 8 Uhr (Status 6).
+  await expect(page.getByTestId('vehicle-panel')).toContainText('Dienstende');
+  await page.waitForTimeout(1500);
+  await page.getByTestId('btn-pause').click();
+  await shot('auftraege');
+  await page.getByTestId('tab-hospitals').click();
+  await expect(page.getByTestId('hospital-panel')).toContainText('Stroke Unit');
+  await shot('kliniken');
+  await page.getByTestId('tab-incidents').click();
   await page.getByTestId('btn-pause').click();
 });
 
