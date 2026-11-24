@@ -6,6 +6,30 @@ Versionierung nach [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+## [0.2.0] – 2026-11-24 – Notrufannahme 2.0 (M5)
+
+### Hinzugefügt
+
+- **Strukturierte Notrufabfrage:** Die Fragen Wo, Was, Wer, Bewusstsein, Atmung und Rückrufnummer
+  werden einzeln gestellt (Alt+1 bis Alt+6, Alt+0 für alle). Der Anrufer antwortet nach 3–8
+  Sekunden, aufgeregte Anrufer brauchen länger. Die Gesprächszeit zählt zur Hilfsfrist.
+- **Neue Antworten:** Bewusstsein (wach, reagiert nicht, unklar) und Atmung (normal, schwer, keine,
+  unklar) als wichtigste Hinweise auf die Dringlichkeit.
+- **Anrufarten:** Hosentaschenanrufe (Stille), Scherzanrufe (Kichern, unterdrückte Nummer),
+  Auskunftsanrufe (Apotheke, Bereitschaftsdienst, Krankentransport) und weitere Meldungen zu
+  laufenden Einsätzen. Die Notrufmaske schlägt dafür Einsätze in der Nähe zum Zuordnen vor.
+- **Polizei-Übergaben (110)** mit vollständig abgefragten, korrekten Angaben.
+- **Bewertung:** Doppelt angelegte Einsätze, alarmierte Scherz-, Fehl- und Auskunftsanrufe werden
+  als Fehler gewertet. Aufgelegte Fehlanrufe sind kein Fehler.
+
+### Geändert
+
+- **Ein Gespräch zur Zeit:** Während eines Gesprächs lässt sich kein zweiter Notruf annehmen.
+  F2 öffnet zuerst das laufende Gespräch.
+- Das Tutorial erklärt die Abfrage. Der E2E-Test spielt den Einsatz jetzt mit vollständiger
+  Abfrage durch.
+- Anrufertexte sind geschlechtsneutral formuliert.
+
 ## [0.1.0] – 2026-11-24 – Vertical Slice (M2–M4)
 
 Der erste **spielbare** Stand: eine endlose Schicht im fiktiven Landkreis Brakenfeld, vom Notruf
@@ -98,6 +122,7 @@ eigentlichen Sinn – das kommt ab M2/M3.
 - Nach einem Absturz startet die Simulation neu beim Schichtbeginn; Autosave folgt in M4.
 - Der Installer wird nur in der CI gebaut (Richtlinie des Entwicklungsrechners, PLAN Kapitel 9).
 
-[Unreleased]: https://github.com/samuelklsn/leitstelle-112/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/samuelklsn/leitstelle-112/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/samuelklsn/leitstelle-112/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/samuelklsn/leitstelle-112/compare/v0.0.1...v0.1.0
 [0.0.1]: https://github.com/samuelklsn/leitstelle-112/releases/tag/v0.0.1

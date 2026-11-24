@@ -369,3 +369,9 @@
     opacity: 0.4;
   }
 }
+
+.acceptBtn:disabled {
+  background: var(--border-strong);
+  color: var(--text-muted);
+  cursor: not-allowed;
+}

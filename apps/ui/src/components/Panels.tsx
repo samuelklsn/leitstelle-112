@@ -21,6 +21,7 @@ export function CallsPanel() {
   const now = useSim((s) => s.host?.view.time ?? 0);
   const command = useSim((s) => s.command);
   const openDialog = useSim((s) => s.openDialog);
+  const lineBusy = calls.some((c) => c.status === 'talking');
   const anyAlarm = calls.some((c) => c.status === 'waiting' && now - c.receivedAt >= CALL_ALARM_MS);
   return (
     <section className={`${css.panel ?? ''} ${css.calls ?? ''}`} aria-label={t('panel.calls')}>
@@ -66,6 +67,8 @@ export function CallsPanel() {
               <button
                 type="button"
                 className={talking ? css.openBtn : css.acceptBtn}
+                disabled={!talking && lineBusy}
+                title={!talking && lineBusy ? t('reason.lineBusy') : undefined}
                 onClick={() => {
                   if (!talking) command({ type: 'call/accept', callId: call.id });
                   openDialog({ kind: 'call', callId: call.id });
@@ -305,12 +308,14 @@ export function RadioLog() {
   return (
     <div className={css.body}>
       <ul className={css.log} data-testid="event-log">
-        {events.map((e) => (
-          <li key={e.key} className={`${css.logRow ?? ''} ${logClass(e) ?? ''}`}>
-            <span className={css.logTime}>{formatTimeOfDay(e.at)}</span>
-            <span>{describe(e, L, t)}</span>
-          </li>
-        ))}
+        {events
+          .filter((e) => e.type !== 'call/answer')
+          .map((e) => (
+            <li key={e.key} className={`${css.logRow ?? ''} ${logClass(e) ?? ''}`}>
+              <span className={css.logTime}>{formatTimeOfDay(e.at)}</span>
+              <span>{describe(e, L, t)}</span>
+            </li>
+          ))}
       </ul>
     </div>
   );
@@ -356,6 +361,10 @@ function describe(e: LogEntry, L: Lookup, t: TFunction): string {
       return t('events.command/rejected', { reason: t(`reason.${e.reason}`) });
     case 'shift/ended':
       return t('events.shift/ended', { index: e.index });
+    case 'call/answer':
+      return t('events.call/answer', { id: e.callId, question: t(`question.${e.question}`) });
+    case 'call/linked':
+      return t('events.call/linked', { id: e.callId, incident: e.incidentId });
   }
 }
 

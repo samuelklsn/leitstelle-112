@@ -41,10 +41,10 @@ describe('Performance', () => {
     // Lage aufbauen, bis 100 Einsätze gleichzeitig laufen.
     for (
       let t = 0;
-      t < 3600 && sim.raw.incidents.filter((i) => i.status !== 'closed').length < 100;
+      t < 4 * 3600 && sim.raw.incidents.filter((i) => i.status !== 'closed').length < 100;
       t++
     ) {
-      if (t % 10 === 0) botAct(sim, { cheat: true });
+      botAct(sim, { cheat: true });
       sim.step();
     }
     const active = sim.raw.incidents.filter((i) => i.status !== 'closed').length;

@@ -266,13 +266,13 @@ describe('Simulation – Determinismus', () => {
     const sh = sim.raw.shift;
     expect({ tick: sim.tick, hash: sim.hash(), calls: sh.callsReceived, incidents: sh.incidents })
       .toMatchInlineSnapshot(`
-      {
-        "calls": 8,
-        "hash": "3c4e226ec6a12520",
-        "incidents": 8,
-        "tick": 7200,
-      }
-    `);
+        {
+          "calls": 8,
+          "hash": "d4f0cfd37511635a",
+          "incidents": 6,
+          "tick": 7200,
+        }
+      `);
   });
 });
 

@@ -31,23 +31,51 @@ export interface BotOptions {
   readonly ignoreDestination?: boolean;
 }
 
-/** Ein Disponent, der alle Aufgaben sofort erledigt. Gibt die Zahl der Befehle zurück. */
+/** Diese Fragen stellt der Bot, bevor er entscheidet. */
+const BOT_QUESTIONS = ['where', 'what', 'conscious', 'breathing'] as const;
+
+/**
+ * Ein Disponent, der seine Aufgaben zügig erledigt – mit denselben Regeln wie der Spieler:
+ * ein Gespräch zur Zeit, erst fragen, dann entscheiden. Gibt die Zahl der Befehle zurück.
+ */
 export function botAct(sim: Simulation, options: BotOptions = {}): number {
   let n = 0;
   const s = sim.raw;
-  for (const call of s.calls) {
-    if (call.status === 'waiting') {
-      sim.submit({ type: 'call/accept', callId: call.id });
+  const talking = s.calls.find((c) => c.status === 'talking');
+  if (talking) {
+    const missing = BOT_QUESTIONS.filter(
+      (q) => !talking.answered.includes(q) && !talking.asked.includes(q),
+    );
+    const ready = BOT_QUESTIONS.every((q) => talking.answered.includes(q));
+    if (options.cheat) {
+      // Perfekter Disponent: erkennt die Art des Anrufs sofort.
+      if (talking.kind === 'duplicate' && talking.duplicateOf !== undefined) {
+        sim.submit({ type: 'call/link', callId: talking.id, incidentId: talking.duplicateOf });
+      } else if (talking.kind !== 'emergency') {
+        sim.submit({ type: 'call/close', callId: talking.id });
+      } else {
+        createFor(sim, talking, talking.truth.addressId);
+      }
+      n++;
+    } else if (!ready) {
+      for (const q of missing) sim.submit({ type: 'call/ask', callId: talking.id, question: q });
+      n += missing.length;
+    } else if (
+      talking.kind === 'misdial' ||
+      talking.kind === 'prank' ||
+      talking.report.reportKey.startsWith('info_')
+    ) {
+      // Hörbar: Stille, Kichern oder eine Auskunftsfrage – kein Einsatz.
+      sim.submit({ type: 'call/close', callId: talking.id });
       n++;
     } else {
-      const d = sim.content.diagnoses.get(call.truth.diagnosisId);
-      const addressId = options.cheat ? call.truth.addressId : findReported(sim, call.report);
-      sim.submit({
-        type: 'incident/create',
-        callId: call.id,
-        addressId,
-        keywordId: d?.keyword ?? 'base:rd1',
-      });
+      createFor(sim, talking, findReported(sim, talking.report));
+      n++;
+    }
+  } else {
+    const waiting = s.calls.find((c) => c.status === 'waiting');
+    if (waiting) {
+      sim.submit({ type: 'call/accept', callId: waiting.id });
       n++;
     }
   }
@@ -79,6 +107,20 @@ export function botAct(sim: Simulation, options: BotOptions = {}): number {
   }
   sim.flush();
   return n;
+}
+
+function createFor(
+  sim: Simulation,
+  call: Simulation['raw']['calls'][number],
+  addressId: number,
+): void {
+  const d = sim.content.diagnoses.get(call.truth.diagnosisId);
+  sim.submit({
+    type: 'incident/create',
+    callId: call.id,
+    addressId,
+    keywordId: d?.keyword ?? 'base:rd1',
+  });
 }
 
 /** Adresse so suchen, wie ein Disponent es mit den Angaben des Anrufers täte. */

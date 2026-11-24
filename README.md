@@ -81,17 +81,18 @@ auf Leitung 2 klingelt schon der nächste Notruf.
 
 ## Stand und Roadmap
 
-**v0.1.0 – Vertical Slice:** Rettungsdienst im fiktiven Landkreis Brakenfeld. Dazu gehören
+**v0.2.0:** strukturierte Notrufabfrage mit Fehl-, Scherz- und Doppelanrufen. **Seit v0.1.0:** Rettungsdienst im fiktiven Landkreis Brakenfeld. Dazu gehören
 7 Orte, 3 Rettungswachen, 2 Notarztstandorte, 2 Krankenhäuser, 4 Stichworte und
 14 Krankheitsbilder, außerdem Tutorial, Speichern und Laden sowie die Schichtauswertung.
 
-| Meilenstein       | Inhalt                                                                                   | Stand                                                              |
-| ----------------- | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| M1 Fundament      | Monorepo, CI, Electron, deterministischer Simulationskern                                | ✅                                                                 |
-| M2 Welt & Routing | Landkreis-Generator, Straßengraph, Fahrzeitmodell, Offline-Karte                         | ✅                                                                 |
-| M3 Vertical Slice | Notruf → Disposition → Anfahrt → Befund → Transport → Krankenhaus                        | ✅                                                                 |
-| M4 v0.1.0         | Speichern, Autosave, Auswertung, Tutorial, Tastatur                                      | ✅                                                                 |
-| M5 – M12          | Dialoggenerator, Feuerwehr, Logistik, Wetter, Mehrmonitor, MANV, Langzeitspiel, Editoren | [geplant](https://github.com/samuelklsn/leitstelle-112/milestones) |
+| Meilenstein          | Inhalt                                                                    | Stand                                                              |
+| -------------------- | ------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| M1 Fundament         | Monorepo, CI, Electron, deterministischer Simulationskern                 | ✅                                                                 |
+| M2 Welt & Routing    | Landkreis-Generator, Straßengraph, Fahrzeitmodell, Offline-Karte          | ✅                                                                 |
+| M3 Vertical Slice    | Notruf → Disposition → Anfahrt → Befund → Transport → Krankenhaus         | ✅                                                                 |
+| M4 v0.1.0            | Speichern, Autosave, Auswertung, Tutorial, Tastatur                       | ✅                                                                 |
+| M5 Notrufannahme 2.0 | Strukturierte Abfrage, Fehl-, Scherz- und Doppelanrufe, Polizei-Übergaben | ✅                                                                 |
+| M6 – M12             | Feuerwehr, Logistik, Wetter, Mehrmonitor, MANV, Langzeitspiel, Editoren   | [geplant](https://github.com/samuelklsn/leitstelle-112/milestones) |
 
 ## Technik
 

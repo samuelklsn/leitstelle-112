@@ -324,6 +324,7 @@ export function HelpDialog() {
     ['Leertaste', 'space'],
     ['1 – 4', 'speed'],
     ['F2', 'f2'],
+    ['Alt+1 – 6', 'alt'],
     ['F3', 'f3'],
     ['F4', 'f4'],
     ['Enter', 'enter'],

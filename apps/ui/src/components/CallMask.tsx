@@ -1,19 +1,24 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { CallView, StaticAddress } from '@ls112/protocol';
+import { QUESTIONS, type CallView, type Question, type StaticAddress } from '@ls112/protocol';
 import { formatDuration } from '../format';
 import { lookup } from '../lookup';
 import { useSim } from '../sim-store';
 import css from './Dialog.module.css';
 
+/** Doppelmeldungen: Einsätze in diesem Umkreis um die genannte Adresse werden vorgeschlagen. */
+const LINK_RADIUS_M = 600;
+
 /**
- * Notrufmaske: Gesprächsverlauf mit den Angaben des Anrufers, Adresssuche und Stichwortwahl.
- * Der Anrufer kann sich irren – der Disponent entscheidet (ADR-0014, „wahre Lage").
+ * Notrufmaske: strukturierte Abfrage (W-Fragen), Adresssuche, Stichwort – oder Zuordnung zu einem
+ * bestehenden Einsatz bzw. Beenden ohne Einsatz. Der Anrufer antwortet mit Verzögerung und kann
+ * sich irren (ADR-0014).
  */
 export function CallMask({ callId }: { callId: string }) {
   const { t } = useTranslation();
   const world = useSim((s) => s.world);
   const call = useSim((s) => s.host?.view.calls.find((c) => c.id === callId));
+  const incidents = useSim((s) => s.host?.view.incidents);
   const now = useSim((s) => s.host?.view.time ?? 0);
   const command = useSim((s) => s.command);
   const openDialog = useSim((s) => s.openDialog);
@@ -43,17 +48,42 @@ export function CallMask({ callId }: { callId: string }) {
 
   if (!call || !L || !world) return null;
   const r = call.report;
+  const answeredOrAsked = (q: Question) => call.answered.includes(q) || call.asked.includes(q);
+  const ask = (q: Question) => {
+    if (!answeredOrAsked(q)) command({ type: 'call/ask', callId, question: q });
+  };
+  const askAll = () => {
+    for (const q of QUESTIONS) ask(q);
+  };
 
   const takeOver = () => {
-    if (!r) return;
+    const a = r?.address;
+    if (!a) return;
     const text =
-      r.toTownId !== null
-        ? `${L.streetName(r.streetId)} ${L.townName(r.townId)}`
-        : `${L.streetName(r.streetId)} ${r.number} ${r.townId ? L.townName(r.townId) : ''}`;
+      a.toTownId !== null
+        ? `${L.streetName(a.streetId)} ${L.townName(a.townId)}`
+        : `${L.streetName(a.streetId)} ${a.number} ${a.townId ? L.townName(a.townId) : ''}`;
     setQuery(text);
     setActive(0);
     input.current?.focus();
   };
+
+  // Laufende Einsätze in der Nähe der genannten (oder gewählten) Adresse – mögliche Doppelmeldung.
+  const stated = r?.address;
+  const ref =
+    chosen ??
+    (stated
+      ? L.searchAddresses(`${L.streetName(stated.streetId)} ${stated.number}`, 1)[0]
+      : undefined);
+  const nearby = (incidents ?? [])
+    .filter((i) => i.status !== 'closed')
+    .map((i) => {
+      const a = L.address(i.addressId);
+      const d = a && ref ? Math.hypot(a.x - ref.x, a.y - ref.y) : Infinity;
+      return { i, d };
+    })
+    .filter((x) => x.d <= LINK_RADIUS_M)
+    .sort((a, b) => a.d - b.d);
 
   const create = () => {
     if (!chosen || !keywordId) return;
@@ -62,7 +92,14 @@ export function CallMask({ callId }: { callId: string }) {
   };
 
   const onKey = (e: React.KeyboardEvent) => {
-    if (e.key === 'ArrowDown') {
+    if (e.altKey && /^[1-6]$/.test(e.key)) {
+      e.preventDefault();
+      const q = QUESTIONS[Number(e.key) - 1];
+      if (q) ask(q);
+    } else if (e.altKey && e.key === '0') {
+      e.preventDefault();
+      askAll();
+    } else if (e.key === 'ArrowDown') {
       e.preventDefault();
       setActive((a) => Math.min(results.length - 1, a + 1));
     } else if (e.key === 'ArrowUp') {
@@ -89,6 +126,7 @@ export function CallMask({ callId }: { callId: string }) {
       <div className={css.dialog}>
         <div className={css.head}>
           <span className={css.title}>{t('mask.title', { id: callId })}</span>
+          {call.source === '110' && <span className={css.badge}>{t('mask.police')}</span>}
           <span className={`${css.badge ?? ''} ${css.badgeAlarm ?? ''}`}>
             {t('calls.talking', {
               duration: formatDuration(now - (call.acceptedAt ?? call.receivedAt)),
@@ -107,14 +145,44 @@ export function CallMask({ callId }: { callId: string }) {
         </div>
         <div className={css.body}>
           <div className={css.split}>
-            {r && <Transcript call={call} />}
+            <div className={css.section}>
+              <Transcript call={call} />
+              <span className={css.label}>{t('mask.questions')}</span>
+              <div className={css.questions}>
+                {QUESTIONS.map((q, i) => {
+                  const done = call.answered.includes(q);
+                  const waiting = call.asked.includes(q);
+                  return (
+                    <button
+                      type="button"
+                      key={q}
+                      className={`${css.question ?? ''} ${done ? (css.questionDone ?? '') : ''} ${waiting ? (css.questionWaiting ?? '') : ''}`}
+                      disabled={done || waiting}
+                      onClick={() => {
+                        ask(q);
+                      }}
+                      data-testid={`ask-${q}`}
+                    >
+                      <span className={css.kbdSmall}>Alt+{i + 1}</span> {t(`question.${q}`)}
+                    </button>
+                  );
+                })}
+                <button
+                  type="button"
+                  className={css.question}
+                  onClick={askAll}
+                  data-testid="ask-all"
+                >
+                  <span className={css.kbdSmall}>Alt+0</span> {t('mask.askAll')}
+                </button>
+              </div>
+            </div>
             <div className={css.section}>
               <div className={css.section}>
                 <span className={css.label}>{t('mask.address')}</span>
                 <div style={{ display: 'flex', gap: 6 }}>
                   <input
                     ref={input}
-                    autoFocus
                     className={css.input}
                     value={query}
                     placeholder={t('mask.addressPlaceholder')}
@@ -128,6 +196,8 @@ export function CallMask({ callId }: { callId: string }) {
                     type="button"
                     className={css.btn}
                     onClick={takeOver}
+                    disabled={!r?.address}
+                    title={r?.address ? '' : t('mask.askWhereFirst')}
                     data-testid="take-address"
                   >
                     {t('mask.takeAddress')}
@@ -155,6 +225,32 @@ export function CallMask({ callId }: { callId: string }) {
                 )}
                 {chosen && <div className={css.ok}>✓ {L.addressLabel(chosen.id)}</div>}
               </div>
+
+              {nearby.length > 0 && (
+                <div className={css.section} data-testid="nearby-incidents">
+                  <span className={css.label}>{t('mask.nearby')}</span>
+                  {nearby.map(({ i, d }) => (
+                    <div key={i.id} className={css.nearby}>
+                      <span>
+                        <strong>{i.id}</strong> {L.keywordCode(i.keywordId)} ·{' '}
+                        {L.addressLabel(i.addressId)}
+                        <span className={css.hint}> · {Math.round(d)} m</span>
+                      </span>
+                      <button
+                        type="button"
+                        className={css.btn}
+                        onClick={() => {
+                          command({ type: 'call/link', callId, incidentId: i.id });
+                          openDialog(null);
+                        }}
+                        data-testid="link-incident"
+                      >
+                        {t('mask.link')}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
 
               <div className={css.section}>
                 <span className={css.label}>{t('mask.keyword')}</span>
@@ -191,6 +287,7 @@ export function CallMask({ callId }: { callId: string }) {
               command({ type: 'call/close', callId });
               openDialog(null);
             }}
+            data-testid="end-call"
           >
             {t('mask.end')}
           </button>
@@ -209,48 +306,82 @@ export function CallMask({ callId }: { callId: string }) {
   );
 }
 
-/** Gesprächsverlauf aus den Angaben des Anrufers, zusammengesetzt aus Textbausteinen. */
+/** Gesprächsverlauf: nur gestellte Fragen und bereits gegebene Antworten. */
 export function Transcript({ call }: { call: CallView }) {
   const { t } = useTranslation();
   const world = useSim((s) => s.world);
   const r = call.report;
   if (!r || !world) return null;
   const L = lookup(world);
-  const address =
-    r.toTownId !== null
-      ? t('caller.addressRoad', {
-          road: L.streetName(r.streetId),
-          a: L.townName(r.townId),
-          b: L.townName(r.toTownId),
-        })
-      : r.townId
-        ? t('caller.addressHouse', {
-            street: L.streetName(r.streetId),
-            number: r.number,
-            town: L.townName(r.townId),
-          })
-        : t('caller.addressNoTown', { street: L.streetName(r.streetId), number: r.number });
-  const patient =
-    r.ageGuess < 14
-      ? t('caller.child', { age: r.ageGuess })
-      : t('caller.patient', { sex: t(`caller.sex.${r.sex}`), age: r.ageGuess });
+  const intro = r.silent
+    ? t('caller.silence')
+    : `${t(`caller.intro.${r.kind}`)} ${r.tone !== 'normal' ? t(`caller.tone.${r.tone}`) : ''}`;
+  const answer = (q: Question): string => {
+    if (r.silent) return t('caller.silenceAnswer');
+    switch (q) {
+      case 'where': {
+        const a = r.address;
+        if (!a) return '';
+        if (a.toTownId !== null) {
+          return t('caller.addressRoad', {
+            road: L.streetName(a.streetId),
+            a: L.townName(a.townId),
+            b: L.townName(a.toTownId),
+          });
+        }
+        return a.townId
+          ? t('caller.addressHouse', {
+              street: L.streetName(a.streetId),
+              number: a.number,
+              town: L.townName(a.townId),
+            })
+          : t('caller.addressNoTown', { street: L.streetName(a.streetId), number: a.number });
+      }
+      case 'what':
+        return r.reportKey ? t(`report.${r.reportKey}`) : '';
+      case 'who':
+        if (!r.patient) return '';
+        return r.patient.ageGuess < 14
+          ? t('caller.child', { age: r.patient.ageGuess })
+          : t('caller.patient', { sex: t(`caller.sex.${r.patient.sex}`), age: r.patient.ageGuess });
+      case 'conscious':
+        return r.conscious ? t(`caller.conscious.${r.conscious}`) : '';
+      case 'breathing':
+        return r.breathing ? t(`caller.breathing.${r.breathing}`) : '';
+      case 'callback':
+        return r.callback === '' ? t('caller.suppressed') : (r.callback ?? '');
+    }
+  };
   return (
     <div className={css.section}>
       <span className={css.label}>
-        {t('mask.transcript')} · {t(`caller.kind.${r.kind}`)}
+        {t('mask.transcript')}
+        {!r.silent && ` · ${t(`caller.kind.${r.kind}`)}`}
       </span>
       <div className={css.transcript} data-testid="transcript">
         <span className={`${css.a ?? ''} ${r.tone === 'panic' ? (css.panic ?? '') : ''}`}>
-          {t(`caller.intro.${r.kind}`)} {r.tone !== 'normal' ? t(`caller.tone.${r.tone}`) : ''}
+          {intro}
         </span>
-        <span className={css.q}>{t('caller.where')}</span>
-        <span className={css.a}>{address}</span>
-        <span className={css.q}>{t('caller.what')}</span>
-        <span className={css.a}>{t(`report.${r.reportKey}`)}</span>
-        <span className={css.q}>{t('caller.who')}</span>
-        <span className={css.a}>{patient}</span>
-        <span className={css.q}>{t('caller.callbackQ')}</span>
-        <span className={`${css.a ?? ''} ${css.mono ?? ''}`}>{r.callback}</span>
+        {r.giggling && <span className={css.stage}>{t('caller.giggling')}</span>}
+        {call.answered.map((q) => (
+          <span key={q} style={{ display: 'contents' }}>
+            <span className={css.q}>{t(`questionLong.${q}`)}</span>
+            <span className={css.a}>{answer(q)}</span>
+          </span>
+        ))}
+        {call.asked.map((q, i) => (
+          <span key={q} style={{ display: 'contents' }}>
+            <span className={css.q}>{t(`questionLong.${q}`)}</span>
+            {i === 0 && (
+              <span className={css.typing} data-testid="typing">
+                …
+              </span>
+            )}
+          </span>
+        ))}
+        {call.answered.length === 0 && call.asked.length === 0 && (
+          <span className={css.hint}>{t('mask.startAsking')}</span>
+        )}
       </div>
     </div>
   );

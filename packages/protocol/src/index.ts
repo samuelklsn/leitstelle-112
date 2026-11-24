@@ -4,6 +4,7 @@
  * Richtung UI → Host: {@link ClientMessage}. Richtung Host → UI: {@link HostMessage}.
  * Alle Nachrichten sind strukturiert klonbar (MessagePort) und enthalten keine Texte.
  */
+import { QUESTIONS, type Question } from '@ls112/sim/types';
 import type {
   GameView,
   HospitalSuggestion,
@@ -32,7 +33,10 @@ export type {
   ErrorCode,
   Outcome,
   RadioMessage,
+  Question,
+  CallSource,
 } from '@ls112/sim';
+export { QUESTIONS } from '@ls112/sim/types';
 
 /** Erlaubte Zeitraffer-Stufen. */
 export const SPEEDS = [1, 2, 5, 10] as const;
@@ -104,6 +108,8 @@ export function isSpeed(value: unknown): value is Speed {
 type Rec = Record<string, unknown>;
 const isRec = (v: unknown): v is Rec => typeof v === 'object' && v !== null && !Array.isArray(v);
 const isId = (v: unknown): v is string => typeof v === 'string' && v.length > 0 && v.length < 64;
+const isQuestion = (v: unknown): v is Question =>
+  typeof v === 'string' && (QUESTIONS as readonly string[]).includes(v);
 const isInt = (v: unknown): v is number => typeof v === 'number' && Number.isInteger(v) && v >= 0;
 
 /**
@@ -164,6 +170,14 @@ export function parseSimCommand(c: unknown): SimCommand | undefined {
     case 'call/accept':
     case 'call/close':
       return isId(c.callId) ? { type: c.type, callId: c.callId } : undefined;
+    case 'call/ask':
+      return isId(c.callId) && isQuestion(c.question)
+        ? { type: 'call/ask', callId: c.callId, question: c.question }
+        : undefined;
+    case 'call/link':
+      return isId(c.callId) && isId(c.incidentId)
+        ? { type: 'call/link', callId: c.callId, incidentId: c.incidentId }
+        : undefined;
     case 'incident/create':
       return isId(c.callId) && isInt(c.addressId) && isId(c.keywordId)
         ? {

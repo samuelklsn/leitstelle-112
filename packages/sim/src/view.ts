@@ -6,29 +6,45 @@
 import type { ContentBundle } from '@ls112/content';
 import type { Simulation } from './simulation';
 import { toCalendar, type CalendarTime, type SimTime } from './time';
-import type {
-  CallerKind,
-  ErrorCode,
-  FmsStatus,
-  Outcome,
-  ShiftStats,
-  VehicleState,
-  VehicleTask,
+import {
+  QUESTIONS,
+  type CallSource,
+  type CallerKind,
+  type CallerReport,
+  type ErrorCode,
+  type FmsStatus,
+  type Outcome,
+  type Question,
+  type ShiftStats,
+  type VehicleState,
+  type VehicleTask,
 } from './types';
 import { worldToMap, type WorldMap } from './world/geojson';
 
+/**
+ * Was der Disponent vom Anrufer weiß. Felder erscheinen erst, wenn die passende Frage beantwortet
+ * ist – Stimme, Ton und Art des Anrufers hört man dagegen sofort.
+ */
 export interface ReportView {
   readonly kind: CallerKind;
-  readonly reportKey: string;
-  readonly streetId: number;
-  readonly number: string;
-  readonly townId: string | null;
-  readonly toTownId: string | null;
-  readonly callback: string;
-  readonly ageGuess: number;
-  readonly sex: 'm' | 'w';
   /** Gesprächston: aufgeregte Anrufer übertreiben, ruhige verharmlosen manchmal. */
   readonly tone: 'panic' | 'calm' | 'normal';
+  /** Am anderen Ende ist nur Stille oder Rauschen (Hosentaschenanruf). */
+  readonly silent: boolean;
+  /** Der Anrufer kichert, im Hintergrund wird gelacht. */
+  readonly giggling: boolean;
+  readonly address?: {
+    readonly streetId: number;
+    readonly number: string;
+    readonly townId: string | null;
+    readonly toTownId: string | null;
+  };
+  readonly reportKey?: string;
+  readonly patient?: { readonly ageGuess: number; readonly sex: 'm' | 'w' };
+  readonly conscious?: CallerReport['conscious'];
+  readonly breathing?: CallerReport['breathing'];
+  /** Leer bei unterdrückter Nummer. */
+  readonly callback?: string;
 }
 
 export interface CallView {
@@ -36,6 +52,10 @@ export interface CallView {
   readonly receivedAt: SimTime;
   readonly status: 'waiting' | 'talking';
   readonly acceptedAt?: SimTime;
+  readonly source: CallSource;
+  /** Beantwortete und noch offene Fragen der Abfrage. */
+  readonly answered: readonly Question[];
+  readonly asked: readonly Question[];
   /** Erst nach Annahme bekannt. */
   readonly report?: ReportView;
 }
@@ -105,7 +125,12 @@ export function buildView(sim: Simulation): GameView {
       receivedAt: c.receivedAt,
       status: c.status,
       ...(c.acceptedAt !== undefined ? { acceptedAt: c.acceptedAt } : {}),
-      ...(c.status === 'talking' ? { report: reportView(c.report) } : {}),
+      source: c.source,
+      answered: [...c.answered],
+      asked: [...c.asked],
+      ...(c.status === 'talking'
+        ? { report: reportView(c.report, c.answered, c.kind === 'misdial', c.kind === 'prank') }
+        : {}),
     })),
     incidents: s.incidents.map((i) => ({
       id: i.id,
@@ -115,7 +140,7 @@ export function buildView(sim: Simulation): GameView {
       addressId: i.addressId,
       status: i.status,
       vehicleIds: [...i.vehicleIds],
-      report: reportView(i.report),
+      report: reportView(i.report, QUESTIONS, false, false),
       doctorRequested: i.doctorRequested,
       locating: i.locating,
       errors: [...i.errors],
@@ -140,18 +165,33 @@ export function buildView(sim: Simulation): GameView {
   };
 }
 
-function reportView(r: Simulation['raw']['calls'][number]['report']): ReportView {
+function reportView(
+  r: CallerReport,
+  answered: readonly Question[],
+  silent: boolean,
+  giggling: boolean,
+): ReportView {
+  const has = (q: Question) => answered.includes(q);
   return {
     kind: r.kind,
-    reportKey: r.reportKey,
-    streetId: r.streetId,
-    number: r.number,
-    townId: r.townId,
-    toTownId: r.toTownId,
-    callback: r.callback,
-    ageGuess: r.ageGuess,
-    sex: r.sex,
     tone: r.misjudge > 0 ? 'panic' : r.misjudge < 0 ? 'calm' : 'normal',
+    silent,
+    giggling,
+    ...(has('where') && !silent
+      ? {
+          address: {
+            streetId: r.streetId,
+            number: r.number,
+            townId: r.townId,
+            toTownId: r.toTownId,
+          },
+        }
+      : {}),
+    ...(has('what') ? { reportKey: r.reportKey } : {}),
+    ...(has('who') && !silent ? { patient: { ageGuess: r.ageGuess, sex: r.sex } } : {}),
+    ...(has('conscious') && !silent ? { conscious: r.conscious } : {}),
+    ...(has('breathing') && !silent ? { breathing: r.breathing } : {}),
+    ...(has('callback') ? { callback: r.callback } : {}),
   };
 }
 

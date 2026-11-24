@@ -20,7 +20,15 @@ import {
   type SimState,
   type VehicleState,
 } from './types';
-import { abandonCall, acceptCall, closeCall, generateCalls } from './systems/calls';
+import {
+  abandonCall,
+  acceptCall,
+  askQuestion,
+  closeCall,
+  generateCalls,
+  linkCall,
+  onAnswer,
+} from './systems/calls';
 import {
   assignDestination,
   createIncident,
@@ -309,6 +317,10 @@ export class Simulation {
         return acceptCall(ctx, command.callId);
       case 'call/close':
         return closeCall(ctx, command.callId);
+      case 'call/ask':
+        return askQuestion(ctx, command.callId, command.question);
+      case 'call/link':
+        return linkCall(ctx, command.callId, command.incidentId);
       case 'incident/create':
         return createIncident(ctx, command.callId, command.addressId, command.keywordId);
       case 'incident/dispatch':
@@ -324,6 +336,10 @@ export class Simulation {
     const ctx = this.ctx;
     if (p.kind === 'call/abandon') {
       abandonCall(ctx, p.callId);
+      return;
+    }
+    if (p.kind === 'call/answer') {
+      onAnswer(ctx, p.callId);
       return;
     }
     if (p.kind === 'incident/callbackDone') {
