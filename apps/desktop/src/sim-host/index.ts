@@ -6,7 +6,7 @@ import { randomInt } from 'node:crypto';
 import { performance } from 'node:perf_hooks';
 import type { MessagePortMain } from 'electron';
 import { loadContentFromDirs } from '@ls112/content/node';
-import { simTimeFrom } from '@ls112/sim';
+import { hashString32, simTimeFrom } from '@ls112/sim';
 import type { HostMessage, StartPreset } from '@ls112/protocol';
 import { createLogger } from '../shared/logger';
 import { writeCrashReport } from '../shared/crash';
@@ -48,6 +48,7 @@ function shiftStart(preset: StartPreset = 'today'): number {
       return simTimeFrom(year, 12, 31, 19);
     case 'today':
     case 'drill':
+    case 'daily':
       return simTimeFrom(year, month, now.getDate(), hour);
   }
 }
@@ -61,6 +62,11 @@ const host = new SimHost({
   log,
   ...(store ? { store } : {}),
   newSeed: () => fixedSeed ?? randomInt(0, 2 ** 32 - 1),
+  dailySeed: () => {
+    const now = new Date();
+    const date = `${now.getFullYear().toString()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}`;
+    return { seed: hashString32(`ls112-tag-${date}`), date };
+  },
   startTime: shiftStart,
   callRateFactor: Number.isFinite(rate) && rate > 0 ? rate : 1,
 });

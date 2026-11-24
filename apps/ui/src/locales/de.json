@@ -158,7 +158,8 @@
     "mci_train": "Ein Zug hat am Bahnübergang einen Lkw erfasst und ist entgleist – da sind sehr viele Verletzte!",
     "mci_fire": "Das ganze Haus brennt! Leute stehen an den Fenstern, einige husten und können nicht mehr laufen!",
     "mci_hazmat": "Im Hallenbad riecht es stechend nach Chlor, viele haben Atemnot und Augenbrennen!",
-    "mci_evacuation": "Im Pflegeheim ist der Strom ausgefallen, die Beatmungsgeräte und der Aufzug gehen nicht, wir müssen alle raus!"
+    "mci_evacuation": "Im Pflegeheim ist der Strom ausgefallen, die Beatmungsgeräte und der Aufzug gehen nicht, wir müssen alle raus!",
+    "info_lonely": "Ach, ich wollte nur mal jemanden hören … mir geht es eigentlich ganz gut."
   },
   "keyword": {
     "pick": "Stichwort wählen"
@@ -200,7 +201,13 @@
     "locating": "Adresse wird geklärt",
     "needsUnits": "Kräfte fehlen",
     "dispatch": "Disponieren",
-    "unitsMissing": "Kräfte nachgefordert"
+    "unitsMissing": "Kräfte nachgefordert",
+    "danger": "Eigensicherung",
+    "police": "Polizei",
+    "policeRequested": "Polizei verständigt",
+    "history_one": "{{count}} Einsatz an dieser Adresse",
+    "history_other": "{{count}} Einsätze an dieser Adresse",
+    "historyHint": "Einsatzhistorie dieser Adresse in diesem Spiel"
   },
   "fms": {
     "0": "Priorisierter Sprechwunsch",
@@ -276,7 +283,9 @@
     "triageDone": "Sichtung abgeschlossen, Ergebnis liegt vor.",
     "patientLoaded": "Patient transportfähig.",
     "greenTreated": "Leichtverletzte vor Ort versorgt und entlassen.",
-    "stagingReady": "Bereitstellungsraum eingerichtet, Fahrzeuge bitte dorthin."
+    "stagingReady": "Bereitstellungsraum eingerichtet, Fahrzeuge bitte dorthin.",
+    "waitingForPolice": "Gefahr für die Besatzung – warten auf Polizei, bevor wir reingehen.",
+    "policeOnScene": "Polizei vor Ort, gehen zum Patienten."
   },
   "events": {
     "call/incoming": "Notruf {{id}} klingelt",
@@ -294,7 +303,9 @@
     "hospital/open": "{{hospital}}: {{department}} wieder aufnahmebereit.",
     "world/weather": "Wetter: {{weather}}",
     "world/eventStart": "Lage: {{event}}{{place}} hat begonnen.",
-    "world/eventEnd": "Lage: {{event}}{{place}} ist beendet."
+    "world/eventEnd": "Lage: {{event}}{{place}} ist beendet.",
+    "career/promoted": "Beförderung: {{rank}}. Sie übernehmen einen größeren Bereich.",
+    "planning/approved": "Bedarfsplanung: {{vehicle}} an der {{station}} bewilligt."
   },
   "reason": {
     "unknownCall": "Notruf nicht mehr vorhanden",
@@ -312,7 +323,10 @@
     "lineBusy": "Sie führen bereits ein Gespräch",
     "noBreakDue": "Keine Pause beantragt.",
     "notOnBreak": "Das Fahrzeug ist nicht in der Pause.",
-    "notMci": "Das ist keine Großlage."
+    "notMci": "Das ist keine Großlage.",
+    "unknownStation": "Diese Wache gibt es nicht oder sie ist eine Reserve.",
+    "noBudget": "Das Budget reicht nicht.",
+    "notJustified": "Antrag abgelehnt: Die Statistik der letzten Schicht begründet kein weiteres Fahrzeug."
   },
   "outcome": {
     "gut": "gut versorgt",
@@ -339,7 +353,8 @@
     "hospitalClosed": "Patient in abgemeldete Abteilung gebracht",
     "breakMissed": "Besatzung ohne Pause (Arbeitszeitverstoß)",
     "unsuitableTransport": "Ungeeignetes Fahrzeug für den Transportauftrag",
-    "mciOverload": "Klinik bei der Großlage überlastet, obwohl andere aufnahmebereit waren"
+    "mciOverload": "Klinik bei der Großlage überlastet, obwohl andere aufnahmebereit waren",
+    "policeNotRequested": "Polizei trotz bekannter Gefahr nicht verständigt"
   },
   "evaluation": {
     "title": "Schichtauswertung",
@@ -392,7 +407,8 @@
       "winter": "Winter – Glätte, Schnee, Grippewelle",
       "summer": "Sommer – Hitze, Gewitter, Volksfeste",
       "newYear": "Silvesternacht – ab 19 Uhr",
-      "drill": "MANV-Übung – heute, mit einer Großlage gleich zu Beginn"
+      "drill": "MANV-Übung – heute, mit einer Großlage gleich zu Beginn",
+      "daily": "Tages-Herausforderung – heute für alle derselbe Verlauf"
     }
   },
   "help": {
@@ -607,5 +623,44 @@
       "onSite": "vor Ort versorgt",
       "deceased": "verstorben"
     }
+  },
+  "known": {
+    "title": "Hinweise aus der Einsatzhistorie",
+    "aggressive": "Der Anrufer berichtet von Aggression oder einer Waffe – Eigensicherung, Polizei verständigen.",
+    "address_one": "Bekannte Adresse: {{count}} Einsatz in diesem Spiel",
+    "address_other": "Bekannte Adresse: {{count}} Einsätze in diesem Spiel",
+    "danger": "Gefahrenadresse: Bei einem früheren Einsatz waren die Kräfte bedroht.",
+    "caller": {
+      "frequent_one": "Bekannte Rufnummer: Vielanrufer, {{count}} Anruf bisher",
+      "frequent_other": "Bekannte Rufnummer: Vielanrufer, {{count}} Anrufe bisher",
+      "regular_one": "Bekannte Rufnummer: Stammpatient, {{count}} Anruf bisher",
+      "regular_other": "Bekannte Rufnummer: Stammpatient, {{count}} Anrufe bisher",
+      "danger_one": "Bekannte Rufnummer: {{count}} Anruf bisher, damals Gefahr für Einsatzkräfte",
+      "danger_other": "Bekannte Rufnummer: {{count}} Anrufe bisher, damals Gefahr für Einsatzkräfte"
+    }
+  },
+  "career": {
+    "title": "Laufbahn",
+    "rank": {
+      "disponent": "Disponent/in",
+      "erfahren": "Erfahrene/r Disponent/in",
+      "schichtfuehrer": "Schichtführer/in",
+      "lagedienst": "Lagedienstführer/in"
+    },
+    "xp": "{{xp}} von {{next}} Erfahrungspunkten",
+    "shifts_one": "{{count}} Schicht",
+    "shifts_other": "{{count}} Schichten",
+    "hint": "Erfahrung kommt aus den Punkten jeder Schicht. Mit jeder Stufe übernehmen Sie einen größeren Bereich – es gibt mehr zu tun.",
+    "planning": "Bedarfsplanung",
+    "budget": "Budget {{budget}}",
+    "kind": {
+      "rtw": "RTW rund um die Uhr ({{cost}})",
+      "rtwDay": "Tages-RTW 8–20 Uhr ({{cost}})",
+      "ktw": "KTW ({{cost}})",
+      "nef": "NEF ({{cost}})"
+    },
+    "request": "Antrag stellen",
+    "planningHint": "Bewilligt wird, wenn die Fahrzeuge dieses Typs an der Wache in der letzten Schicht stark ausgelastet waren oder die Hilfsfrist verfehlt wurde.",
+    "daily": "Tages-Herausforderung {{date}} · Bestleistung auf diesem Rechner: {{best}} Punkte"
   }
 }
