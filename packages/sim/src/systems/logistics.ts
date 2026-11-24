@@ -15,9 +15,20 @@ import type {
   TransportOrderState,
   VehicleState,
 } from '../types';
+import { isRestDay } from '../calendar';
 import { countError } from './calls';
+import { flyable } from './world';
 import { closeIncident } from './outcome';
-import { drive, findVehicle, isAvailable, isRdUnit, newTask, radio, setStatus } from './vehicles';
+import {
+  drive,
+  findVehicle,
+  isAir,
+  isAvailable,
+  isRdUnit,
+  newTask,
+  radio,
+  setStatus,
+} from './vehicles';
 
 /** Unter dieser Tankfüllung fährt die Besatzung nach dem Einsatz tanken. */
 export const FUEL_LOW = 0.25;
@@ -36,6 +47,8 @@ const START_MESSAGE: Record<ServiceReason, RadioMessage> = {
   refuel: 'refuel',
   break: 'breakStart',
   offDuty: 'offDuty',
+  weather: 'grounded',
+  external: 'externalMission',
 };
 const END_MESSAGE: Record<ServiceReason, RadioMessage> = {
   disinfection: 'disinfected',
@@ -43,6 +56,8 @@ const END_MESSAGE: Record<ServiceReason, RadioMessage> = {
   refuel: 'refueled',
   break: 'breakEnd',
   offDuty: 'onDuty',
+  weather: 'flyable',
+  external: 'externalBack',
 };
 
 // ---------------------------------------------------------------------------- Kliniken
@@ -153,9 +168,21 @@ export function onHospitalReopen(ctx: Ctx, hospitalId: string, dept: string): vo
 export function inService(ctx: Ctx, vehicleId: string, time: SimTime): boolean {
   const s = ctx.content.vehicleService.get(vehicleId);
   if (!s) return true;
-  const cal = toCalendar(time);
-  if (s.weekdaysOnly && cal.weekday >= 6) return false;
-  return cal.hour >= s.from && cal.hour < s.to;
+  if (s.weekdaysOnly && isRestDay(ctx.content.bundle.holidays, time)) return false;
+  const { from, to } = serviceHours(ctx, s, time);
+  const hour = toCalendar(time).hour;
+  return hour >= from && hour < to;
+}
+
+/** Dienststunden: fest oder – bei der Luftrettung – nach Tageslicht des Monats. */
+function serviceHours(
+  ctx: Ctx,
+  s: { from: number; to: number; daylight: boolean },
+  time: SimTime,
+): { from: number; to: number } {
+  if (!s.daylight) return s;
+  const light = ctx.content.bundle.settings.daylight?.[toCalendar(time).month - 1];
+  return light ? { from: light[0], to: light[1] } : s;
 }
 
 /** Dienstbeginn der Besatzung, die zum Zeitpunkt `time` im Dienst ist. */
@@ -163,7 +190,8 @@ function crewStart(ctx: Ctx, vehicleId: string, time: SimTime): SimTime {
   const cal = toCalendar(time);
   const dayStart = time - (cal.hour * 3600 + cal.minute * 60 + cal.second) * 1000;
   const service = ctx.content.vehicleService.get(vehicleId);
-  if (service) return Math.min(time, dayStart + service.from * MS_PER_HOUR);
+  if (service)
+    return Math.min(time, dayStart + serviceHours(ctx, service, time).from * MS_PER_HOUR);
   const hours = [...ctx.content.bundle.settings.logistics.crewChangeHours].sort((a, b) => a - b);
   const today = hours.filter((h) => h <= cal.hour).at(-1);
   if (today !== undefined) return dayStart + today * MS_PER_HOUR;
@@ -177,10 +205,11 @@ export function initVehicleLogistics(ctx: Ctx, v: VehicleState): void {
   v.onDuty = inService(ctx, v.id, now);
   v.crewSince = crewStart(ctx, v.id, now);
   v.breakTakenMs = 0;
-  if (!v.onDuty) {
+  const grounded = v.onDuty && isAir(ctx, v) && !flyable(ctx);
+  if (!v.onDuty || grounded) {
     v.status = 6;
     v.task = 'service';
-    v.service = { reason: 'offDuty', since: now };
+    v.service = { reason: grounded ? 'weather' : 'offDuty', since: now };
   }
 }
 
@@ -194,7 +223,46 @@ export function updateLogistics(ctx: Ctx): void {
     // Die Feuerwehr plant ihre Besatzungen selbst; die Leitstelle disponiert nur.
     if (!isRdUnit(ctx, v)) continue;
     if (fullHour) updateDuty(ctx, v, cal.hour);
+    if (isAir(ctx, v)) checkAir(ctx, v, fullHour);
     checkBreak(ctx, v);
+  }
+}
+
+/**
+ * Luftrettung: Bei Nebel, Sturm oder Schneefall bleibt der Hubschrauber am Boden. Zu jeder vollen
+ * Stunde kann er außerdem zu einem Einsatz außerhalb des Bereichs gerufen werden.
+ */
+function checkAir(ctx: Ctx, v: VehicleState, fullHour: boolean): void {
+  if (!v.onDuty) return;
+  if (!flyable(ctx)) {
+    if (!v.service && isAvailable(v)) goOutOfService(ctx, v, 'weather');
+    return;
+  }
+  if (v.service?.reason === 'weather') {
+    endOpenService(ctx, v, 'flyable');
+    return;
+  }
+  const air = ctx.content.bundle.settings.air;
+  if (
+    fullHour &&
+    !v.service &&
+    isAvailable(v) &&
+    v.node === v.homeNode &&
+    ctx.rng.logistics.chance(air.externalPerHour)
+  )
+    goOutOfService(ctx, v, 'external');
+}
+
+/** Außer Dienst ohne festes Ende beenden (Wetter, Dienstbeginn): wieder einsatzbereit. */
+function endOpenService(ctx: Ctx, v: VehicleState, message: RadioMessage): void {
+  delete v.service;
+  if (v.task === 'toService') {
+    // Noch auf dem Heimweg: einfach weiterfahren, aber wieder einsatzbereit.
+    v.task = 'returning';
+    setStatus(ctx, v, 1, message);
+  } else {
+    newTask(v, 'idle');
+    setStatus(ctx, v, 2, message);
   }
 }
 
@@ -233,15 +301,12 @@ function startDuty(ctx: Ctx, v: VehicleState): void {
   v.onDuty = true;
   startCrew(v, ctx.state.time);
   if (v.service?.reason !== 'offDuty') return;
-  delete v.service;
-  if (v.task === 'toService') {
-    // Noch auf dem Heimweg: einfach weiterfahren, aber wieder einsatzbereit.
-    v.task = 'returning';
-    setStatus(ctx, v, 1, 'onDuty');
-  } else {
-    newTask(v, 'idle');
-    setStatus(ctx, v, 2, 'onDuty');
+  if (isAir(ctx, v) && !flyable(ctx)) {
+    v.service.reason = 'weather';
+    radio(ctx, v, 'grounded');
+    return;
   }
+  endOpenService(ctx, v, 'onDuty');
 }
 
 function endDuty(ctx: Ctx, v: VehicleState): void {
@@ -285,7 +350,10 @@ function serviceDuration(ctx: Ctx, reason: ServiceReason): number | undefined {
       return rangeInt(rng, L.refuelMinutes) * MS_PER_MINUTE;
     case 'break':
       return L.breakMinutes * MS_PER_MINUTE;
+    case 'external':
+      return rangeInt(rng, ctx.content.bundle.settings.air.externalMinutes) * MS_PER_MINUTE;
     case 'offDuty':
+    case 'weather':
       return undefined;
   }
 }
@@ -313,6 +381,10 @@ export function onServiceDone(ctx: Ctx, v: VehicleState): void {
     goOutOfService(ctx, v, 'offDuty');
     return;
   }
+  if (isAir(ctx, v) && !flyable(ctx)) {
+    goOutOfService(ctx, v, 'weather');
+    return;
+  }
   newTask(v, 'idle');
   setStatus(ctx, v, 2, END_MESSAGE[service.reason]);
 }
@@ -333,6 +405,7 @@ export function afterMission(ctx: Ctx, v: VehicleState, disinfect: boolean): boo
   if (ctx.rng.logistics.chance(L.defectPerMission)) reason = 'defect';
   else if (disinfect) reason = 'disinfection';
   else if (!v.onDuty) reason = 'offDuty';
+  else if (isAir(ctx, v) && !flyable(ctx)) reason = 'weather';
   else if (v.fuel < FUEL_LOW) reason = 'refuel';
   if (!reason) return false;
   goOutOfService(ctx, v, reason);
@@ -398,7 +471,8 @@ export function generateOrders(ctx: Ctx): void {
   if (ctx.config.tutorial) return;
   const { hour } = toCalendar(ctx.state.time);
   const perHour = (t.ratePer100k * ctx.content.population * ctx.config.callRateFactor) / 100_000;
-  const p = (perHour * (t.hourlyProfile[hour] ?? 1) * TICK_MS) / MS_PER_HOUR;
+  const rest = isRestDay(ctx.content.bundle.holidays, ctx.state.time) ? t.restDayFactor : 1;
+  const p = (perHour * (t.hourlyProfile[hour] ?? 1) * rest * TICK_MS) / MS_PER_HOUR;
   if (ctx.rng.orders.chance(p)) createOrder(ctx);
 }
 
@@ -406,7 +480,10 @@ export function generateOrders(ctx: Ctx): void {
 export function seedPreBookedOrders(ctx: Ctx): void {
   const t = ctx.content.bundle.settings.transports;
   if (ctx.config.tutorial || ctx.content.bundle.transportOrders.length === 0) return;
-  for (let i = 0; i < t.preBooked; i++) {
+  // Am Wochenende und an Feiertagen ist kaum etwas vorbestellt.
+  const rest = isRestDay(ctx.content.bundle.holidays, ctx.state.time) ? t.restDayFactor : 1;
+  const count = Math.round(t.preBooked * rest);
+  for (let i = 0; i < count; i++) {
     const lead = rangeInt(ctx.rng.orders, t.preBookedMinutes) * MS_PER_MINUTE;
     createOrder(ctx, undefined, lead);
   }

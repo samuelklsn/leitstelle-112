@@ -4,6 +4,7 @@
 | ----------------- | ---------------------------------------------------------------------------------------------------- | --------------------- |
 | AAO               | Alarm- und Ausrückeordnung: welche Fahrzeuge zu welchem Stichwort alarmiert werden                   | `Keyword.aao`         |
 | Ausrückzeit       | Zeit von der Alarmierung bis zum Losfahren (Status 3)                                                | `turnout`             |
+| Einsatz-Regie     | Schwankung des Aufkommens in Phasen innerhalb fester Grenzen (ADR-0014)                              | `director`            |
 | Disponent/in      | Fachkraft in der Leitstelle, die Notrufe annimmt und Einsätze führt                                  | –                     |
 | Einsatz           | Ein Ereignis, zu dem Kräfte alarmiert werden                                                         | `incident`            |
 | Erstbefund        | Erste Rückmeldung der Einsatzkräfte vor Ort                                                          | `assessed`, `finding` |
@@ -19,7 +20,9 @@
 | NAW               | Notarztwagen: RTW mit Notarzt an Bord, transportiert selbst                                          | `base:naw`            |
 | NEF               | Notarzteinsatzfahrzeug: bringt den Notarzt zum Einsatzort (Rendezvous-System)                        | `base:nef`            |
 | Rendezvous-System | Notarzt und RTW fahren getrennt und treffen sich am Einsatzort                                       | –                     |
+| RTH               | Rettungshubschrauber: Notarzt aus der Luft, nur bei Tageslicht und Flugwetter                        | `base:rth`            |
 | RTW               | Rettungswagen: Notfallversorgung und Transport                                                       | `base:rtw`            |
+| Sperrung          | Gesperrter Straßenabschnitt (Baustelle, Veranstaltung), Fahrzeuge werden umgeleitet                  | `closure`             |
 | Sonderrechte      | Fahrt mit Blaulicht und Martinshorn (§ 35 und § 38 StVO)                                             | `emergency`           |
 | Sprechwunsch      | Status 5: Das Fahrzeug möchte die Leitstelle sprechen                                                | `requestDestination`  |
 | Stichwort         | Einsatzkategorie, die die AAO auslöst (z. B. „RD 2“)                                                 | `Keyword`             |
@@ -27,6 +30,7 @@
 | Tracer-Diagnose   | Zeitkritische Leitdiagnose mit Zeitfenster (Schlaganfall, ACS, Polytrauma, Reanimation)              | `tracer`              |
 | Verlegung         | Transport von einer Klinik in eine andere                                                            | `fromHospitalId`      |
 | Vorhaltung        | Welche Fahrzeuge zu welchen Zeiten besetzt sind                                                      | `service`             |
+| Weltlage          | Wetter und laufende Ereignisse (Volksfest, Grippewelle, Silvester)                                   | `WorldState`          |
 | Wahre Lage        | Die tatsächliche Situation hinter einem Notruf, zunächst verborgen                                   | `Truth`               |
 | Zielklinik        | Krankenhaus, das den Patienten aufnimmt                                                              | `hospitalId`          |
 

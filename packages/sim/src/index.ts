@@ -14,6 +14,7 @@ export {
   type SimTime,
   type CalendarTime,
   type IsoWeekday,
+  summerTimeOffset,
 } from './time';
 export { Simulation, replay, defaultConfig, contentHash } from './simulation';
 export type { VehicleSuggestion, HospitalSuggestion, Need } from './systems/operations';
@@ -28,6 +29,7 @@ export {
   type ReportView,
   type FindingView,
   type OrderView,
+  type WorldView,
   type HospitalView,
   type DepartmentView,
   type WorldInfo,

@@ -220,3 +220,25 @@
     opacity: 0.35;
   }
 }
+
+/* Weltlage in der Kopfzeile: Wetter, Feiertag, Ereignisse (ADR-0016). */
+.world {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-sans, inherit);
+}
+
+.chip {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1px 8px;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.chipWarn {
+  border-color: var(--warn);
+  color: var(--warn);
+}

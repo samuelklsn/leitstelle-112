@@ -1,7 +1,7 @@
 {
   "name": "@ls112/desktop",
   "productName": "Leitstelle 112",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "private": true,
   "description": "Leitstelle 112 – Desktop-Anwendung (Electron)",
   "license": "GPL-3.0-or-later",

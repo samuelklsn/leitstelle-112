@@ -15,4 +15,5 @@ die Issue-Vorlage „Fachliches Feedback“.
 | [zeit.md](zeit.md)                           | Spielzeit, Kalender, Schichten                       |
 | [feuerwehr.md](feuerwehr.md)                 | Feuerwachen, Stichworte, Lagemeldung, Ausbreitung    |
 | [logistik.md](logistik.md)                   | Krankentransport, Kliniken, Dienst, Pausen, Status 6 |
+| [welt.md](welt.md)                           | Wetter, Feiertage, Ereignisse, Regie, Luftrettung    |
 | [region-brakenfeld.md](region-brakenfeld.md) | Der fiktive Landkreis und seine Vorhaltung           |

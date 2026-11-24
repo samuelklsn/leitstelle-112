@@ -12,6 +12,7 @@ import {
   PROTOCOL_VERSION,
   parseClientMessage,
   type GameMode,
+  type StartPreset,
   type HostMessage,
   type HostState,
   type Query,
@@ -40,7 +41,7 @@ export interface HostOptions {
   /** Neuer Seed je Spiel (Host darf echten Zufall nutzen, der Kern nicht). */
   readonly newSeed: () => number;
   /** Spielbeginn für ein neues Spiel (Schichtbeginn heute). */
-  readonly startTime: () => number;
+  readonly startTime: (preset?: StartPreset) => number;
   readonly callRateFactor?: number;
 }
 
@@ -86,8 +87,8 @@ export class SimHost {
     port.postMessage({ type: 'state', state: this.state() });
   }
 
-  newGame(mode: GameMode): void {
-    this.sim = this.createSim(mode);
+  newGame(mode: GameMode, start?: StartPreset): void {
+    this.sim = this.createSim(mode, start);
     this.mode = mode;
     this.gameId++;
     this.lastAutosaveAt = this.sim.time;
@@ -179,11 +180,12 @@ export class SimHost {
     }
   }
 
-  private createSim(mode: GameMode): Simulation {
+  private createSim(mode: GameMode, start?: StartPreset): Simulation {
     return Simulation.create(
       defaultConfig({
         seed: this.options.newSeed() >>> 0,
-        startTime: this.options.startTime(),
+        // Das Training beginnt immer heute; sonst nach Wahl im Startbildschirm.
+        startTime: this.options.startTime(mode === 'tutorial' ? 'today' : start),
         callRateFactor: this.options.callRateFactor ?? 1,
         tutorial: mode === 'tutorial',
       }),
@@ -240,7 +242,7 @@ export class SimHost {
         port.postMessage({ type: 'reply', id: msg.id, result: this.answer(msg.query) });
         return;
       case 'game/new':
-        this.newGame(msg.mode);
+        this.newGame(msg.mode, msg.start);
         return;
       case 'save/write':
         if (!this.save('manual', msg.name)) port.postMessage({ type: 'error', code: 'saveFailed' });

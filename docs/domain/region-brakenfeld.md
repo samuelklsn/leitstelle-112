@@ -38,6 +38,7 @@ Ergebnis: rund 1.300 Kreuzungen, 2.000 Straßenstücke, 15.000 Hausadressen und
 | Rettungswache Ellerbach          | RTW 2/83-1, RTW 2/83-2, KTW 2/85-1 (Mo–Fr 7–17)                                             |
 | Notarztstandort Klinik Ellerbach | NEF 2/82-1                                                                                  |
 | Rettungswache Tannrode           | RTW 3/83-1, KTW 3/85-1 (Mo–Fr 7–15)                                                         |
+| Luftrettungsstation Hohenwarte   | RTH 1/10-1 (Tageslicht, Flugwetter; fliegt auch für Nachbarbereiche)                        |
 
 | Krankenhaus              | Versorgungsstufe | Fachabteilungen                                                                                             |
 | ------------------------ | ---------------- | ----------------------------------------------------------------------------------------------------------- |

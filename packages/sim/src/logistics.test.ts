@@ -149,6 +149,12 @@ describe('Transportaufträge', () => {
       baseContent(),
     );
     expect(tutorial.raw.incidents).toHaveLength(0);
+    // Sonntag, 29.11.2026: kaum Vorbestellungen.
+    const sunday = Simulation.create(
+      defaultConfig({ seed: 3, startTime: SHIFT_START + 5 * 24 * MS_PER_HOUR }),
+      baseContent(),
+    );
+    expect(sunday.raw.incidents.length).toBeLessThan(orders.length);
   });
 
   it('kommen tagsüber regelmäßig, nachts kaum', () => {

@@ -37,6 +37,8 @@ export type {
   CallSource,
 } from '@ls112/sim';
 export { QUESTIONS } from '@ls112/sim/types';
+// Reine Kalenderrechnung ohne Abhängigkeiten – auch im Renderer nutzbar (Sommerzeit).
+export { summerTimeOffset } from '@ls112/sim/time';
 
 /** Erlaubte Zeitraffer-Stufen. */
 export const SPEEDS = [1, 2, 5, 10] as const;
@@ -45,6 +47,10 @@ export type Speed = (typeof SPEEDS)[number];
 export const PROTOCOL_VERSION = 2;
 
 export type GameMode = 'free' | 'tutorial';
+
+/** Spielbeginn: heute oder eine Jahreszeit bzw. die Silvesternacht (ADR-0016). */
+export const START_PRESETS = ['today', 'winter', 'summer', 'newYear'] as const;
+export type StartPreset = (typeof START_PRESETS)[number];
 
 export type Query =
   | { readonly type: 'suggestVehicles'; readonly incidentId: string }
@@ -74,7 +80,7 @@ export type ClientMessage =
   | { readonly type: 'clock/setSpeed'; readonly speed: Speed }
   | { readonly type: 'sim/command'; readonly command: SimCommand }
   | { readonly type: 'query'; readonly id: number; readonly query: Query }
-  | { readonly type: 'game/new'; readonly mode: GameMode }
+  | { readonly type: 'game/new'; readonly mode: GameMode; readonly start?: StartPreset }
   | { readonly type: 'save/write'; readonly name: string }
   | { readonly type: 'save/load'; readonly id: number };
 
@@ -139,10 +145,12 @@ export function parseClientMessage(data: unknown): ClientMessage | undefined {
       const query = parseQuery(data.query);
       return isInt(data.id) && query ? { type: 'query', id: data.id, query } : undefined;
     }
-    case 'game/new':
-      return data.mode === 'free' || data.mode === 'tutorial'
-        ? { type: 'game/new', mode: data.mode }
-        : undefined;
+    case 'game/new': {
+      if (data.mode !== 'free' && data.mode !== 'tutorial') return undefined;
+      const start = START_PRESETS.find((p) => p === data.start);
+      if (data.start !== undefined && !start) return undefined;
+      return { type: 'game/new', mode: data.mode, ...(start ? { start } : {}) };
+    }
     case 'save/write':
       return typeof data.name === 'string' && data.name.trim().length > 0
         ? { type: 'save/write', name: data.name.trim().slice(0, 60) }

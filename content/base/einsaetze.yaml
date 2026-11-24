@@ -15,14 +15,14 @@ keywords:
     description: Lebensbedrohliche Erkrankung oder Verletzung, Notarzt-Indikation
     priority: 1
     emergency: true
-    aao: [{type: base:rtw, count: 1}, {type: base:nef, count: 1}]
+    aao: [{type: base:rtw, count: 1}, {type: base:nef, count: 1, alternatives: [base:rth]}]
   - id: base:rd3
     code: RD 3
     name: Reanimation
     description: Bewusstlos, keine normale Atmung – Herz-Kreislauf-Stillstand
     priority: 1
     emergency: true
-    aao: [{type: base:rtw, count: 2}, {type: base:nef, count: 1}]
+    aao: [{type: base:rtw, count: 2}, {type: base:nef, count: 1, alternatives: [base:rth]}]
   - id: base:rd0
     code: RD 0
     name: Hilfeleistung
@@ -207,3 +207,27 @@ diagnoses:
     department: innere
     onSceneMinutes: [15, 25]
     reports: [{key: fire_smoke, weight: 1}]
+  # Wetter- und ereignisabhängige Krankheitsbilder (ADR-0016): selten, bis die Lage sie häuft.
+  - id: base:exsiccosis
+    name: Exsikkose / Hitzeerschöpfung
+    weight: 1
+    ageRange: [70, 98]
+    naca: [2, 3]
+    keyword: base:rd1
+    doctorNeeded: 0.1
+    transport: 0.85
+    department: innere
+    onSceneMinutes: [15, 25]
+    reports: [{key: confused, weight: 4}, {key: unwell, weight: 4}, {key: helpless_person, weight: 2}]
+  - id: base:firework-injury
+    name: Verletzung durch Feuerwerkskörper
+    weight: 0.02
+    ageRange: [12, 45]
+    naca: [2, 4]
+    keyword: base:rd1
+    doctorNeeded: 0.25
+    transport: 0.95
+    department: unfallchirurgie
+    outdoor: true
+    onSceneMinutes: [10, 20]
+    reports: [{key: firework, weight: 1}]

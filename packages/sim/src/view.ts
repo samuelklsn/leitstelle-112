@@ -4,6 +4,7 @@
  * bis die Einsatzkräfte sie vor Ort erkennen (ADR-0014).
  */
 import type { ContentBundle } from '@ls112/content';
+import { holidayName } from './calendar';
 import type { Simulation } from './simulation';
 import { toCalendar, type CalendarTime, type SimTime } from './time';
 import {
@@ -147,6 +148,21 @@ export interface HospitalView {
   readonly departments: readonly DepartmentView[];
 }
 
+/** Weltlage für die Kopfzeile und die Karte (ADR-0016). */
+export interface WorldView {
+  readonly weatherId: string;
+  readonly temperature: number;
+  /** Name des heutigen Feiertags. */
+  readonly holiday?: string;
+  readonly events: readonly {
+    readonly key: string;
+    readonly eventId: string;
+    readonly until: SimTime;
+    readonly townId?: string;
+    readonly closure?: { readonly streetId: number; readonly x: number; readonly y: number };
+  }[];
+}
+
 export interface GameView {
   readonly time: SimTime;
   readonly calendar: CalendarTime;
@@ -155,6 +171,7 @@ export interface GameView {
   readonly incidents: readonly IncidentView[];
   readonly vehicles: readonly VehicleView[];
   readonly hospitals: readonly HospitalView[];
+  readonly world: WorldView;
   readonly shift: ShiftStats;
   readonly lastShift: ShiftStats | null;
 }
@@ -247,8 +264,28 @@ export function buildView(sim: Simulation): GameView {
         }),
       };
     }),
+    world: worldView(sim),
     shift: s.shift,
     lastShift: s.shiftHistory.at(-1) ?? null,
+  };
+}
+
+function worldView(sim: Simulation): WorldView {
+  const w = sim.raw.world;
+  const holiday = holidayName(sim.content.bundle.holidays, sim.raw.time);
+  return {
+    weatherId: w.weatherId,
+    temperature: w.temperature,
+    ...(holiday !== undefined ? { holiday } : {}),
+    events: w.events.map((e) => ({
+      key: e.key,
+      eventId: e.eventId,
+      until: e.until,
+      ...(e.townId !== undefined ? { townId: e.townId } : {}),
+      ...(e.closure
+        ? { closure: { streetId: e.closure.streetId, x: e.closure.x, y: e.closure.y } }
+        : {}),
+    })),
   };
 }
 
@@ -370,6 +407,8 @@ export interface WorldInfo {
   readonly diagnoses: readonly { id: string; name: string }[];
   readonly fireScenarios: readonly { id: string; name: string; kind: 'brand' | 'th' }[];
   readonly transportOrders: readonly { id: string; name: string }[];
+  readonly weather: readonly { id: string; name: string; symbol: string; flyable: boolean }[];
+  readonly worldEvents: readonly { id: string; name: string }[];
   readonly hilfsfrist: ContentBundle['settings']['hilfsfrist'];
   readonly shift: ContentBundle['settings']['shift'];
 }
@@ -400,6 +439,13 @@ export function buildWorldInfo(sim: Simulation): WorldInfo {
     diagnoses: c.diagnoses.map((d) => ({ id: d.id, name: d.name })),
     fireScenarios: c.fireScenarios.map((s) => ({ id: s.id, name: s.name, kind: s.kind })),
     transportOrders: c.transportOrders.map((o) => ({ id: o.id, name: o.name })),
+    weather: c.weather.map((w) => ({
+      id: w.id,
+      name: w.name,
+      symbol: w.symbol,
+      flyable: w.flyable,
+    })),
+    worldEvents: c.worldEvents.map((e) => ({ id: e.id, name: e.name })),
     hilfsfrist: c.settings.hilfsfrist,
     shift: c.settings.shift,
   };

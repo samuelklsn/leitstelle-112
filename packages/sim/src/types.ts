@@ -12,6 +12,7 @@ export const RNG_STREAMS = [
   'logistics',
   'hospitals',
   'orders',
+  'world',
 ] as const;
 export type RngStreamName = (typeof RNG_STREAMS)[number];
 
@@ -209,7 +210,16 @@ export type VehicleTask =
   | 'service';
 
 /** Warum ein Fahrzeug außer Dienst ist. */
-export type ServiceReason = 'disinfection' | 'defect' | 'refuel' | 'break' | 'offDuty';
+export type ServiceReason =
+  | 'disinfection'
+  | 'defect'
+  | 'refuel'
+  | 'break'
+  | 'offDuty'
+  /** Luftrettung: kein Flugwetter. */
+  | 'weather'
+  /** Luftrettung: Einsatz außerhalb des Leitstellenbereichs. */
+  | 'external';
 
 export interface RouteState {
   readonly nodes: readonly number[];
@@ -248,6 +258,33 @@ export interface VehicleState {
   breakRequestedAt?: SimTime;
   /** Dienstende während eines Einsatzes: Überstunden laufen seit … */
   overtimeSince?: SimTime;
+}
+
+/** Laufendes Ereignis der Weltlage (ADR-0016). */
+export interface WorldEventState {
+  readonly key: string;
+  readonly eventId: string;
+  readonly startedAt: SimTime;
+  readonly until: SimTime;
+  readonly townId?: string;
+  /** Gesperrter Straßenabschnitt (beide Fahrtrichtungen). */
+  readonly closure?: {
+    readonly edges: readonly number[];
+    readonly streetId: number;
+    readonly x: number;
+    readonly y: number;
+  };
+}
+
+/** Wetter, Ereignisse und Einsatz-Regie (ADR-0016). */
+export interface WorldState {
+  weatherId: string;
+  /** Temperatur in °C. */
+  temperature: number;
+  weatherUntil: SimTime;
+  events: WorldEventState[];
+  /** Einsatz-Regie: Faktor wandert in der Phase linear von `from` nach `to`. */
+  director: { from: number; to: number; phaseStart: SimTime; phaseEnd: SimTime };
 }
 
 /** Aufnahmebereitschaft einer Klinik je Fachabteilung (ADR-0015). */
@@ -303,6 +340,9 @@ export type ScheduledPayload =
   | { readonly kind: 'hospital/update' }
   | { readonly kind: 'hospital/reopen'; readonly hospitalId: string; readonly department: string }
   | { readonly kind: 'order/expire'; readonly incidentId: string }
+  | { readonly kind: 'world/weather' }
+  | { readonly kind: 'world/director' }
+  | { readonly kind: 'world/eventEnd'; readonly key: string }
   | { readonly kind: 'incident/callbackDone'; readonly incidentId: string }
   | { readonly kind: 'shift/end' }
   | { readonly kind: 'fire/escalate'; readonly callId: string }
@@ -317,6 +357,7 @@ export interface SimState {
   incidents: IncidentState[];
   vehicles: VehicleState[];
   hospitals: Record<string, HospitalState>;
+  world: WorldState;
   shift: ShiftStats;
   shiftHistory: ShiftStats[];
 }
@@ -422,6 +463,15 @@ export type SimEvent =
       readonly open: boolean;
       /** Abmeldung wegen Belegung oder Geräteausfall. */
       readonly reason: 'full' | 'closure';
+    }
+  | { readonly type: 'world/weather'; readonly at: SimTime; readonly weatherId: string }
+  | {
+      readonly type: 'world/event';
+      readonly at: SimTime;
+      readonly eventId: string;
+      readonly started: boolean;
+      readonly townId?: string;
+      readonly streetId?: number;
     };
 
 export type RadioMessage =
@@ -456,7 +506,11 @@ export type RadioMessage =
   | 'breakStart'
   | 'breakEnd'
   | 'offDuty'
-  | 'onDuty';
+  | 'onDuty'
+  | 'grounded'
+  | 'flyable'
+  | 'externalMission'
+  | 'externalBack';
 
 export interface LoggedCommand {
   /** Tick, nach dem der Befehl angewendet wurde (Spielzeit dieses Ticks). */
@@ -465,7 +519,7 @@ export interface LoggedCommand {
 }
 
 /** Format-Version des Snapshots – bei inkompatiblen Änderungen erhöhen. */
-export const SNAPSHOT_VERSION = 3;
+export const SNAPSHOT_VERSION = 4;
 
 export interface SimSnapshot {
   readonly version: typeof SNAPSHOT_VERSION;

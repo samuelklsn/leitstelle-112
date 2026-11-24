@@ -13,6 +13,9 @@ import {
  */
 export class Router {
   private readonly cache = new Map<string, Uint32Array>();
+  /** Gesperrte Kanten (Baustellen, Veranstaltungen) und ihr Zeitfaktor. */
+  private penalties: readonly number[] = [];
+  private penaltyFactor = 1;
 
   constructor(
     readonly graph: RoadGraph,
@@ -26,9 +29,30 @@ export class Router {
     let times = this.cache.get(key);
     if (!times) {
       times = computeEdgeTimes(this.graph, this.model, ctx);
+      for (const e of this.penalties) {
+        const t = times[e];
+        if (t !== undefined) times[e] = Math.min(0xffffffff, Math.round(t * this.penaltyFactor));
+      }
       this.cache.set(key, times);
     }
     return times;
+  }
+
+  /**
+   * Sperrungen: Diese Kanten sind um `factor` langsamer – Einsatzfahrzeuge kommen mit Absprache
+   * notfalls noch durch, nehmen aber in aller Regel den Umweg. Leert den Cache bei Änderung.
+   */
+  setPenalties(edges: readonly number[], factor: number): void {
+    const sorted = [...edges].sort((a, b) => a - b);
+    if (
+      factor === this.penaltyFactor &&
+      sorted.length === this.penalties.length &&
+      sorted.every((e, i) => e === this.penalties[i])
+    )
+      return;
+    this.penalties = sorted;
+    this.penaltyFactor = factor;
+    this.cache.clear();
   }
 
   route(from: number, to: number, ctx: TravelContext): Route | undefined {

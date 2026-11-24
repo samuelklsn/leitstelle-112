@@ -104,20 +104,24 @@ export const VehicleType = z.object({
    * und zählt für die Hilfsfrist; `krankentransport` (KTW) und `intensiv` (ITW) für Aufträge.
    */
   transportClass: z.enum(['notfall', 'krankentransport', 'intensiv']).optional(),
+  /** Luftrettungsmittel (RTH): fliegt Luftlinie, nur bei Tageslicht und Flugwetter. */
+  air: z.boolean().default(false),
 });
 
 /** Dienstzeit eines Fahrzeugs (volle Stunden, Ortszeit); ohne Angabe rund um die Uhr. */
 export const Service = z.object({
-  from: z.number().int().min(0).max(23),
-  to: z.number().int().min(1).max(24),
-  /** Nur montags bis freitags besetzt. */
+  from: z.number().int().min(0).max(23).default(0),
+  to: z.number().int().min(1).max(24).default(24),
+  /** Nur montags bis freitags besetzt (nicht an Feiertagen). */
   weekdaysOnly: z.boolean().default(false),
+  /** Nur bei Tageslicht (Luftrettung) – Zeiten je Monat aus den Einstellungen. */
+  daylight: z.boolean().default(false),
 });
 
 export const Station = z.object({
   id: Id,
   name: z.string(),
-  kind: z.enum(['rettungswache', 'notarztstandort', 'feuerwache']),
+  kind: z.enum(['rettungswache', 'notarztstandort', 'feuerwache', 'luftrettung']),
   position: Point,
   /**
    * Eigene Ausrückzeit (Sekunden) – z. B. Freiwillige Feuerwehr: Alarm über Meldeempfänger,
@@ -272,6 +276,79 @@ export const FireScenario = z.object({
   escalation: z.object({ after: Range, to: Id }).optional(),
 });
 
+// ---------------------------------------------------------------- Welt (ADR-0016)
+
+/** Faktoren je Krankheitsbild bzw. Feuerwehrlage (1 = unverändert). */
+const Multipliers = z.record(Id, z.number().nonnegative()).default({});
+
+/** Wetterlage mit ihren Auswirkungen auf Fahrzeiten, Aufkommen und Einsatzmix. */
+export const Weather = z.object({
+  id: Id,
+  name: z.string(),
+  /** Kurzzeichen für die Oberfläche. */
+  symbol: z.string().max(4),
+  /** Faktor auf die Fahrgeschwindigkeit (1 = trocken). */
+  speed: z.number().positive().max(1),
+  /** Faktor auf das Notrufaufkommen. */
+  calls: z.number().positive(),
+  /** Hubschrauber dürfen fliegen. */
+  flyable: z.boolean(),
+  /** Temperaturgrenzen der Wetterlage (Hitze ist heiß, Glätte kalt), °C. */
+  minTemperature: z.number().optional(),
+  maxTemperature: z.number().optional(),
+  diagnoses: Multipliers,
+  fireScenarios: Multipliers,
+});
+
+/** Klima je Monat: Temperaturbereich und Häufigkeit der Wetterlagen. */
+export const Climate = z.object({
+  month: z.number().int().min(1).max(12),
+  /** Temperaturbereich in °C (auch unter null). */
+  temperature: z.tuple([z.number(), z.number()]),
+  weather: z.record(Id, z.number().nonnegative()),
+});
+
+/**
+ * Ereignis der Weltlage (Volksfest, Grippewelle, Baustelle, Silvester). Entweder an einem festen
+ * Datum oder zufällig in passenden Monaten und an passenden Wochentagen.
+ */
+export const WorldEvent = z.object({
+  id: Id,
+  name: z.string(),
+  /** Festes Datum mit Startstunde (z. B. Silvester 18 Uhr). */
+  date: z
+    .object({
+      month: z.number().int().min(1).max(12),
+      day: z.number().int().min(1).max(31),
+      hour: z.number().int().min(0).max(23),
+    })
+    .optional(),
+  months: z.array(z.number().int().min(1).max(12)).default([]),
+  weekdays: z.array(z.number().int().min(1).max(7)).default([]),
+  /** Wahrscheinlichkeit, dass das Ereignis an einem passenden Tag beginnt. */
+  perDay: Probability.default(0),
+  startHour: Range.default([0, 23]),
+  durationHours: Range,
+  /** Findet in einem Ort statt; dorthin geht ein Teil der Notrufe. */
+  town: z.boolean().default(false),
+  minPopulation: z.number().nonnegative().default(0),
+  localShare: Probability.default(0),
+  calls: z.number().positive().default(1),
+  diagnoses: Multipliers,
+  fireScenarios: Multipliers,
+  /** Sperrt einen Straßenabschnitt (Baustelle, Veranstaltung). */
+  closure: z.boolean().default(false),
+});
+
+/** Gesetzlicher Feiertag: festes Datum oder Abstand zum Ostersonntag. */
+export const Holiday = z.object({
+  name: z.string(),
+  date: z
+    .object({ month: z.number().int().min(1).max(12), day: z.number().int().min(1).max(31) })
+    .optional(),
+  easterOffset: z.number().int().min(-60).max(70).optional(),
+});
+
 // ---------------------------------------------------------------- Einstellungen
 
 export const Settings = z.object({
@@ -291,6 +368,8 @@ export const Settings = z.object({
     /** Notrufe pro Stunde je 100.000 Einwohner im Tagesmittel. */
     ratePer100k: z.number().positive(),
     hourlyProfile: z.array(z.number().nonnegative()).length(24),
+    /** Faktor je Wochentag (Montag … Sonntag); Feiertage zählen als Sonntag. */
+    weekdayFactor: z.array(z.number().positive()).length(7).default([1, 1, 1, 1, 1, 1, 1]),
     abandonAfterSeconds: Range,
     /** Antwortzeit des Anrufers je Frage der Notrufabfrage (Sekunden). */
     answerSeconds: Range.default([3, 8]),
@@ -329,6 +408,8 @@ export const Settings = z.object({
       /** Aufträge je Stunde und 100.000 Einwohner im Tagesmittel. */
       ratePer100k: z.number().nonnegative(),
       hourlyProfile: z.array(z.number().nonnegative()).length(24),
+      /** Faktor an Wochenenden und Feiertagen (Praxen und Dialysen arbeiten kaum). */
+      restDayFactor: z.number().nonnegative().default(1),
       /** Pünktlich ist, wer spätestens so viele Minuten nach dem Termin abholt. */
       toleranceMinutes: z.number().positive(),
       /** Am Vortag bestellte Aufträge, die zum Spielbeginn schon in der Liste stehen. */
@@ -340,6 +421,7 @@ export const Settings = z.object({
       ratePer100k: 0,
       hourlyProfile: Array.from({ length: 24 }, () => 1),
       toleranceMinutes: 15,
+      restDayFactor: 1,
       preBooked: 0,
       preBookedMinutes: [20, 180],
     }),
@@ -381,6 +463,36 @@ export const Settings = z.object({
       closurePerDay: 0,
       closureHours: [1, 3],
     }),
+  /** Wetterwechsel (ADR-0016): Dauer einer Wetterlage, Neigung zum Beibehalten. */
+  weather: z
+    .object({ changeHours: Range, persistence: Probability })
+    .default({ changeHours: [3, 8], persistence: 0.4 }),
+  /**
+   * Einsatz-Regie (ADR-0014, Punkt 8): Das Aufkommen schwankt in Phasen um höchstens ± amplitude
+   * um die Basisrate – Ruhe und Spitzen wechseln, ohne Unrealistisches zu erfinden.
+   */
+  director: z
+    .object({ amplitude: z.number().min(0).max(0.5), phaseMinutes: Range })
+    .default({ amplitude: 0, phaseMinutes: [30, 90] }),
+  /** Tageslicht je Monat (Januar … Dezember): Stunden [hell ab, dunkel ab], Ortszeit. */
+  daylight: z.array(Range).length(12).optional(),
+  /** Luftrettung: Reisegeschwindigkeit, Start- und Landezeit. */
+  air: z
+    .object({
+      speedKmh: z.number().positive(),
+      liftoffSeconds: Range,
+      landingSeconds: Range,
+      /** Wahrscheinlichkeit je Stunde für einen Einsatz außerhalb des Bereichs, Dauer (Min.). */
+      externalPerHour: Probability.default(0),
+      externalMinutes: Range.default([45, 90]),
+    })
+    .default({
+      speedKmh: 220,
+      liftoffSeconds: [120, 240],
+      landingSeconds: [120, 180],
+      externalPerHour: 0,
+      externalMinutes: [45, 90],
+    }),
   caller: z.object({
     /** Wahrscheinlichkeiten für ungenaue Adressangaben. */
     wrongHouseNumber: Probability,
@@ -405,6 +517,10 @@ export type FireScenario = z.infer<typeof FireScenario>;
 export type UnitNeed = z.infer<typeof UnitNeed>;
 export type TransportOrder = z.infer<typeof TransportOrder>;
 export type Service = z.infer<typeof Service>;
+export type Weather = z.infer<typeof Weather>;
+export type Climate = z.infer<typeof Climate>;
+export type WorldEvent = z.infer<typeof WorldEvent>;
+export type Holiday = z.infer<typeof Holiday>;
 
 /** Vollständiger, validierter Inhaltsstand, den die Simulation erhält. */
 export interface ContentBundle {
@@ -416,5 +532,9 @@ export interface ContentBundle {
   readonly diagnoses: readonly Diagnosis[];
   readonly fireScenarios: readonly FireScenario[];
   readonly transportOrders: readonly TransportOrder[];
+  readonly weather: readonly Weather[];
+  readonly climate: readonly Climate[];
+  readonly worldEvents: readonly WorldEvent[];
+  readonly holidays: readonly Holiday[];
   readonly settings: Settings;
 }

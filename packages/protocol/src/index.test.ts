@@ -35,6 +35,12 @@ describe('parseClientMessage', () => {
   it('lehnt ungültige Werte ab', () => {
     expect(parseClientMessage({ type: 'clock/setSpeed', speed: 3 })).toBeUndefined();
     expect(parseClientMessage({ type: 'game/new', mode: 'hard' })).toBeUndefined();
+    expect(parseClientMessage({ type: 'game/new', mode: 'free', start: 'summer' })).toEqual({
+      type: 'game/new',
+      mode: 'free',
+      start: 'summer',
+    });
+    expect(parseClientMessage({ type: 'game/new', mode: 'free', start: 'mars' })).toBeUndefined();
     expect(parseClientMessage({ type: 'save/write', name: '   ' })).toBeUndefined();
     expect(parseClientMessage({ type: 'save/load', id: -1 })).toBeUndefined();
     expect(parseClientMessage({ type: 'query', id: 1, query: { type: 'x' } })).toBeUndefined();

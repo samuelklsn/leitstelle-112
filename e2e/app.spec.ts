@@ -66,8 +66,9 @@ test('Startbildschirm und Tutorial', async () => {
   await page.getByTestId('start-tutorial').click();
   await expect(page.getByTestId('tutorial-coach')).toBeVisible();
   await expect(page.getByTestId('start-screen')).toBeHidden();
-  // 13 Rettungsdienst- (RTW, NEF, KTW, ITW) und 15 Feuerwehrfahrzeuge.
-  await expect(page.getByTestId('vehicle-row')).toHaveCount(28);
+  // 13 Rettungsdienst- (RTW, NEF, KTW, ITW), ein Hubschrauber und 15 Feuerwehrfahrzeuge.
+  await expect(page.getByTestId('vehicle-row')).toHaveCount(29);
+  await expect(page.getByTestId('weather-chip')).toBeVisible();
 });
 
 test('Takt, Pause und Zeitraffer', async () => {
@@ -152,10 +153,13 @@ test('Auswertung zeigt die laufende Schicht', async () => {
 test('Logistik: Transportaufträge, Kliniken und Status 6', async () => {
   // Freies Spiel: Zum Schichtbeginn liegen vorbestellte Krankentransporte vor.
   await page.getByTestId('menu-new').click();
+  // Sommerbeginn: anderes Wetter und andere Lage als im Training (ADR-0016).
+  await page.getByTestId('start-preset').selectOption('summer');
   await page.getByTestId('start-free').click();
   await expect(page.getByTestId('start-screen')).toBeHidden();
   await page.getByTestId('tab-orders').click();
-  await expect(page.getByTestId('order-row')).toHaveCount(5);
+  // Vorbestellte Aufträge: werktags fünf, am Wochenende weniger.
+  await expect(page.getByTestId('order-row').first()).toBeVisible();
   await page.getByTestId('order-row').first().getByRole('button').click();
   await expect(page.getByTestId('dispatch-dialog')).toBeVisible();
   await page.getByTestId('alarm').click();

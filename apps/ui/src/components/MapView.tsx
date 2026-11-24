@@ -103,6 +103,8 @@ export function MapView() {
   const mapRef = useRef<MapLibre | null>(null);
   const vehicles = useRef(new Map<string, Tween>());
   const incidents = useRef(new Map<string, { marker: Marker; el: HTMLDivElement }>());
+  /** Sperrungen (Baustellen, Veranstaltungen) als Marker je Ereignis. */
+  const closures = useRef(new Map<string, Marker>());
 
   // Karte und statische Marker (Orte, Wachen, Kliniken) einmal je Welt anlegen.
   useEffect(() => {
@@ -142,6 +144,15 @@ export function MapView() {
     }
     for (const s of world.stations) {
       const doctor = s.kind === 'notarztstandort';
+      if (s.kind === 'luftrettung') {
+        add(
+          L.toLonLat(s.position[0], s.position[1]),
+          css.airStation ?? '',
+          'LR',
+          `${s.name} (${t('map.airStation')})`,
+        );
+        continue;
+      }
       if (s.kind === 'feuerwache') {
         add(
           L.toLonLat(s.position[0], s.position[1]),
@@ -183,10 +194,12 @@ export function MapView() {
 
     const vehicleMap = vehicles.current;
     const incidentMap = incidents.current;
+    const closureMap = closures.current;
     return () => {
       cancelAnimationFrame(frame);
       vehicleMap.clear();
       incidentMap.clear();
+      closureMap.clear();
       map.remove();
       mapRef.current = null;
     };
@@ -203,6 +216,32 @@ export function MapView() {
       map,
       host.view.incidents.filter((i) => i.status !== 'closed'),
     );
+    syncClosures(map);
+
+    function syncClosures(m: MapLibre) {
+      const seen = new Set<string>();
+      for (const e of host?.view.world.events ?? []) {
+        if (!e.closure) continue;
+        seen.add(e.key);
+        if (closures.current.has(e.key)) continue;
+        const { outer, inner } = markerElement();
+        inner.className = css.closure ?? '';
+        inner.textContent = '⛔';
+        const name = world?.worldEvents.find((x) => x.id === e.eventId)?.name ?? '';
+        inner.title = `${name}: ${L.streetName(e.closure.streetId)}`;
+        inner.dataset.testid = 'closure-marker';
+        const marker = new Marker({ element: outer })
+          .setLngLat(L.toLonLat(e.closure.x, e.closure.y))
+          .addTo(m);
+        closures.current.set(e.key, marker);
+      }
+      for (const [key, marker] of closures.current) {
+        if (!seen.has(key)) {
+          marker.remove();
+          closures.current.delete(key);
+        }
+      }
+    }
 
     function updateVehicle(m: MapLibre, v: VehicleView, at: number, label: string) {
       let tw = vehicles.current.get(v.id);

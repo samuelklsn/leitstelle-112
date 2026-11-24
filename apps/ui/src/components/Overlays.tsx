@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { SaveInfo, ShiftStats } from '@ls112/protocol';
+import { START_PRESETS, type SaveInfo, type ShiftStats, type StartPreset } from '@ls112/protocol';
 import { formatDuration } from '../format';
 import { lookup } from '../lookup';
 import { useSim } from '../sim-store';
@@ -44,6 +44,7 @@ export function StartScreen() {
   const world = useSim((s) => s.world);
   const newGame = useSim((s) => s.newGame);
   const openDialog = useSim((s) => s.openDialog);
+  const [start, setStart] = useState<StartPreset>('today');
   return (
     <div className={ov.start} data-testid="start-screen">
       <div className={ov.startInner}>
@@ -62,7 +63,7 @@ export function StartScreen() {
             type="button"
             className={ov.card}
             onClick={() => {
-              newGame('free');
+              newGame('free', start);
             }}
             data-testid="start-free"
             autoFocus
@@ -92,6 +93,23 @@ export function StartScreen() {
             <span>{t('start.loadText')}</span>
           </button>
         </div>
+        <label className={ov.startPreset}>
+          {t('start.when')}
+          <select
+            value={start}
+            onChange={(e) => {
+              const v = START_PRESETS.find((p) => p === e.target.value);
+              if (v) setStart(v);
+            }}
+            data-testid="start-preset"
+          >
+            {START_PRESETS.map((p) => (
+              <option key={p} value={p}>
+                {t(`start.preset.${p}`)}
+              </option>
+            ))}
+          </select>
+        </label>
         <p className={ov.disclaimer}>{t('start.disclaimer')}</p>
       </div>
     </div>

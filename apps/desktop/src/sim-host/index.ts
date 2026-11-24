@@ -7,7 +7,7 @@ import { performance } from 'node:perf_hooks';
 import type { MessagePortMain } from 'electron';
 import { loadContentFromDirs } from '@ls112/content/node';
 import { simTimeFrom } from '@ls112/sim';
-import type { HostMessage } from '@ls112/protocol';
+import type { HostMessage, StartPreset } from '@ls112/protocol';
 import { createLogger } from '../shared/logger';
 import { writeCrashReport } from '../shared/crash';
 import { SimHost, type ClientPort } from './host';
@@ -30,17 +30,25 @@ try {
   log.error({ err: error }, 'Spielstand-Datenbank nicht verfügbar – Speichern deaktiviert');
 }
 
-/** Spielbeginn: heutiger Schichtbeginn (Ortszeit). Der Host darf die Systemzeit lesen. */
-function shiftStart(): number {
+/**
+ * Spielbeginn (Ortszeit): heutiger Schichtbeginn oder der nächste passende Tag einer Jahreszeit.
+ * Die Silvesternacht beginnt mit dem Nachtdienst um 19 Uhr. Der Host darf die Systemzeit lesen.
+ */
+function shiftStart(preset: StartPreset = 'today'): number {
   const now = new Date();
-  return simTimeFrom(
-    now.getFullYear(),
-    now.getMonth() + 1,
-    now.getDate(),
-    content.settings.shift.startHour,
-    0,
-    0,
-  );
+  const year = now.getFullYear();
+  const hour = content.settings.shift.startHour;
+  const month = now.getMonth() + 1;
+  switch (preset) {
+    case 'winter':
+      return simTimeFrom(month === 1 && now.getDate() <= 20 ? year : year + 1, 1, 20, hour);
+    case 'summer':
+      return simTimeFrom(month <= 7 ? year : year + 1, 7, 18, hour);
+    case 'newYear':
+      return simTimeFrom(year, 12, 31, 19);
+    case 'today':
+      return simTimeFrom(year, month, now.getDate(), hour);
+  }
 }
 
 const fixedSeed = env.LS112_SEED ? Number(env.LS112_SEED) >>> 0 : undefined;

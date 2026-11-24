@@ -11,6 +11,7 @@ import {
   type SimCommand,
   type SimEvent,
   type Speed,
+  type StartPreset,
   type WorldInfo,
 } from '@ls112/protocol';
 
@@ -46,7 +47,7 @@ interface SimStore {
   query: (query: Query) => Promise<QueryResult>;
   togglePause: () => void;
   setSpeed: (speed: Speed) => void;
-  newGame: (mode: GameMode) => void;
+  newGame: (mode: GameMode, start?: StartPreset) => void;
   openDialog: (dialog: Dialog | null) => void;
   selectIncident: (id: string | null) => void;
   focusVehicle: (id: string | null) => void;
@@ -91,8 +92,8 @@ export const useSim = create<SimStore>((set, get) => ({
   setSpeed: (speed) => {
     get().send({ type: 'clock/setSpeed', speed });
   },
-  newGame: (mode) => {
-    get().send({ type: 'game/new', mode });
+  newGame: (mode, start) => {
+    get().send({ type: 'game/new', mode, ...(start ? { start } : {}) });
     set({ events: [], dialog: null, selectedIncidentId: null });
   },
   openDialog: (dialog) => {
