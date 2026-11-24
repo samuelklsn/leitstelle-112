@@ -268,7 +268,7 @@ describe('Simulation – Determinismus', () => {
       .toMatchInlineSnapshot(`
         {
           "calls": 8,
-          "hash": "d4f0cfd37511635a",
+          "hash": "e86b5fe1afd326a5",
           "incidents": 6,
           "tick": 7200,
         }
@@ -298,7 +298,9 @@ describe('Simulation – Statistik', () => {
     expect(events.some((e) => e.type === 'shift/ended')).toBe(true);
     expect(sim.raw.shiftHistory).toHaveLength(1);
     expect(sim.raw.shift.index).toBe(2);
-    expect(Object.keys(sim.raw.shiftHistory[0]?.vehicleBusyMs ?? {})).toHaveLength(7);
+    expect(Object.keys(sim.raw.shiftHistory[0]?.vehicleBusyMs ?? {})).toHaveLength(
+      sim.raw.vehicles.length,
+    );
   });
 });
 
@@ -352,7 +354,7 @@ describe('Konfiguration', () => {
 
   it('startet mit allen Fahrzeugen in Status 2 auf ihrer Wache', () => {
     const sim = newSim();
-    expect(sim.raw.vehicles).toHaveLength(7);
+    expect(sim.raw.vehicles).toHaveLength(22);
     expect(sim.raw.vehicles.every((v) => v.status === 2)).toBe(true);
   });
 });
@@ -366,7 +368,10 @@ describe('Statische Weltdaten', () => {
     expect(info.addresses.some((a) => a.kind === 'road' && a.toTownId !== undefined)).toBe(true);
     expect(info.streets.length).toBe(sim.world.streets.length);
     expect(info.map.roads.features.length).toBe(sim.world.segments.length);
-    expect(info.keywords.map((k) => k.code)).toEqual(['RD 1', 'RD 2', 'RD 3', 'RD 0']);
+    expect(info.keywords.map((k) => k.code)).toEqual(
+      expect.arrayContaining(['RD 1', 'RD 2', 'RD 3', 'RD 0', 'B 1', 'B 2', 'TH 2']),
+    );
+    expect(info.fireScenarios.length).toBeGreaterThanOrEqual(8);
     expect(info.diagnoses.every((d) => d.name.length > 0)).toBe(true);
     // Keine verborgene Wahrheit in den statischen Daten.
     expect(JSON.stringify(info)).not.toContain('needsDoctor');
