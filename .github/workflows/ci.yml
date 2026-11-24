@@ -49,6 +49,9 @@ jobs:
       - name: Unit- und Property-Tests mit Coverage
         run: pnpm coverage
 
+      - name: Performance-Budget (300 Fahrzeuge, 100 Einsätze)
+        run: pnpm test:perf
+
       - name: Build
         run: pnpm build
 

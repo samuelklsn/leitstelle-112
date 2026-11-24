@@ -1,0 +1,194 @@
+# Eigenes Stichwortschema und Krankheitsbilder („wahre Lage") für den Rettungsdienst.
+# Häufigkeiten, NACA-Bereiche und Zeiten sind Annahmen für die Spielbalance, siehe
+# docs/domain/einsaetze.md. Anrufer schildern die Lage über `reports` – nicht immer richtig.
+keywords:
+  - id: base:rd1
+    code: RD 1
+    name: Notfall
+    description: Akute Erkrankung oder Verletzung ohne erkennbare Notarzt-Indikation
+    priority: 2
+    emergency: true
+    aao: [{type: base:rtw, count: 1}]
+  - id: base:rd2
+    code: RD 2
+    name: Notfall mit Notarzt
+    description: Lebensbedrohliche Erkrankung oder Verletzung, Notarzt-Indikation
+    priority: 1
+    emergency: true
+    aao: [{type: base:rtw, count: 1}, {type: base:nef, count: 1}]
+  - id: base:rd3
+    code: RD 3
+    name: Reanimation
+    description: Bewusstlos, keine normale Atmung – Herz-Kreislauf-Stillstand
+    priority: 1
+    emergency: true
+    aao: [{type: base:rtw, count: 2}, {type: base:nef, count: 1}]
+  - id: base:rd0
+    code: RD 0
+    name: Hilfeleistung
+    description: Nicht zeitkritisch, Anfahrt ohne Sonderrechte
+    priority: 3
+    emergency: false
+    aao: [{type: base:rtw, count: 1}]
+
+diagnoses:
+  - id: base:acs
+    name: Akutes Koronarsyndrom
+    weight: 9
+    ageRange: [40, 92]
+    naca: [3, 5]
+    tracer: acs
+    keyword: base:rd2
+    doctorNeeded: 0.8
+    transport: 1
+    department: herzkatheter
+    onSceneMinutes: [15, 25]
+    reports: [{key: chest_pain, weight: 8}, {key: unwell, weight: 2}]
+  - id: base:stroke
+    name: Schlaganfall
+    weight: 7
+    ageRange: [50, 95]
+    naca: [3, 4]
+    tracer: stroke
+    keyword: base:rd1
+    doctorNeeded: 0.25
+    transport: 1
+    department: stroke
+    onSceneMinutes: [12, 20]
+    reports: [{key: stroke_signs, weight: 6}, {key: confused, weight: 3}, {key: fall, weight: 1}]
+  - id: base:dyspnea
+    name: Atemnot (COPD, Asthma, Herzinsuffizienz)
+    weight: 9
+    ageRange: [25, 95]
+    naca: [3, 4]
+    keyword: base:rd1
+    doctorNeeded: 0.4
+    transport: 0.9
+    department: innere
+    onSceneMinutes: [15, 25]
+    reports: [{key: breathing, weight: 9}, {key: unwell, weight: 1}]
+  - id: base:fall
+    name: Häuslicher Sturz
+    weight: 14
+    ageRange: [65, 99]
+    naca: [2, 3]
+    keyword: base:rd1
+    doctorNeeded: 0.05
+    transport: 0.7
+    department: unfallchirurgie
+    onSceneMinutes: [15, 30]
+    reports: [{key: fall, weight: 9}, {key: helpless_person, weight: 2}]
+  - id: base:hypoglycemia
+    name: Unterzuckerung
+    weight: 5
+    ageRange: [20, 90]
+    naca: [3, 4]
+    keyword: base:rd2
+    doctorNeeded: 0.2
+    transport: 0.35
+    department: innere
+    onSceneMinutes: [15, 25]
+    reports: [{key: unconscious, weight: 5}, {key: confused, weight: 4}]
+  - id: base:cardiac-arrest
+    name: Herz-Kreislauf-Stillstand
+    weight: 2
+    ageRange: [35, 95]
+    naca: [6, 7]
+    tracer: cardiac_arrest
+    keyword: base:rd3
+    doctorNeeded: 1
+    transport: 0.5
+    department: herzkatheter
+    onSceneMinutes: [35, 55]
+    reports: [{key: not_responding, weight: 6}, {key: cpr, weight: 3}, {key: unconscious, weight: 3}]
+  - id: base:traffic-injury
+    name: Verkehrsunfall mit Verletztem
+    weight: 6
+    ageRange: [16, 85]
+    naca: [2, 5]
+    tracer: trauma
+    keyword: base:rd1
+    doctorNeeded: 0.35
+    transport: 0.9
+    department: unfallchirurgie
+    onSceneMinutes: [20, 35]
+    outdoor: true
+    reports: [{key: traffic_accident, weight: 1}]
+  - id: base:febrile-seizure
+    name: Fieberkrampf beim Kleinkind
+    weight: 2
+    ageRange: [1, 5]
+    naca: [2, 3]
+    keyword: base:rd2
+    doctorNeeded: 0.3
+    transport: 1
+    department: paediatrie
+    onSceneMinutes: [15, 20]
+    reports: [{key: child_seizure, weight: 1}]
+  - id: base:seizure
+    name: Krampfanfall
+    weight: 5
+    ageRange: [15, 80]
+    naca: [2, 3]
+    keyword: base:rd1
+    doctorNeeded: 0.15
+    transport: 0.75
+    department: neurologie
+    onSceneMinutes: [15, 25]
+    reports: [{key: seizure, weight: 7}, {key: unconscious, weight: 3}]
+  - id: base:intoxication
+    name: Alkoholintoxikation
+    weight: 6
+    ageRange: [15, 70]
+    naca: [2, 3]
+    keyword: base:rd1
+    doctorNeeded: 0.05
+    transport: 0.8
+    department: innere
+    onSceneMinutes: [10, 20]
+    outdoor: true
+    reports: [{key: drunk, weight: 6}, {key: helpless_person, weight: 4}]
+  - id: base:psych
+    name: Psychiatrischer Notfall
+    weight: 3
+    ageRange: [16, 80]
+    naca: [2, 3]
+    keyword: base:rd1
+    doctorNeeded: 0.15
+    transport: 0.85
+    department: psychiatrie
+    onSceneMinutes: [20, 35]
+    reports: [{key: confused, weight: 5}, {key: helpless_person, weight: 3}]
+  - id: base:anaphylaxis
+    name: Allergische Reaktion
+    weight: 2
+    ageRange: [5, 80]
+    naca: [2, 5]
+    keyword: base:rd2
+    doctorNeeded: 0.4
+    transport: 0.9
+    department: innere
+    onSceneMinutes: [12, 20]
+    reports: [{key: allergy, weight: 5}, {key: breathing, weight: 3}]
+  - id: base:abdominal
+    name: Akutes Abdomen
+    weight: 6
+    ageRange: [10, 95]
+    naca: [2, 3]
+    keyword: base:rd1
+    doctorNeeded: 0.05
+    transport: 0.95
+    department: chirurgie
+    onSceneMinutes: [12, 20]
+    reports: [{key: abdominal, weight: 8}, {key: unwell, weight: 2}]
+  - id: base:no-patient
+    name: Kein Patient auffindbar / Einsatz abgebrochen
+    weight: 3
+    ageRange: [20, 80]
+    naca: [1, 1]
+    keyword: base:rd1
+    doctorNeeded: 0
+    transport: 0
+    onSceneMinutes: [5, 10]
+    outdoor: true
+    reports: [{key: helpless_person, weight: 6}, {key: drunk, weight: 2}]

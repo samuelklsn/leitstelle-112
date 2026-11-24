@@ -1,14 +1,16 @@
-import type { HostSnapshot } from '@ls112/protocol';
+import type { GameView } from '@ls112/protocol';
+
+type Calendar = GameView['calendar'];
 
 const pad = (n: number) => n.toString().padStart(2, '0');
 
 /** „Di 24.11.2026" – Wochentagskürzel kommt aus i18n. */
-export function formatDate(calendar: HostSnapshot['calendar'], weekdayShort: string): string {
+export function formatDate(calendar: Calendar, weekdayShort: string): string {
   return `${weekdayShort} ${pad(calendar.day)}.${pad(calendar.month)}.${calendar.year.toString()}`;
 }
 
 /** „07:45:30" */
-export function formatClock(calendar: HostSnapshot['calendar']): string {
+export function formatClock(calendar: Calendar): string {
   return `${pad(calendar.hour)}:${pad(calendar.minute)}:${pad(calendar.second)}`;
 }
 

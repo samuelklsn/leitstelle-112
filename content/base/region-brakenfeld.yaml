@@ -1,0 +1,127 @@
+# Fiktiver Landkreis Brakenfeld – alle Orte, Straßen und Namen sind frei erfunden.
+# Koordinaten in Metern, Ursprung Südwest-Ecke. Aus dieser Konfiguration erzeugt der
+# Weltgenerator (packages/sim/src/world) deterministisch Straßennetz und Adressen.
+region:
+  id: base:brakenfeld
+  name: Landkreis Brakenfeld
+  center: ILS Brakenfeld
+  seed: 4711
+  size: {width: 26000, height: 20000}
+  geo:
+    # Lage nur für die Kartenprojektion; es gibt keine reale Hintergrundkarte.
+    {originLon: 9.30, originLat: 50.90, metersPerDegLon: 70300, metersPerDegLat: 111250}
+  towns:
+    - id: base:brakenfeld
+      name: Brakenfeld
+      kind: kreisstadt
+      x: 13000
+      y: 10000
+      radius: 1900
+      blockSize: 150
+      rotationDeg: 12
+      population: 41200
+      bridgeEvery: 5
+      mainStreets: [Hauptstraße, Bahnhofstraße]
+    - id: base:ellerbach
+      name: Ellerbach
+      kind: stadt
+      x: 5200
+      y: 14400
+      radius: 1050
+      blockSize: 130
+      rotationDeg: -8
+      population: 12500
+      mainStreets: [Marktstraße, Kirchstraße]
+    - id: base:tannrode
+      name: Tannrode
+      kind: stadt
+      x: 21000
+      y: 4600
+      radius: 950
+      blockSize: 130
+      rotationDeg: 25
+      population: 9800
+      mainStreets: [Hauptstraße, Lindenallee]
+    - id: base:hagenried
+      name: Hagenried
+      kind: gemeinde
+      x: 6500
+      y: 4700
+      radius: 520
+      blockSize: 115
+      rotationDeg: 5
+      population: 3200
+      mainStreets: [Dorfstraße, Am Anger]
+    - id: base:oberwiesel
+      name: Oberwiesel
+      kind: gemeinde
+      x: 19600
+      y: 16400
+      radius: 560
+      blockSize: 115
+      rotationDeg: -15
+      population: 3900
+      mainStreets: [Hauptstraße, Wieselweg]
+    - id: base:muehlsteg
+      name: Mühlsteg
+      kind: gemeinde
+      x: 10200
+      y: 16900
+      radius: 440
+      blockSize: 105
+      rotationDeg: 30
+      population: 2100
+      mainStreets: [Mühlenstraße, Brückenweg]
+    - id: base:kaltenhof
+      name: Kaltenhof
+      kind: gemeinde
+      x: 23800
+      y: 10900
+      radius: 400
+      blockSize: 105
+      rotationDeg: -20
+      population: 1600
+      mainStreets: [Dorfstraße, Hofweg]
+  roads:
+    - name: B 412
+      roadClass: bundesstrasse
+      path: [base:ellerbach, [8200, 12900], [10600, 11300], base:brakenfeld, [16400, 12600], [18300, 14800], base:oberwiesel]
+    - name: L 3110
+      roadClass: landesstrasse
+      path: [base:hagenried, [8600, 6100], [10700, 7600], base:brakenfeld]
+    - name: L 3112
+      roadClass: landesstrasse
+      path: [base:brakenfeld, [15800, 8000], [18600, 6200], base:tannrode]
+    - name: L 3115
+      roadClass: landesstrasse
+      path: [base:ellerbach, [7200, 15900], base:muehlsteg]
+    - name: K 21
+      roadClass: kreisstrasse
+      path: [base:hagenried, [5600, 7800], [5100, 11200], base:ellerbach]
+    - name: K 24
+      roadClass: kreisstrasse
+      path: [base:tannrode, [22700, 7900], base:kaltenhof, [22200, 13900], base:oberwiesel]
+    - name: K 27
+      roadClass: kreisstrasse
+      path: [base:brakenfeld, [17600, 10300], [20900, 10700], base:kaltenhof]
+    - name: K 30
+      roadClass: kreisstrasse
+      path: [base:muehlsteg, [11500, 14300], base:brakenfeld]
+  motorway:
+    name: A 97
+    points: [[0, 2700], [4200, 2500], [8000, 2300], [11500, 2500], [14500, 2700], [18000, 2300], [22000, 2100], [26000, 2500]]
+    exits:
+      - {name: Hagenried, at: [6600, 2400], to: base:hagenried, roadName: K 19, roadClass: kreisstrasse}
+      - {name: Brakenfeld-Süd, at: [12800, 2600], to: base:brakenfeld, roadName: B 455, roadClass: bundesstrasse}
+      - {name: Tannrode, at: [20200, 2200], to: base:tannrode, roadName: L 3118, roadClass: landesstrasse}
+  river:
+    name: Brake
+    width: 45
+    points: [[0, 9200], [4000, 9900], [8200, 9600], [11000, 10350], [13200, 10250], [15500, 10650], [19000, 12300], [23000, 13300], [26000, 13900]]
+  forests:
+    - name: Brakenfelder Forst
+      points: [[14800, 13300], [17600, 13800], [18400, 15600], [16700, 18200], [14000, 17400], [13200, 15200]]
+    - name: Hagenrieder Wald
+      points: [[2000, 5200], [4300, 4300], [5200, 6800], [3900, 9000], [1600, 8200]]
+    - name: Tannenhöhe
+      points: [[22600, 4800], [25600, 5200], [25800, 8600], [23600, 9000], [22400, 7000]]

@@ -1,0 +1,43 @@
+# Fahrzeugtypen, Rettungswachen und Krankenhäuser des Vertical Slice.
+# Funkrufnamen folgen dem verbreiteten Schema „Rufname Ort Wache/Kennzahl-Nummer".
+vehicleTypes:
+  - {id: base:rtw, short: RTW, name: Rettungswagen, canTransport: true, doctor: false, radioCode: 83}
+  - {id: base:nef, short: NEF, name: Notarzteinsatzfahrzeug, canTransport: false, doctor: true, radioCode: 82}
+
+stations:
+  - id: base:rw-brakenfeld
+    name: Rettungswache Brakenfeld
+    kind: rettungswache
+    position: [12650, 9350]
+    vehicles:
+      - {id: base:rtw-1-83-1, callsign: Rettung Brakenfeld 1/83-1, type: base:rtw}
+      - {id: base:rtw-1-83-2, callsign: Rettung Brakenfeld 1/83-2, type: base:rtw}
+  - id: base:na-brakenfeld
+    name: Notarztstandort Kreisklinikum
+    kind: notarztstandort
+    position: [13850, 10950]
+    vehicles:
+      - {id: base:nef-1-82-1, callsign: Rettung Brakenfeld 1/82-1, type: base:nef}
+  - id: base:rw-ellerbach
+    name: Rettungswache Ellerbach
+    kind: rettungswache
+    position: [5350, 14250]
+    vehicles:
+      - {id: base:rtw-2-83-1, callsign: Rettung Ellerbach 2/83-1, type: base:rtw}
+      - {id: base:rtw-2-83-2, callsign: Rettung Ellerbach 2/83-2, type: base:rtw}
+  - id: base:na-ellerbach
+    name: Notarztstandort Klinik Ellerbach
+    kind: notarztstandort
+    position: [5050, 14700]
+    vehicles:
+      - {id: base:nef-2-82-1, callsign: Rettung Ellerbach 2/82-1, type: base:nef}
+  - id: base:rw-tannrode
+    name: Rettungswache Tannrode
+    kind: rettungswache
+    position: [21100, 4500]
+    vehicles:
+      - {id: base:rtw-3-83-1, callsign: Rettung Tannrode 3/83-1, type: base:rtw}
+
+hospitals:
+  - {id: base:kk-brakenfeld, name: Kreisklinikum Brakenfeld, short: KK Brakenfeld, level: schwerpunktversorgung, position: [13900, 10900], departments: [innere, chirurgie, unfallchirurgie, neurologie, stroke, herzkatheter, paediatrie, gynaekologie, intensiv]}
+  - {id: base:kl-ellerbach, name: Klinik Ellerbach, short: Kl. Ellerbach, level: grundversorgung, position: [5000, 14800], departments: [innere, chirurgie, psychiatrie]}

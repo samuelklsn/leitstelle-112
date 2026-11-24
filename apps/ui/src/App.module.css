@@ -10,8 +10,8 @@
 .header {
   display: flex;
   align-items: center;
-  gap: 18px;
-  padding: 6px 12px;
+  gap: 16px;
+  padding: 5px 12px;
   background: var(--bg-panel);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -19,12 +19,12 @@
 
 .brand {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 10px;
 }
 
 .brandMark {
-  display: inline-grid;
+  display: grid;
   place-items: center;
   width: 30px;
   height: 30px;
@@ -34,7 +34,6 @@
   font-weight: 800;
   font-size: 0.8rem;
   letter-spacing: -0.02em;
-  align-self: center;
 }
 
 .brandTitle {
@@ -48,12 +47,36 @@
   font-size: 0.85rem;
 }
 
+.menu {
+  display: flex;
+  gap: 2px;
+}
+
+.menu button {
+  padding: 5px 10px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.menu button:hover {
+  background: var(--bg-row-hover);
+  color: var(--text);
+}
+
 .clock {
   margin-left: auto;
   display: flex;
   align-items: baseline;
   gap: 10px;
   font-family: var(--font-mono);
+}
+
+.shift {
+  color: var(--text-faint);
+  font-size: 0.8rem;
 }
 
 .clockDate {
@@ -107,14 +130,11 @@
 .connection {
   display: flex;
   align-items: center;
-  gap: 6px;
-  color: var(--text-muted);
-  font-size: 0.8rem;
 }
 
 .dot {
-  width: 9px;
-  height: 9px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
   background: var(--text-faint);
 }
@@ -122,7 +142,6 @@
 .dotOk {
   background: var(--ok);
 }
-
 .dotBad {
   background: var(--alarm);
 }
@@ -130,237 +149,22 @@
 /* ---------- Arbeitsfläche ---------- */
 .workspace {
   display: grid;
-  grid-template-columns: minmax(280px, 22%) 1fr minmax(300px, 24%);
-  grid-template-rows: 1fr minmax(160px, 30%);
+  grid-template-columns: minmax(260px, 19%) 1fr minmax(330px, 23%);
+  grid-template-rows: 1fr minmax(170px, 30%);
   grid-template-areas:
     'calls map vehicles'
-    'log log vehicles';
+    'bottom bottom vehicles';
   gap: var(--gap);
   min-height: 0;
 }
 
-.panel {
-  display: flex;
-  flex-direction: column;
+.map {
+  grid-area: map;
+  position: relative;
   min-height: 0;
-  background: var(--bg-panel);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   overflow: hidden;
-}
-
-.panelHeader {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 10px;
-  background: var(--bg-panel-header);
-  border-bottom: 1px solid var(--border);
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-}
-
-.count {
-  margin-left: auto;
-  min-width: 22px;
-  padding: 0 6px;
-  border-radius: 10px;
-  background: var(--border-strong);
-  color: var(--text);
-  text-align: center;
-  font-family: var(--font-mono);
-  letter-spacing: 0;
-}
-
-.countAlarm {
-  background: var(--alarm);
-  color: #fff;
-}
-
-.panelBody {
-  flex: 1;
-  overflow: auto;
-  min-height: 0;
-}
-
-.calls {
-  grid-area: calls;
-}
-.map {
-  grid-area: map;
-}
-.vehicles {
-  grid-area: vehicles;
-}
-.log {
-  grid-area: log;
-}
-
-.empty {
-  padding: 24px 12px;
-  color: var(--text-faint);
-  text-align: center;
-  font-size: 0.9rem;
-}
-
-/* ---------- Notrufe ---------- */
-.callRow {
-  display: grid;
-  grid-template-columns: 6px 1fr auto;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 10px 8px 0;
-  border-bottom: 1px solid var(--border);
-}
-
-.callRow:hover {
-  background: var(--bg-row-hover);
-}
-
-.callStripe {
-  align-self: stretch;
-  background: var(--ok);
-}
-
-.callWarn .callStripe {
-  background: var(--warn);
-}
-
-.callAlarm .callStripe {
-  background: var(--alarm);
-  animation: blink 0.8s steps(2, start) infinite;
-}
-
-.callTitle {
-  font-weight: 600;
-  font-family: var(--font-mono);
-}
-
-.callMeta {
-  color: var(--text-muted);
-  font-size: 0.8rem;
-  font-variant-numeric: tabular-nums;
-}
-
-.acceptBtn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 5px 10px;
-  background: var(--ok);
-  color: #04210f;
-  border: none;
-  border-radius: var(--radius);
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.acceptBtn:hover {
-  filter: brightness(1.1);
-}
-
-.kbd {
-  padding: 0 4px;
-  border-radius: 3px;
-  background: rgb(0 0 0 / 0.25);
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
-  font-weight: 600;
-}
-
-/* ---------- Karte (Platzhalter bis M2) ---------- */
-.mapPlaceholder {
-  position: relative;
-  height: 100%;
-  display: grid;
-  place-items: center;
-  background-color: #0d141c;
-  background-image:
-    linear-gradient(rgb(78 161 255 / 0.06) 1px, transparent 1px),
-    linear-gradient(90deg, rgb(78 161 255 / 0.06) 1px, transparent 1px);
-  background-size: 40px 40px;
-}
-
-.mapHint {
-  max-width: 340px;
-  padding: 12px 16px;
-  border: 1px dashed var(--border-strong);
-  border-radius: var(--radius);
-  background: rgb(11 15 20 / 0.85);
-  color: var(--text-muted);
-  text-align: center;
-  font-size: 0.9rem;
-}
-
-/* ---------- Fahrzeuge / FMS-Legende ---------- */
-.legend {
-  list-style: none;
-  margin: 0;
-  padding: 8px 10px;
-  display: grid;
-  gap: 6px;
-}
-
-.legendIntro {
-  padding: 10px 10px 0;
-  color: var(--text-muted);
-  font-size: 0.85rem;
-}
-
-.legendItem {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 0.9rem;
-}
-
-.fms {
-  display: inline-grid;
-  place-items: center;
-  width: 26px;
-  height: 22px;
-  border-radius: 3px;
-  color: #0b0f14;
-  font-family: var(--font-mono);
-  font-weight: 800;
-}
-
-/* ---------- Protokoll ---------- */
-.logList {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  font-family: var(--font-mono);
-  font-size: 0.85rem;
-}
-
-.logRow {
-  display: grid;
-  grid-template-columns: 80px 1fr;
-  gap: 10px;
-  padding: 3px 10px;
-  border-bottom: 1px solid rgb(35 50 67 / 0.5);
-}
-
-.logTime {
-  color: var(--text-faint);
-  font-variant-numeric: tabular-nums;
-}
-
-.logIncoming {
-  color: var(--warn);
-}
-.logAccepted {
-  color: var(--ok);
-}
-.logAbandoned {
-  color: var(--alarm);
-}
-.logRejected {
-  color: var(--text-muted);
 }
 
 /* ---------- Fußzeile ---------- */
@@ -386,6 +190,29 @@
   margin-left: auto;
   display: flex;
   gap: 14px;
+}
+
+.shortcuts kbd {
+  padding: 0 4px;
+  border-radius: 3px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-strong);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+}
+
+.notice {
+  position: fixed;
+  left: 50%;
+  bottom: 48px;
+  z-index: 70;
+  transform: translateX(-50%);
+  padding: 8px 16px;
+  border-radius: 6px;
+  background: var(--accent-strong);
+  color: #fff;
+  font-weight: 600;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.4);
 }
 
 @keyframes blink {

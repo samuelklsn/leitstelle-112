@@ -1,6 +1,6 @@
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
-import { parseClientMessage } from './index';
+import { parseClientMessage, parseSimCommand } from './index';
 
 describe('parseClientMessage', () => {
   it('akzeptiert gültige Nachrichten', () => {
@@ -8,33 +8,76 @@ describe('parseClientMessage', () => {
       type: 'clock/setSpeed',
       speed: 5,
     });
-    expect(parseClientMessage({ type: 'clock/setPaused', paused: true })).toEqual({
-      type: 'clock/setPaused',
-      paused: true,
+    expect(parseClientMessage({ type: 'clock/togglePause' })).toEqual({
+      type: 'clock/togglePause',
     });
     expect(
-      parseClientMessage({ type: 'sim/command', command: { type: 'call/accept', callId: 'N1' } }),
-    ).toEqual({ type: 'sim/command', command: { type: 'call/accept', callId: 'N1' } });
+      parseClientMessage({
+        type: 'query',
+        id: 3,
+        query: { type: 'suggestVehicles', incidentId: 'E1' },
+      }),
+    ).toEqual({
+      type: 'query',
+      id: 3,
+      query: { type: 'suggestVehicles', incidentId: 'E1' },
+    });
+    expect(parseClientMessage({ type: 'game/new', mode: 'tutorial' })).toEqual({
+      type: 'game/new',
+      mode: 'tutorial',
+    });
+    expect(parseClientMessage({ type: 'save/write', name: '  Schicht 1  ' })).toEqual({
+      type: 'save/write',
+      name: 'Schicht 1',
+    });
   });
 
-  it('lehnt ungültige Zeitraffer-Stufen und unbekannte Befehle ab', () => {
+  it('lehnt ungültige Werte ab', () => {
     expect(parseClientMessage({ type: 'clock/setSpeed', speed: 3 })).toBeUndefined();
-    expect(parseClientMessage({ type: 'sim/command', command: { type: 'x' } })).toBeUndefined();
-    expect(parseClientMessage({ type: 'clock/setPaused', paused: 'ja' })).toBeUndefined();
+    expect(parseClientMessage({ type: 'game/new', mode: 'hard' })).toBeUndefined();
+    expect(parseClientMessage({ type: 'save/write', name: '   ' })).toBeUndefined();
+    expect(parseClientMessage({ type: 'save/load', id: -1 })).toBeUndefined();
+    expect(parseClientMessage({ type: 'query', id: 1, query: { type: 'x' } })).toBeUndefined();
   });
 
-  it('übersteht beliebige Eingaben ohne Ausnahme und kopiert keine Fremdfelder', () => {
+  it('übersteht beliebige Eingaben ohne Ausnahme', () => {
     fc.assert(
       fc.property(fc.anything(), (input) => {
-        const parsed = parseClientMessage(input);
-        if (parsed) {
-          expect(
-            Object.keys(parsed).every((k) =>
-              ['type', 'speed', 'paused', 'command', 'protocol', 'view'].includes(k),
-            ),
-          ).toBe(true);
-        }
+        expect(() => parseClientMessage(input)).not.toThrow();
+        expect(() => parseSimCommand(input)).not.toThrow();
       }),
     );
+  });
+});
+
+describe('parseSimCommand', () => {
+  it('kopiert nur bekannte Felder', () => {
+    expect(
+      parseSimCommand({
+        type: 'incident/dispatch',
+        incidentId: 'E1',
+        vehicleIds: ['a', 'b'],
+        hack: 1,
+      }),
+    ).toEqual({
+      type: 'incident/dispatch',
+      incidentId: 'E1',
+      vehicleIds: ['a', 'b'],
+    });
+  });
+
+  it('lehnt leere Alarmierungen und falsche Typen ab', () => {
+    expect(
+      parseSimCommand({ type: 'incident/dispatch', incidentId: 'E1', vehicleIds: [] }),
+    ).toBeUndefined();
+    expect(
+      parseSimCommand({
+        type: 'incident/create',
+        callId: 'N1',
+        addressId: '5',
+        keywordId: 'base:rd1',
+      }),
+    ).toBeUndefined();
+    expect(parseSimCommand({ type: 'vehicle/assignDestination', vehicleId: 'v' })).toBeUndefined();
   });
 });

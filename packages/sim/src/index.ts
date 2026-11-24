@@ -15,5 +15,28 @@ export {
   type CalendarTime,
   type IsoWeekday,
 } from './time';
-export { Simulation, replay, defaultConfig, DEFAULT_HOURLY_PROFILE } from './simulation';
+export { Simulation, replay, defaultConfig, contentHash } from './simulation';
+export type { VehicleSuggestion, HospitalSuggestion } from './systems/operations';
+export { ERROR_PENALTY } from './systems/calls';
+export {
+  buildView,
+  buildWorldInfo,
+  type GameView,
+  type CallView,
+  type IncidentView,
+  type VehicleView,
+  type ReportView,
+  type FindingView,
+  type WorldInfo,
+  type StaticAddress,
+} from './view';
+export { generateWorld } from './world/generator';
+export {
+  worldToMap,
+  toLonLat,
+  type WorldMap,
+  type GeoCollection,
+  type GeoFeature,
+} from './world/geojson';
+export type { World, WorldAddress, WorldStreet, WorldTown } from './world/types';
 export * from './types';

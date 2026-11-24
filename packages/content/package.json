@@ -1,0 +1,19 @@
+{
+  "name": "@ls112/content",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Inhalts-Schemas (Zod), Loader und Validator für Leitstelle 112",
+  "license": "GPL-3.0-or-later",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./node": "./src/node.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "yaml": "^2.9.1",
+    "zod": "^4.6.7"
+  }
+}

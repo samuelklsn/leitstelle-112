@@ -1,43 +1,75 @@
 /**
  * Einstiegspunkt des Sim-Hosts (Electron utilityProcess, ADR-0005).
- * Empfängt vom Main-Prozess MessagePorts der Fenster und betreibt den Takt.
+ * Lädt die Inhalte, verwaltet Spielstände, empfängt MessagePorts der Fenster und betreibt den Takt.
  */
 import { randomInt } from 'node:crypto';
 import { performance } from 'node:perf_hooks';
 import type { MessagePortMain } from 'electron';
-import { defaultConfig, simTimeFrom } from '@ls112/sim';
+import { loadContentFromDirs } from '@ls112/content/node';
+import { simTimeFrom } from '@ls112/sim';
 import type { HostMessage } from '@ls112/protocol';
 import { createLogger } from '../shared/logger';
 import { writeCrashReport } from '../shared/crash';
 import { SimHost, type ClientPort } from './host';
+import { SqliteSaveStore, type SaveStore } from './saves';
 
 const LOOP_INTERVAL_MS = 50;
 
-const logDir = process.env.LS112_LOG_DIR ?? '.';
-const crashDir = process.env.LS112_CRASH_DIR ?? '.';
-const appVersion = process.env.LS112_APP_VERSION ?? '0.0.0';
+const env = process.env;
+const logDir = env.LS112_LOG_DIR ?? '.';
+const crashDir = env.LS112_CRASH_DIR ?? '.';
+const appVersion = env.LS112_APP_VERSION ?? '0.0.0';
 const log = createLogger(logDir, 'sim-host');
 
-/** Schichtbeginn 07:00 am heutigen Tag (Ortszeit). Der Host darf die Systemzeit lesen. */
-function shiftStart(): number {
-  const now = new Date();
-  return simTimeFrom(now.getFullYear(), now.getMonth() + 1, now.getDate(), 7, 0, 0);
+const started = performance.now();
+const content = loadContentFromDirs(env.LS112_CONTENT_DIR ?? 'content/base');
+let store: SaveStore | undefined;
+try {
+  store = env.LS112_SAVE_FILE ? new SqliteSaveStore(env.LS112_SAVE_FILE) : undefined;
+} catch (error) {
+  log.error({ err: error }, 'Spielstand-Datenbank nicht verfügbar – Speichern deaktiviert');
 }
 
-const seed = process.env.LS112_SEED
-  ? Number(process.env.LS112_SEED) >>> 0
-  : randomInt(0, 2 ** 32 - 1);
-// Nur für Tests: höhere Anrufrate, damit kurze E2E-Läufe Notrufe sehen.
-const callRate = process.env.LS112_E2E === '1' ? Number(process.env.LS112_CALL_RATE) : NaN;
-const host = new SimHost(
-  defaultConfig({
-    seed,
-    startTime: shiftStart(),
-    ...(Number.isFinite(callRate) && callRate > 0 ? { callRatePerHour: callRate } : {}),
-  }),
+/** Spielbeginn: heutiger Schichtbeginn (Ortszeit). Der Host darf die Systemzeit lesen. */
+function shiftStart(): number {
+  const now = new Date();
+  return simTimeFrom(
+    now.getFullYear(),
+    now.getMonth() + 1,
+    now.getDate(),
+    content.settings.shift.startHour,
+    0,
+    0,
+  );
+}
+
+const fixedSeed = env.LS112_SEED ? Number(env.LS112_SEED) >>> 0 : undefined;
+// Nur für Tests: höheres Notrufaufkommen, damit kurze E2E-Läufe genug zu tun haben.
+const rate = env.LS112_E2E === '1' && env.LS112_CALL_RATE ? Number(env.LS112_CALL_RATE) : 1;
+
+const host = new SimHost({
+  content,
   log,
+  ...(store ? { store } : {}),
+  newSeed: () => fixedSeed ?? randomInt(0, 2 ** 32 - 1),
+  startTime: shiftStart,
+  callRateFactor: Number.isFinite(rate) && rate > 0 ? rate : 1,
+});
+
+// Nach einem Absturz: letzten automatischen Spielstand laden.
+if (env.LS112_RESUME === '1') {
+  const id = store?.latestAuto();
+  if (id !== undefined && host.loadGame(id)) log.info({ id }, 'Nach Absturz fortgesetzt');
+}
+log.info(
+  {
+    seed: host.sim.config.seed,
+    appVersion,
+    startupMs: Math.round(performance.now() - started),
+    nodes: host.sim.world.graph.nodeCount,
+  },
+  'Sim-Host gestartet',
 );
-log.info({ seed, appVersion }, 'Sim-Host gestartet');
 
 function crash(error: unknown): never {
   const file = writeCrashReport(
@@ -46,7 +78,7 @@ function crash(error: unknown): never {
       process: 'sim-host',
       appVersion,
       extra: {
-        seed,
+        seed: host.sim.config.seed,
         tick: host.sim.tick,
         // Letzte Befehle: damit lässt sich der Absturz per Replay nachstellen.
         lastCommands: host.sim.commandLog().slice(-200),
@@ -82,7 +114,13 @@ process.parentPort.on('message', (event) => {
     if (!port) return;
     host.addClient(wrapPort(port));
     port.start();
-  } else if (data?.type === 'crash-test' && process.env.LS112_E2E === '1') {
+  } else if (data?.type === 'shutdown') {
+    // Beim Beenden den aktuellen Stand sichern.
+    host.save('auto', 'Beim Beenden');
+    store?.close();
+    log.flush();
+    process.exit(0);
+  } else if (data?.type === 'crash-test' && env.LS112_E2E === '1') {
     // Nur für E2E-Tests: provozierter Absturz, um die Wiederherstellung zu prüfen.
     throw new Error('Absichtlicher Testabsturz');
   }

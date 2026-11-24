@@ -6,3 +6,5 @@ pnpm-lock.yaml
 LICENSE
 playwright-report
 test-results
+# Inhaltsdateien bleiben kompakt und von Hand formatiert – für Modder lesbarer.
+content

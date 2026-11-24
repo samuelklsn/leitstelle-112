@@ -32,3 +32,10 @@ Quelle der Wahrheit führt zu Doppelpflege.
 
 Modder arbeiten mit Textdateien, das Spiel bleibt schnell. Snapshots sind an die Sim-Version
 gebunden → Migrationen nötig.
+
+## Nachtrag 2026-11-24 (M4)
+
+`node:sqlite` ist in Electron 45 (Node 24) verfügbar und stabil genug. Wir verwenden es statt
+better-sqlite3 – **kein natives Modul**, kein Rebuild für die Electron-ABI, keine DLL, die auf
+verwalteten Rechnern blockiert werden könnte. Spielstände: Tabelle `saves` mit deflate-komprimiertem
+Snapshot und Befehlsprotokoll, Autosave rollierend (3), Migrationen über `meta.schema`.

@@ -39,3 +39,9 @@ Auswertung) und im Zeitraffer bis 10x stabil sein.
 Saubere Tests und Replays. Disziplin nötig: jede Neuerung muss die Regeln einhalten;
 Golden-Replay-Tests fangen Verstöße ab. Spielstand-Kompatibilität bei Änderungen der
 Simulationslogik erfordert Versionierung.
+
+## Nachtrag 2026-11-24 (M2)
+
+`Math.sqrt` ist im Kern erlaubt: IEEE 754 schreibt ein korrekt gerundetes Ergebnis vor, es ist also
+auf allen Engines bitgleich. Sinus und Kosinus berechnet der Weltgenerator mit einer eigenen
+Taylorreihe (`detSin`/`detCos`), weil `Math.sin` nicht bitgenau spezifiziert ist.

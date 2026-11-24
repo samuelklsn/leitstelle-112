@@ -9,6 +9,12 @@ files:
   - '!dist/**/*.map'
   - package.json
 asar: true
+# Basisinhalte liegen offen neben der App, damit Modder sie lesen können (ADR-0009).
+extraResources:
+  - from: ../../content/base
+    to: content/base
+  - from: ../../content/LICENSE.md
+    to: content/LICENSE.md
 win:
   target:
     - target: nsis

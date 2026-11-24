@@ -1,8 +1,7 @@
 {
   "extends": "../../tsconfig.base.json",
-  "compilerOptions": {
-    "lib": ["ES2023"],
-    "types": []
-  },
+  // Node-Typen nur für Tests (Inhalte von der Platte laden). Im Produktivcode verbietet ESLint
+  // jeden Node-Import (ADR-0004).
+  "compilerOptions": { "types": ["node"] },
   "include": ["src"]
 }

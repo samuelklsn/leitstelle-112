@@ -1,7 +1,7 @@
 {
   "name": "@ls112/desktop",
   "productName": "Leitstelle 112",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "private": true,
   "description": "Leitstelle 112 – Desktop-Anwendung (Electron)",
   "license": "GPL-3.0-or-later",
@@ -16,6 +16,7 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "devDependencies": {
+    "@ls112/content": "workspace:*",
     "@ls112/protocol": "workspace:*",
     "@ls112/sim": "workspace:*",
     "electron": "^45.4.1",

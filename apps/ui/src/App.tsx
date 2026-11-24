@@ -1,42 +1,63 @@
+import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { TFunction } from 'i18next';
-import { SPEEDS, type HostSnapshot } from '@ls112/protocol';
-import { formatClock, formatDate, formatDuration, formatTimeOfDay } from './format';
-import { useSim, type SimEventEntry } from './sim-store';
+import { SPEEDS } from '@ls112/protocol';
+import { formatClock, formatDate } from './format';
+import { useSim } from './sim-store';
 import { useGlobalShortcuts } from './use-shortcuts';
+import { CallMask } from './components/CallMask';
+import { DestinationDialog, DispatchDialog } from './components/DispatchDialog';
+import { MapView } from './components/MapView';
+import {
+  EvaluationDialog,
+  HelpDialog,
+  SavesDialog,
+  StartScreen,
+  TutorialCoach,
+} from './components/Overlays';
+import { BottomTabs, CallsPanel, VehiclePanel } from './components/Panels';
 import css from './App.module.css';
-
-/** Notrufe sollen schnell angenommen werden; ab diesen Wartezeiten wird die Zeile auffällig. */
-const CALL_WARN_MS = 10_000;
-const CALL_ALARM_MS = 30_000;
-
-const FMS_LEGEND = ['1', '2', '3', '4', '7', '8', '5', '0', '6', '9'] as const;
 
 export function App() {
   useGlobalShortcuts();
-  const state = useSim((s) => s.state);
-  const status = useSim((s) => s.status);
-
+  const dialog = useSim((s) => s.dialog);
   return (
     <div className={css.shell}>
-      <Header state={state} status={status} />
+      <Header />
       <main className={css.workspace}>
-        <CallsPanel state={state} />
-        <MapPanel />
-        <VehiclesPanel />
-        <EventLog />
+        <CallsPanel />
+        <section className={css.map} aria-label="Lagekarte">
+          <MapView />
+          {dialog?.kind === 'call' && <CallMask key={dialog.callId} callId={dialog.callId} />}
+          {dialog?.kind === 'dispatch' && (
+            <DispatchDialog key={dialog.incidentId} incidentId={dialog.incidentId} />
+          )}
+          {dialog?.kind === 'destination' && (
+            <DestinationDialog key={dialog.vehicleId} vehicleId={dialog.vehicleId} />
+          )}
+          <TutorialCoach />
+        </section>
+        <VehiclePanel />
+        <BottomTabs />
       </main>
-      <Footer state={state} />
+      <Footer />
+      {dialog?.kind === 'start' && <StartScreen />}
+      {dialog?.kind === 'evaluation' && <EvaluationDialog shift={dialog.shift} />}
+      {dialog?.kind === 'saves' && <SavesDialog />}
+      {dialog?.kind === 'help' && <HelpDialog />}
+      <Notice />
     </div>
   );
 }
 
-function Header({ state, status }: { state: HostSnapshot | undefined; status: string }) {
+function Header() {
   const { t } = useTranslation();
+  const host = useSim((s) => s.host);
+  const world = useSim((s) => s.world);
+  const status = useSim((s) => s.status);
   const togglePause = useSim((s) => s.togglePause);
   const setSpeed = useSim((s) => s.setSpeed);
-  const paused = state?.paused ?? false;
-
+  const openDialog = useSim((s) => s.openDialog);
+  const paused = host?.paused ?? false;
   return (
     <header className={css.header}>
       <div className={css.brand}>
@@ -44,17 +65,55 @@ function Header({ state, status }: { state: HostSnapshot | undefined; status: st
           112
         </span>
         <span className={css.brandTitle}>{t('app.title')}</span>
-        <span className={css.brandSub}>{t('app.center')}</span>
+        <span className={css.brandSub}>{world?.centerName}</span>
       </div>
-
+      <nav className={css.menu}>
+        <button
+          type="button"
+          onClick={() => {
+            openDialog({ kind: 'start' });
+          }}
+        >
+          {t('menu.new')}
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            openDialog({ kind: 'saves' });
+          }}
+        >
+          {t('menu.saves')}
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            openDialog({ kind: 'evaluation' });
+          }}
+          data-testid="open-evaluation"
+        >
+          {t('menu.evaluation')}
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            openDialog({ kind: 'help' });
+          }}
+        >
+          {t('menu.help')}
+        </button>
+      </nav>
       <div className={css.clock} data-testid="sim-clock">
-        {state && (
+        {host && (
           <>
+            <span className={css.shift}>{t('clock.shift', { n: host.view.shift.index })}</span>
             <span className={css.clockDate}>
-              {formatDate(state.calendar, t(`clock.weekday.${state.calendar.weekday.toString()}`))}
+              {formatDate(
+                host.view.calendar,
+                t(`clock.weekday.${host.view.calendar.weekday.toString()}`),
+              )}
             </span>
             <span className={css.clockTime} data-testid="sim-time">
-              {formatClock(state.calendar)}
+              {formatClock(host.view.calendar)}
             </span>
             {paused && (
               <span className={css.pausedBadge} data-testid="paused-badge">
@@ -64,11 +123,10 @@ function Header({ state, status }: { state: HostSnapshot | undefined; status: st
           </>
         )}
       </div>
-
       <div className={css.controls} role="group" aria-label={t('shortcuts.speed')}>
         <button
           type="button"
-          className={`${css.ctrl} ${paused ? css.ctrlActive : ''}`}
+          className={`${css.ctrl ?? ''} ${paused ? (css.ctrlActive ?? '') : ''}`}
           onClick={togglePause}
           aria-pressed={paused}
           data-testid="btn-pause"
@@ -80,11 +138,11 @@ function Header({ state, status }: { state: HostSnapshot | undefined; status: st
           <button
             key={speed}
             type="button"
-            className={`${css.ctrl} ${state?.speed === speed && !paused ? css.ctrlActive : ''}`}
+            className={`${css.ctrl ?? ''} ${host?.speed === speed && !paused ? (css.ctrlActive ?? '') : ''}`}
             onClick={() => {
               setSpeed(speed);
             }}
-            aria-pressed={state?.speed === speed}
+            aria-pressed={host?.speed === speed}
             data-testid={`btn-speed-${speed.toString()}`}
             title={`${t('clock.speed', { speed })} (${(i + 1).toString()})`}
           >
@@ -92,176 +150,71 @@ function Header({ state, status }: { state: HostSnapshot | undefined; status: st
           </button>
         ))}
       </div>
-
-      <div className={css.connection} role="status">
+      <div className={css.connection} role="status" title={t(`app.${status}`)}>
         <span
-          className={`${css.dot} ${status === 'connected' ? css.dotOk : status === 'disconnected' ? css.dotBad : ''}`}
+          className={`${css.dot ?? ''} ${status === 'connected' ? (css.dotOk ?? '') : status === 'disconnected' ? (css.dotBad ?? '') : ''}`}
         />
-        {t(`app.${status}`)}
       </div>
     </header>
   );
 }
 
-function CallsPanel({ state }: { state: HostSnapshot | undefined }) {
+function Footer() {
   const { t } = useTranslation();
-  const send = useSim((s) => s.send);
-  const calls = state?.waitingCalls ?? [];
-  const now = state?.time ?? 0;
-  const anyAlarm = calls.some((c) => now - c.receivedAt >= CALL_ALARM_MS);
-
-  return (
-    <section className={`${css.panel} ${css.calls}`} aria-label={t('panel.calls')}>
-      <div className={css.panelHeader}>
-        {t('panel.calls')}
-        <span
-          className={`${css.count} ${anyAlarm ? css.countAlarm : ''}`}
-          data-testid="calls-count"
-        >
-          {calls.length}
-        </span>
-      </div>
-      <div className={css.panelBody}>
-        {calls.length === 0 && <div className={css.empty}>{t('calls.empty')}</div>}
-        {calls.map((call, index) => {
-          const waited = now - call.receivedAt;
-          const level =
-            waited >= CALL_ALARM_MS ? css.callAlarm : waited >= CALL_WARN_MS ? css.callWarn : '';
-          return (
-            <div key={call.id} className={`${css.callRow} ${level}`} data-testid="call-row">
-              <span className={css.callStripe} aria-hidden="true" />
-              <div>
-                <div className={css.callTitle}>112 · {t('calls.line', { n: index + 1 })}</div>
-                <div className={css.callMeta}>
-                  {call.id} · {t('calls.waiting', { duration: formatDuration(waited) })}
-                </div>
-              </div>
-              <button
-                type="button"
-                className={css.acceptBtn}
-                onClick={() => {
-                  send({ type: 'sim/command', command: { type: 'call/accept', callId: call.id } });
-                }}
-              >
-                {t('calls.accept')}
-                {index === 0 && <span className={css.kbd}>{t('calls.acceptHint')}</span>}
-              </button>
-            </div>
-          );
-        })}
-      </div>
-    </section>
-  );
-}
-
-function MapPanel() {
-  const { t } = useTranslation();
-  return (
-    <section className={`${css.panel} ${css.map}`} aria-label={t('panel.map')}>
-      <div className={css.panelHeader}>{t('panel.map')}</div>
-      <div className={css.panelBody}>
-        <div className={css.mapPlaceholder}>
-          <div className={css.mapHint}>{t('map.placeholder')}</div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function VehiclesPanel() {
-  const { t } = useTranslation();
-  return (
-    <section className={`${css.panel} ${css.vehicles}`} aria-label={t('panel.vehicles')}>
-      <div className={css.panelHeader}>{t('panel.vehicles')}</div>
-      <div className={css.panelBody}>
-        <div className={css.legendIntro}>{t('vehicles.placeholder')}</div>
-        <ul className={css.legend}>
-          {FMS_LEGEND.map((code) => (
-            <li key={code} className={css.legendItem}>
-              <span className={css.fms} style={{ background: `var(--fms-${code})` }}>
-                {code}
-              </span>
-              {t(`fms.${code}`)}
-            </li>
-          ))}
-        </ul>
-      </div>
-    </section>
-  );
-}
-
-const LOG_CLASS: Record<SimEventEntry['type'], string | undefined> = {
-  'call/incoming': css.logIncoming,
-  'call/accepted': css.logAccepted,
-  'call/abandoned': css.logAbandoned,
-  'command/rejected': css.logRejected,
-};
-
-function EventLog() {
-  const { t } = useTranslation();
-  const events = useSim((s) => s.events);
-  return (
-    <section className={`${css.panel} ${css.log}`} aria-label={t('panel.log')}>
-      <div className={css.panelHeader}>{t('panel.log')}</div>
-      <div className={css.panelBody}>
-        <ul className={css.logList} data-testid="event-log">
-          {events.map((e) => (
-            <li key={e.key} className={css.logRow}>
-              <span className={css.logTime}>{formatTimeOfDay(e.at)}</span>
-              <span className={LOG_CLASS[e.type]}>{describeEvent(e, t)}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
-    </section>
-  );
-}
-
-function describeEvent(e: SimEventEntry, t: TFunction): string {
-  switch (e.type) {
-    case 'call/incoming':
-    case 'call/abandoned':
-      return t(`events.${e.type}`, { callId: e.callId });
-    case 'call/accepted':
-      return t('events.call/accepted', { callId: e.callId, waited: formatDuration(e.waitedMs) });
-    case 'command/rejected':
-      return t('events.command/rejected', { reason: t(`events.reason.${e.reason}`) });
-  }
-}
-
-function Footer({ state }: { state: HostSnapshot | undefined }) {
-  const { t } = useTranslation();
-  const stats = state?.stats;
-  const avg = stats && stats.callsAccepted > 0 ? stats.totalWaitMs / stats.callsAccepted : 0;
+  const shift = useSim((s) => s.host?.view.shift);
+  const quota =
+    shift && shift.hilfsfristMeasured > 0
+      ? `${Math.round((100 * shift.hilfsfristMet) / shift.hilfsfristMeasured).toString()} %`
+      : '–';
   return (
     <footer className={css.footer}>
       <span className={css.stat}>
         {t('stats.received')}
-        <strong data-testid="stat-received">{stats?.callsReceived ?? 0}</strong>
+        <strong data-testid="stat-received">{shift?.callsReceived ?? 0}</strong>
       </span>
       <span className={css.stat}>
-        {t('stats.accepted')}
-        <strong>{stats?.callsAccepted ?? 0}</strong>
+        {t('stats.incidents')}
+        <strong>{shift?.incidents ?? 0}</strong>
       </span>
       <span className={css.stat}>
-        {t('stats.abandoned')}
-        <strong>{stats?.callsAbandoned ?? 0}</strong>
+        {t('stats.hilfsfrist')}
+        <strong>{quota}</strong>
       </span>
       <span className={css.stat}>
-        {t('stats.avgWait')}
-        <strong>{formatDuration(avg)}</strong>
+        {t('stats.score')}
+        <strong data-testid="stat-score">{shift?.score ?? 0}</strong>
       </span>
       <span className={css.shortcuts} aria-label={t('shortcuts.title')}>
         <span>
-          <span className={css.kbd}>Leertaste</span> {t('shortcuts.pause')}
+          <kbd>Leertaste</kbd> {t('shortcuts.pause')}
         </span>
         <span>
-          <span className={css.kbd}>1–4</span> {t('shortcuts.speed')}
+          <kbd>1–4</kbd> {t('shortcuts.speed')}
         </span>
         <span>
-          <span className={css.kbd}>F2</span> {t('shortcuts.accept')}
+          <kbd>F2</kbd> {t('shortcuts.accept')}
+        </span>
+        <span>
+          <kbd>F3</kbd> {t('shortcuts.dispatch')}
+        </span>
+        <span>
+          <kbd>F4</kbd> {t('shortcuts.destination')}
         </span>
       </span>
     </footer>
   );
+}
+
+function Notice() {
+  const notice = useSim((s) => s.notice);
+  useEffect(() => {
+    if (!notice) return;
+    const timer = setTimeout(() => {
+      useSim.setState({ notice: null });
+    }, 3500);
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [notice]);
+  return notice ? <div className={css.notice}>{notice.text}</div> : null;
 }

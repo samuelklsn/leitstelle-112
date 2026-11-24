@@ -344,6 +344,8 @@ Krankenhauses nie negativ; nach Pause ändert sich der Zustand nicht.
 
 ## 6. Meilensteine
 
+**Stand 2026-11-24:** M0–M4 abgeschlossen (v0.1.0, spielbarer Vertical Slice). Nächster Meilenstein: M5.
+
 Jeder Meilenstein endet lauffähig, getestet, committet, mit CHANGELOG-Eintrag und
 Zusammenfassung an den Product Owner.
 

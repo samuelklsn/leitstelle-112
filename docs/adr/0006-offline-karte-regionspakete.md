@@ -36,3 +36,15 @@ fiktiven Landkreis; später kommen echte Regionen aus OSM-Daten (ODbL) hinzu.
 
 Der eigene Builder ist ein nennenswertes Arbeitspaket (M2), zahlt sich aber für den
 Regionen-Editor und echte Regionen aus.
+
+## Nachtrag 2026-11-24 (M2)
+
+Für die **fiktive Region** braucht es vorerst keine Vektorkacheln: Der Weltgenerator erzeugt
+Straßen, Flächen und Gewässer beim Start in unter einer Sekunde, und MapLibre zeigt sie direkt als
+GeoJSON-Quellen (ca. 2.000 Straßenstücke). Das spart ein Build-Werkzeug und generierte Binärdateien
+im Repository. Der Kachel-Spike (MBTiles/PMTiles, #12) wird mit der OSM-Pipeline (M13) fällig,
+wenn echte Regionen deutlich größer werden.
+
+Beschriftungen kommen als HTML-Marker statt als Kartensymbole – damit entfallen eingebettete
+Glyphen (Schriftdateien) vorerst ganz. Der Karten-Worker von MapLibre wird als lokales Asset
+ausgeliefert (`setWorkerUrl`), die CSP erlaubt nur `self` und `blob:`.

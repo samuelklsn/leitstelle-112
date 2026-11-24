@@ -85,7 +85,14 @@ let simHost: UtilityProcess | undefined;
 let simHostRestarts = 0;
 const windows = new Set<BrowserWindow>();
 
-function startSimHost(): void {
+/** Basisinhalte: im Installer unter resources/content, in der Entwicklung im Repository. */
+function contentDir(): string {
+  return app.isPackaged
+    ? join(process.resourcesPath, 'content', 'base')
+    : join(__dirname, '..', '..', '..', 'content', 'base');
+}
+
+function startSimHost(resume = false): void {
   const child = utilityProcess.fork(join(__dirname, 'sim-host.cjs'), [], {
     serviceName: 'Leitstelle 112 – Simulation',
     stdio: 'pipe',
@@ -94,6 +101,9 @@ function startSimHost(): void {
       LS112_LOG_DIR: logDir,
       LS112_CRASH_DIR: crashDir,
       LS112_APP_VERSION: app.getVersion(),
+      LS112_CONTENT_DIR: contentDir(),
+      LS112_SAVE_FILE: join(app.getPath('userData'), 'saves.db'),
+      LS112_RESUME: resume ? '1' : '0',
     },
   });
   child.stdout?.on('data', (chunk: Buffer) => {
@@ -119,7 +129,7 @@ async function handleSimHostCrash(): Promise<void> {
   // Im Test automatisch neu starten, sonst den Spieler fragen.
   if (IS_E2E) {
     simHostRestarts++;
-    startSimHost();
+    startSimHost(true);
     return;
   }
   const parent = [...windows][0];
@@ -129,7 +139,7 @@ async function handleSimHostCrash(): Promise<void> {
     message: 'Die Simulation wurde unerwartet beendet.',
     detail:
       'Ein Absturzbericht wurde lokal gespeichert. Es werden keine Daten versendet.\n' +
-      'Die Simulation kann neu gestartet werden; ab Version 0.1 wird dabei der letzte automatische Spielstand geladen.',
+      'Beim Neustart wird der letzte automatische Spielstand geladen (höchstens 5 Spielminuten alt).',
     buttons: ['Neu starten', 'Berichtsordner öffnen', 'Beenden'],
     defaultId: 0,
     cancelId: 2,
@@ -143,7 +153,7 @@ async function handleSimHostCrash(): Promise<void> {
     return;
   }
   simHostRestarts++;
-  startSimHost();
+  startSimHost(true);
 }
 
 /** Gibt dem Fenster einen direkten Kanal zum Sim-Host (ADR-0005). */
@@ -224,6 +234,8 @@ ipcMain.on('e2e-crash-sim-host', () => {
 app.on('before-quit', () => {
   quitting = true;
   log.info('App wird beendet');
+  // Sim-Host sichert den aktuellen Stand und beendet sich selbst.
+  simHost?.postMessage({ type: 'shutdown' });
 });
 
 const gotLock = IS_E2E || app.requestSingleInstanceLock();

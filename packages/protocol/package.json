@@ -1,6 +1,6 @@
 {
   "name": "@ls112/protocol",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "private": true,
   "description": "Nachrichtentypen zwischen Sim-Host und Oberfläche",
   "license": "GPL-3.0-or-later",

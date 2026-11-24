@@ -1,0 +1,14 @@
+{
+  "name": "@ls112/routing",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Straßengraph, Routing und Fahrzeitmodell von Leitstelle 112",
+  "license": "GPL-3.0-or-later",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  }
+}

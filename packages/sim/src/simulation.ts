@@ -1,3 +1,6 @@
+import type { ContentBundle } from '@ls112/content';
+import { DEFAULT_TRAVEL_MODEL, Router } from '@ls112/routing';
+import { indexContent, type ContentIndex, type Ctx } from './context';
 import { EventQueue } from './event-queue';
 import { hashValue } from './hash';
 import { Rng } from './rng';
@@ -5,128 +8,199 @@ import { MS_PER_HOUR, TICK_MS, toCalendar } from './time';
 import {
   RNG_STREAMS,
   SNAPSHOT_VERSION,
-  type CallState,
   type LoggedCommand,
+  type RejectReason,
   type RngStreamName,
   type ScheduledPayload,
+  type ShiftStats,
   type SimCommand,
   type SimConfig,
   type SimEvent,
   type SimSnapshot,
   type SimState,
-  type SimView,
+  type VehicleState,
 } from './types';
-
-/**
- * Vorgabe-Tagesprofil für Notrufe im Rettungsdienst (Annahme, docs/domain/einsatzaufkommen.md):
- * Minimum in den frühen Morgenstunden, Maximum am späten Vormittag. Mittelwert = 1.
- */
-export const DEFAULT_HOURLY_PROFILE: readonly number[] = [
-  0.6, 0.5, 0.45, 0.4, 0.4, 0.5, 0.75, 1.0, 1.25, 1.4, 1.45, 1.45, 1.35, 1.3, 1.25, 1.2, 1.2, 1.15,
-  1.1, 1.05, 1.0, 0.9, 0.8, 0.7,
-];
+import { abandonCall, acceptCall, closeCall, generateCalls } from './systems/calls';
+import {
+  assignDestination,
+  createIncident,
+  dispatch,
+  findVehicle,
+  onArrive,
+  onAssessed,
+  onCallbackDone,
+  onDestinationTimeout,
+  onHandoverDone,
+  onSceneDone,
+  onTurnoutDone,
+  releaseCommand,
+  suggestHospitals,
+  suggestVehicles,
+  type HospitalSuggestion,
+  type VehicleSuggestion,
+} from './systems/operations';
+import { generateWorld } from './world/generator';
+import type { World } from './world/types';
 
 export function defaultConfig(overrides: Partial<SimConfig> = {}): SimConfig {
-  return {
-    seed: 112,
-    startTime: 0,
-    callRatePerHour: 6,
-    hourlyProfile: DEFAULT_HOURLY_PROFILE,
-    abandonAfterSeconds: [45, 180],
-    ...overrides,
-  };
+  return { seed: 112, startTime: 0, callRateFactor: 1, tutorial: false, ...overrides };
 }
 
 function validateConfig(config: SimConfig): void {
   if (!Number.isInteger(config.seed) || config.seed < 0 || config.seed > 0xffffffff) {
     throw new RangeError('seed muss eine ganze Zahl zwischen 0 und 2^32-1 sein');
   }
-  if (!Number.isInteger(config.startTime)) {
+  if (!Number.isInteger(config.startTime))
     throw new RangeError('startTime muss ganzzahlig sein (ms)');
-  }
-  if (config.hourlyProfile.length !== 24) {
-    throw new RangeError('hourlyProfile braucht genau 24 Werte');
-  }
-  if (config.callRatePerHour < 0 || config.hourlyProfile.some((f) => f < 0)) {
-    throw new RangeError('Raten dürfen nicht negativ sein');
-  }
-  const [min, max] = config.abandonAfterSeconds;
-  if (!Number.isInteger(min) || !Number.isInteger(max) || min < 1 || max < min) {
-    throw new RangeError('abandonAfterSeconds muss ein Intervall ganzer Sekunden ≥ 1 sein');
-  }
+  if (!(config.callRateFactor >= 0)) throw new RangeError('callRateFactor darf nicht negativ sein');
 }
 
-function formatCallId(n: number): string {
-  return `N${n.toString().padStart(6, '0')}`;
+/** Welt nur einmal je Regionskonfiguration erzeugen (deterministisch, also cachebar). */
+const worldCache = new WeakMap<object, World>();
+function worldFor(content: ContentBundle): World {
+  let world = worldCache.get(content.region);
+  if (!world) {
+    world = generateWorld(content.region);
+    worldCache.set(content.region, world);
+  }
+  return world;
+}
+
+export function contentHash(content: ContentBundle): string {
+  return hashValue(content);
+}
+
+function newShift(index: number, startedAt: number): ShiftStats {
+  return {
+    index,
+    startedAt,
+    callsReceived: 0,
+    callsAccepted: 0,
+    callsAbandoned: 0,
+    totalAnswerMs: 0,
+    incidents: 0,
+    hilfsfristMeasured: 0,
+    hilfsfristMet: 0,
+    totalResponseMs: 0,
+    outcomes: { gut: 0, beeintraechtigt: 0, verstorben: 0, keinPatient: 0 },
+    errors: {},
+    score: 0,
+  };
 }
 
 /**
  * Der Simulationskern. Rein deterministisch: Der Verlauf hängt nur von Konfiguration,
- * Seed und der Folge der Befehle (mit Tick-Nummer) ab.
+ * Inhalten, Seed und der Folge der Befehle (mit Tick-Nummer) ab.
  *
  * Befehle werden zur *aktuellen* Spielzeit angewendet – über {@link Simulation.flush} sofort
- * (auch in der Pause: Disponenten arbeiten weiter, während die Zeit steht) oder spätestens zu
- * Beginn des nächsten {@link Simulation.step}. Protokolliert wird der Tick, nach dem der Befehl
- * wirkte; das genügt für exakte Replays.
+ * (auch in der Pause) oder spätestens zu Beginn des nächsten {@link Simulation.step}.
  *
- * Ablauf eines Ticks ({@link Simulation.step}):
- * 1. Noch vorgemerkte Befehle in Eingangsreihenfolge anwenden.
- * 2. Spielzeit um {@link TICK_MS} weiterstellen.
- * 3. Fällige geplante Ereignisse abarbeiten (Zeitpunkt, dann Sequenznummer).
- * 4. Systeme ausführen (M1: Notrufgenerator).
+ * Ablauf eines Ticks: vorgemerkte Befehle → Zeit + {@link TICK_MS} → fällige Ereignisse
+ * (Zeitpunkt, dann Sequenznummer) → Systeme (Notrufgenerator).
  */
 export class Simulation {
+  readonly world: World;
+  readonly content: ContentIndex;
+  readonly router: Router;
+  readonly contentHash: string;
   private state: SimState;
   private readonly queue: EventQueue<ScheduledPayload>;
   private readonly rng: Record<RngStreamName, Rng>;
   private pending: SimCommand[];
   private readonly log: LoggedCommand[] = [];
+  private events: SimEvent[] = [];
+  private readonly ctx: Ctx;
 
   private constructor(
     readonly config: SimConfig,
+    bundle: ContentBundle,
     state: SimState,
     queue: EventQueue<ScheduledPayload>,
     rng: Record<RngStreamName, Rng>,
     pending: SimCommand[],
+    hash: string,
   ) {
+    this.world = worldFor(bundle);
+    this.content = indexContent(bundle, this.world);
+    this.router = new Router(this.world.graph, DEFAULT_TRAVEL_MODEL);
+    this.contentHash = hash;
     this.state = state;
     this.queue = queue;
     this.rng = rng;
     this.pending = pending;
+    // Der Zustand wird bei Wiederherstellung ersetzt – deshalb Zugriff über eine Funktion.
+    const currentState = () => this.state;
+    this.ctx = {
+      config,
+      content: this.content,
+      world: this.world,
+      router: this.router,
+      get state() {
+        return currentState();
+      },
+      rng: this.rng,
+      schedule: (at, payload) => {
+        this.queue.schedule(at, payload);
+      },
+      emit: (event) => {
+        this.events.push(event);
+      },
+      newId: (prefix) => {
+        const id = `${prefix}${this.state.nextId.toString().padStart(6, '0')}`;
+        this.state.nextId++;
+        return id;
+      },
+    };
   }
 
-  static create(config: SimConfig): Simulation {
+  static create(config: SimConfig, content: ContentBundle): Simulation {
     validateConfig(config);
     const rng = {} as Record<RngStreamName, Rng>;
-    for (const name of RNG_STREAMS) {
-      rng[name] = Rng.stream(config.seed, name);
-    }
+    for (const name of RNG_STREAMS) rng[name] = Rng.stream(config.seed, name);
     const state: SimState = {
       time: config.startTime,
       tick: 0,
       nextId: 1,
       calls: [],
-      stats: { callsReceived: 0, callsAccepted: 0, callsAbandoned: 0, totalWaitMs: 0 },
+      incidents: [],
+      vehicles: [],
+      shift: newShift(1, config.startTime),
+      shiftHistory: [],
     };
-    return new Simulation(config, state, new EventQueue(), rng, []);
+    const sim = new Simulation(
+      config,
+      content,
+      state,
+      new EventQueue(),
+      rng,
+      [],
+      contentHash(content),
+    );
+    sim.state.vehicles = sim.initialVehicles();
+    sim.queue.schedule(sim.nextShiftEnd(config.startTime), { kind: 'shift/end' });
+    return sim;
   }
 
-  static restore(snapshot: SimSnapshot): Simulation {
+  static restore(snapshot: SimSnapshot, content: ContentBundle): Simulation {
     // Snapshots kommen aus Dateien; der Typ garantiert die Version zur Laufzeit nicht.
     if ((snapshot.version as number) !== SNAPSHOT_VERSION) {
       throw new RangeError(`Snapshot-Version ${String(snapshot.version)} wird nicht unterstützt`);
     }
+    const hash = contentHash(content);
+    if (snapshot.contentHash !== hash) {
+      throw new RangeError('Spielstand passt nicht zu den installierten Inhalten');
+    }
     validateConfig(snapshot.config);
     const rng = {} as Record<RngStreamName, Rng>;
-    for (const name of RNG_STREAMS) {
-      rng[name] = Rng.fromState(snapshot.rng[name]);
-    }
+    for (const name of RNG_STREAMS) rng[name] = Rng.fromState(snapshot.rng[name]);
     return new Simulation(
       snapshot.config,
-      structuredCloneJson(snapshot.state),
-      EventQueue.fromJSON(structuredCloneJson(snapshot.queue)),
+      content,
+      cloneJson(snapshot.state),
+      EventQueue.fromJSON(cloneJson(snapshot.queue)),
       rng,
       [...snapshot.pending],
+      hash,
     );
   }
 
@@ -138,57 +212,53 @@ export class Simulation {
     return this.state.tick;
   }
 
-  /** Merkt einen Befehl vor; er wirkt beim nächsten {@link flush} oder {@link step}. */
+  /** Schreibgeschützter Blick auf den vollständigen Zustand (inkl. verborgener Wahrheit). */
+  get raw(): Readonly<SimState> {
+    return this.state;
+  }
+
   submit(command: SimCommand): void {
     this.pending.push(command);
   }
 
-  /** Protokoll aller angewendeten Befehle seit Erzeugung bzw. Wiederherstellung. */
   commandLog(): readonly LoggedCommand[] {
     return this.log;
   }
 
-  /** Wendet alle vorgemerkten Befehle sofort zur aktuellen Spielzeit an, ohne Zeit zu verbrauchen. */
+  /** Wendet vorgemerkte Befehle sofort zur aktuellen Spielzeit an, ohne Zeit zu verbrauchen. */
   flush(): SimEvent[] {
-    const events: SimEvent[] = [];
-    this.applyPending(events);
-    return events;
+    this.applyPending();
+    return this.takeEvents();
   }
 
-  /** Führt genau einen Tick aus und liefert die dabei entstandenen Ereignisse. */
   step(): SimEvent[] {
-    const events: SimEvent[] = [];
-    this.applyPending(events);
-
-    const tick = this.state.tick + 1;
-    const time = this.state.time + TICK_MS;
-    this.state = { ...this.state, tick, time };
-
-    for (let due = this.queue.popDue(time); due; due = this.queue.popDue(time)) {
-      this.handleScheduled(due.payload, events);
+    this.applyPending();
+    this.state.tick++;
+    this.state.time += TICK_MS;
+    for (
+      let due = this.queue.popDue(this.state.time);
+      due;
+      due = this.queue.popDue(this.state.time)
+    ) {
+      this.handleScheduled(due.payload);
     }
-
-    this.generateCalls(events);
-    return events;
+    generateCalls(this.ctx);
+    return this.takeEvents();
   }
 
-  /** Führt `count` Ticks aus und sammelt alle Ereignisse. */
   run(count: number): SimEvent[] {
     const all: SimEvent[] = [];
-    for (let i = 0; i < count; i++) {
-      all.push(...this.step());
-    }
+    for (let i = 0; i < count; i++) all.push(...this.step());
     return all;
   }
 
   snapshot(): SimSnapshot {
     const rng = {} as Record<RngStreamName, ReturnType<Rng['state']>>;
-    for (const name of RNG_STREAMS) {
-      rng[name] = this.rng[name].state();
-    }
-    return structuredCloneJson({
+    for (const name of RNG_STREAMS) rng[name] = this.rng[name].state();
+    return cloneJson({
       version: SNAPSHOT_VERSION,
       config: this.config,
+      contentHash: this.contentHash,
       state: this.state,
       rng,
       queue: this.queue.toJSON(),
@@ -196,145 +266,165 @@ export class Simulation {
     });
   }
 
-  /** Prüfsumme über den gesamten Zustand inkl. Zufalls- und Warteschlangenzustand. */
   hash(): string {
-    return hashValue(this.snapshot());
+    const snap = this.snapshot();
+    return hashValue({ ...snap, contentHash: '' });
   }
 
-  view(): SimView {
-    return {
-      time: this.state.time,
-      tick: this.state.tick,
-      waitingCalls: this.state.calls,
-      stats: this.state.stats,
-    };
+  suggestVehicles(incidentId: string): VehicleSuggestion[] {
+    return suggestVehicles(this.ctx, incidentId);
   }
 
-  /**
-   * Ein Handler je Befehlstyp. Der Mapped Type erzwingt zur Compile-Zeit, dass jeder neue
-   * Befehl einen Handler bekommt.
-   */
-  private readonly commandHandlers: {
-    readonly [K in SimCommand['type']]: (
-      command: Extract<SimCommand, { type: K }>,
-      events: SimEvent[],
-    ) => void;
-  } = {
-    'call/accept': (command, events) => {
-      this.acceptCall(command.callId, events);
-    },
-  };
+  suggestHospitals(vehicleId: string): HospitalSuggestion[] {
+    return suggestHospitals(this.ctx, vehicleId);
+  }
 
-  private readonly scheduledHandlers: {
-    readonly [K in ScheduledPayload['kind']]: (
-      payload: Extract<ScheduledPayload, { kind: K }>,
-      events: SimEvent[],
-    ) => void;
-  } = {
-    'call/abandon': (payload, events) => {
-      this.abandonCall(payload.callId, events);
-    },
-  };
+  private takeEvents(): SimEvent[] {
+    const events = this.events;
+    this.events = [];
+    return events;
+  }
 
-  private applyPending(events: SimEvent[]): void {
+  private applyPending(): void {
     const commands = this.pending;
     this.pending = [];
     for (const command of commands) {
       this.log.push({ tick: this.state.tick, command });
-      this.apply(command, events);
+      const reason = this.apply(command);
+      if (reason) {
+        this.events.push({
+          type: 'command/rejected',
+          at: this.state.time,
+          command: command.type,
+          reason,
+        });
+      }
     }
   }
 
-  private apply(command: SimCommand, events: SimEvent[]): void {
-    const handler = this.commandHandlers[command.type];
-    handler(command, events);
+  private apply(command: SimCommand): RejectReason | undefined {
+    const ctx = this.ctx;
+    switch (command.type) {
+      case 'call/accept':
+        return acceptCall(ctx, command.callId);
+      case 'call/close':
+        return closeCall(ctx, command.callId);
+      case 'incident/create':
+        return createIncident(ctx, command.callId, command.addressId, command.keywordId);
+      case 'incident/dispatch':
+        return dispatch(ctx, command.incidentId, command.vehicleIds);
+      case 'vehicle/assignDestination':
+        return assignDestination(ctx, command.vehicleId, command.hospitalId);
+      case 'vehicle/release':
+        return releaseCommand(ctx, command.vehicleId);
+    }
   }
 
-  private handleScheduled(payload: ScheduledPayload, events: SimEvent[]): void {
-    const handler = this.scheduledHandlers[payload.kind];
-    handler(payload, events);
-  }
-
-  private acceptCall(callId: string, events: SimEvent[]): void {
-    const call = this.state.calls.find((c) => c.id === callId);
-    if (!call) {
-      events.push({
-        type: 'command/rejected',
-        at: this.state.time,
-        command: 'call/accept',
-        reason: 'unknownCall',
-      });
+  private handleScheduled(p: ScheduledPayload): void {
+    const ctx = this.ctx;
+    if (p.kind === 'call/abandon') {
+      abandonCall(ctx, p.callId);
       return;
     }
-    const waitedMs = this.state.time - call.receivedAt;
-    this.removeCall(call.id);
-    this.state = {
-      ...this.state,
-      stats: {
-        ...this.state.stats,
-        callsAccepted: this.state.stats.callsAccepted + 1,
-        totalWaitMs: this.state.stats.totalWaitMs + waitedMs,
-      },
-    };
-    events.push({ type: 'call/accepted', at: this.state.time, callId: call.id, waitedMs });
+    if (p.kind === 'incident/callbackDone') {
+      onCallbackDone(ctx, p.incidentId);
+      return;
+    }
+    if (p.kind === 'shift/end') {
+      this.endShift();
+      return;
+    }
+    const v = findVehicle(ctx, p.vehicleId);
+    // Veraltete Ereignisse einer abgebrochenen Aufgabe ignorieren.
+    if (v?.taskSeq !== p.seq) return;
+    switch (p.kind) {
+      case 'vehicle/turnoutDone':
+        onTurnoutDone(ctx, v);
+        return;
+      case 'vehicle/arrive':
+        onArrive(ctx, v);
+        return;
+      case 'vehicle/assessed':
+        onAssessed(ctx, v);
+        return;
+      case 'vehicle/sceneDone':
+        onSceneDone(ctx, v);
+        return;
+      case 'vehicle/destTimeout':
+        onDestinationTimeout(ctx, v);
+        return;
+      case 'vehicle/handoverDone':
+        onHandoverDone(ctx, v);
+        return;
+    }
   }
 
-  private abandonCall(callId: string, events: SimEvent[]): void {
-    // Wurde der Anruf inzwischen angenommen, ist das geplante Auflegen gegenstandslos.
-    if (!this.state.calls.some((c) => c.id === callId)) return;
-    this.removeCall(callId);
-    this.state = {
-      ...this.state,
-      stats: { ...this.state.stats, callsAbandoned: this.state.stats.callsAbandoned + 1 },
-    };
-    events.push({ type: 'call/abandoned', at: this.state.time, callId });
+  private initialVehicles(): VehicleState[] {
+    return this.content.bundle.stations.flatMap((station) => {
+      const home = this.content.stationNode.get(station.id) ?? 0;
+      return station.vehicles.map((v): VehicleState => ({
+        id: v.id,
+        typeId: v.type,
+        stationId: station.id,
+        homeNode: home,
+        status: 2,
+        task: 'idle',
+        taskSeq: 0,
+        incidentId: null,
+        node: home,
+        route: null,
+        hospitalId: null,
+        busyMs: 0,
+      }));
+    });
   }
 
-  /**
-   * Notrufe als Bernoulli-Prozess je Tick (p = Rate × Δt). Bei Raten weit unter einem Anruf
-   * pro Sekunde ist das eine sehr gute Näherung an einen Poisson-Prozess und kommt ohne
-   * Logarithmus aus (Determinismus, ADR-0004).
-   */
-  private generateCalls(events: SimEvent[]): void {
-    const { hour } = toCalendar(this.state.time);
-    const factor = this.config.hourlyProfile[hour] ?? 1;
-    const p = (this.config.callRatePerHour * factor * TICK_MS) / MS_PER_HOUR;
-    if (!this.rng.calls.chance(p)) return;
-
-    const id = formatCallId(this.state.nextId);
-    const call: CallState = { id, receivedAt: this.state.time, status: 'waiting' };
-    this.state = {
-      ...this.state,
-      nextId: this.state.nextId + 1,
-      calls: [...this.state.calls, call],
-      stats: { ...this.state.stats, callsReceived: this.state.stats.callsReceived + 1 },
-    };
-    const [min, max] = this.config.abandonAfterSeconds;
-    const patienceMs = this.rng.callers.nextInt(min, max) * 1000;
-    this.queue.schedule(this.state.time + patienceMs, { kind: 'call/abandon', callId: id });
-    events.push({ type: 'call/incoming', at: this.state.time, callId: id });
+  /** Nächster Schichtwechsel nach `time` laut Einstellungen. */
+  private nextShiftEnd(time: number): number {
+    const { startHour, hours } = this.content.bundle.settings.shift;
+    const cal = toCalendar(time);
+    const dayStart = time - (cal.hour * 3600 + cal.minute * 60 + cal.second) * 1000;
+    let t = dayStart + startHour * MS_PER_HOUR;
+    while (t <= time) t += hours * MS_PER_HOUR;
+    return t;
   }
 
-  private removeCall(id: string): void {
-    this.state = { ...this.state, calls: this.state.calls.filter((c) => c.id !== id) };
+  private endShift(): void {
+    const shift = this.state.shift;
+    shift.endedAt = this.state.time;
+    // Auslastung der Schicht festhalten, dann Zähler für die neue Schicht zurücksetzen.
+    const busy: Record<string, number> = {};
+    for (const v of this.state.vehicles) {
+      if (v.busySince !== undefined) {
+        v.busyMs += this.state.time - v.busySince;
+        v.busySince = this.state.time;
+      }
+      busy[v.id] = v.busyMs;
+      v.busyMs = 0;
+    }
+    shift.vehicleBusyMs = busy;
+    this.state.shiftHistory = [...this.state.shiftHistory, shift].slice(-30);
+    this.state.shift = newShift(shift.index + 1, this.state.time);
+    this.events.push({ type: 'shift/ended', at: this.state.time, index: shift.index });
+    this.queue.schedule(this.nextShiftEnd(this.state.time), { kind: 'shift/end' });
   }
 }
 
 /** Tiefe Kopie über JSON – der Zustand enthält per Definition nur JSON-Werte. */
-function structuredCloneJson<T>(value: T): T {
+function cloneJson<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
 }
 
 /** Spielt ein Befehlsprotokoll von Beginn an nach (Replays, Bugreports). */
 export function replay(
   config: SimConfig,
+  content: ContentBundle,
   log: readonly LoggedCommand[],
   ticks: number,
 ): Simulation {
-  const sim = Simulation.create(config);
+  const sim = Simulation.create(config, content);
   let i = 0;
   for (let t = 0; t <= ticks; t++) {
-    // Befehle wirkten nach Tick t (zur Spielzeit von Tick t), also vor dem nächsten Schritt.
     while (i < log.length && (log[i] as LoggedCommand).tick === t) {
       sim.submit((log[i] as LoggedCommand).command);
       i++;

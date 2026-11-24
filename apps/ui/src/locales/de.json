@@ -1,44 +1,140 @@
 {
   "app": {
     "title": "Leitstelle 112",
-    "center": "ILS Brakenfeld",
     "connecting": "Verbinde mit Simulation …",
     "connected": "Simulation verbunden",
     "disconnected": "Simulation getrennt – wird neu gestartet …"
+  },
+  "menu": {
+    "new": "Neues Spiel",
+    "save": "Speichern",
+    "saves": "Spielstände",
+    "evaluation": "Auswertung",
+    "help": "Hilfe"
   },
   "clock": {
     "pause": "Pause",
     "resume": "Weiter",
     "paused": "PAUSE",
     "speed": "Zeitraffer {{speed}}×",
-    "weekday": {
-      "1": "Mo",
-      "2": "Di",
-      "3": "Mi",
-      "4": "Do",
-      "5": "Fr",
-      "6": "Sa",
-      "7": "So"
-    }
+    "shift": "Schicht {{n}}",
+    "weekday": { "1": "Mo", "2": "Di", "3": "Mi", "4": "Do", "5": "Fr", "6": "Sa", "7": "So" }
   },
   "panel": {
     "calls": "Notrufe",
     "map": "Lagekarte",
     "vehicles": "Fahrzeugstatus",
-    "log": "Ereignisprotokoll"
+    "incidents": "Einsätze",
+    "radio": "Funk"
   },
   "calls": {
     "empty": "Keine wartenden Notrufe",
     "line": "Leitung {{n}}",
-    "waiting": "wartet {{duration}}",
+    "waiting": "klingelt {{duration}}",
+    "talking": "im Gespräch {{duration}}",
     "accept": "Annehmen",
-    "acceptHint": "F2"
+    "open": "Öffnen"
   },
-  "map": {
-    "placeholder": "Die Offline-Lagekarte des Landkreises Brakenfeld folgt in Meilenstein 2."
+  "mask": {
+    "title": "Notrufabfrage {{id}}",
+    "caller": "Anrufer",
+    "transcript": "Gesprächsverlauf",
+    "address": "Einsatzort",
+    "addressPlaceholder": "Straße, Hausnummer, Ort …",
+    "takeAddress": "Angaben übernehmen",
+    "noResults": "Keine passende Adresse gefunden.",
+    "keyword": "Stichwort",
+    "create": "Einsatz anlegen",
+    "end": "Ohne Einsatz beenden",
+    "callback": "Rückrufnummer",
+    "hint": "↑/↓ Treffer wählen · Strg+Enter Einsatz anlegen · Esc Maske schließen (Gespräch bleibt)"
   },
-  "vehicles": {
-    "placeholder": "Fahrzeuge folgen in Meilenstein 3. Legende der FMS-Status:"
+  "caller": {
+    "kind": {
+      "self": "Betroffene Person",
+      "relative": "Angehörige/r",
+      "neighbor": "Nachbar/in",
+      "passerby": "Passant/in",
+      "caregiver": "Pflegekraft"
+    },
+    "intro": {
+      "self": "Hallo? Ich brauche Hilfe …",
+      "relative": "Ja, hallo, ich rufe für meine Angehörige an …",
+      "neighbor": "Ich bin hier bei meiner Nachbarschaft …",
+      "passerby": "Hallo, ich bin hier zufällig vorbeigekommen …",
+      "caregiver": "Pflegedienst hier, ich bin gerade bei einer Patientin …"
+    },
+    "tone": {
+      "panic": "Bitte, schnell! Ich glaube, es ist ganz schlimm!",
+      "calm": "Es ist bestimmt nichts Ernstes, aber ich wollte lieber mal anrufen."
+    },
+    "where": "Wo genau ist der Notfallort?",
+    "addressHouse": "{{street}} {{number}}, in {{town}}.",
+    "addressNoTown": "{{street}} {{number}}. … Was? Ach so, den Ort? Ähm …",
+    "addressRoad": "Auf der {{road}}, zwischen {{a}} und {{b}}.",
+    "what": "Was ist passiert?",
+    "who": "Wer ist betroffen?",
+    "patient": "{{sex}}, etwa {{age}} Jahre alt.",
+    "sex": { "m": "Ein Mann", "w": "Eine Frau" },
+    "child": "Ein Kind, etwa {{age}} Jahre alt.",
+    "callbackQ": "Unter welcher Nummer erreichen wir Sie?"
+  },
+  "report": {
+    "chest_pain": "Starke Schmerzen in der Brust, es drückt und zieht in den linken Arm. Schweißgebadet.",
+    "unwell": "Fühlt sich ganz komisch, ist blass und irgendwie nicht richtig da.",
+    "stroke_signs": "Hängender Mundwinkel, spricht ganz verwaschen, der rechte Arm geht nicht mehr.",
+    "confused": "Ist total verwirrt, weiß nicht, wo sie ist, erkennt mich nicht mehr.",
+    "breathing": "Bekommt kaum Luft, japst richtig und kann nicht mehr sprechen.",
+    "fall": "Ist gestürzt und kommt nicht mehr hoch, die Hüfte tut weh.",
+    "unconscious": "Liegt da und reagiert kaum, atmet aber.",
+    "not_responding": "Reagiert überhaupt nicht mehr! Ich weiß nicht, ob sie noch atmet!",
+    "cpr": "Atmet nicht mehr! Ich drücke auf die Brust, wie Sie es sagen!",
+    "traffic_accident": "Hier hat es gekracht, ein Auto ist in den Graben gefahren, jemand ist verletzt.",
+    "child_seizure": "Mein Kind hat Fieber und zuckt am ganzen Körper, die Augen sind verdreht!",
+    "seizure": "Hat einen Krampfanfall, zuckt am ganzen Körper.",
+    "drunk": "Da liegt jemand, ziemlich betrunken, nicht mehr richtig ansprechbar.",
+    "allergy": "Nach einem Wespenstich schwillt alles an, das Gesicht, der Hals …",
+    "abdominal": "Ganz starke Bauchschmerzen, krümmt sich vor Schmerzen.",
+    "helpless_person": "Hier liegt eine Person am Boden, ich weiß nicht, was los ist."
+  },
+  "keyword": {
+    "pick": "Stichwort wählen"
+  },
+  "dispatch": {
+    "title": "Disposition {{id}}",
+    "suggestion": "Vorschlag nach AAO und Fahrzeit",
+    "eta": "Eintreffen",
+    "alarm": "Alarmieren",
+    "none": "Kein Fahrzeug ausgewählt",
+    "unavailable": "nicht verfügbar",
+    "doctorRequested": "Nachforderung Notarzt!",
+    "assigned": "Bereits im Einsatz"
+  },
+  "destination": {
+    "title": "Zielklinik für {{vehicle}}",
+    "finding": "Befund",
+    "suitable": "geeignet",
+    "unsuitable": "Fachabteilung fehlt",
+    "assign": "Zuweisen",
+    "waiting": "Sprechwunsch seit {{duration}}"
+  },
+  "incidents": {
+    "empty": "Keine Einsätze",
+    "number": "Nr.",
+    "keyword": "Stw.",
+    "location": "Einsatzort",
+    "report": "Meldung / Befund",
+    "units": "Kräfte",
+    "time": "Seit Eingang",
+    "status": {
+      "open": "offen",
+      "active": "läuft",
+      "closed": "beendet"
+    },
+    "doctorRequested": "NA nachgefordert",
+    "locating": "Adresse wird geklärt",
+    "needsUnits": "Kräfte fehlen",
+    "dispatch": "Disponieren"
   },
   "fms": {
     "0": "Priorisierter Sprechwunsch",
@@ -52,25 +148,166 @@
     "8": "Am Transportziel",
     "9": "Fremdanmeldung"
   },
+  "task": {
+    "idle": "auf Wache",
+    "turnout": "rückt aus",
+    "toScene": "Anfahrt",
+    "onScene": "vor Ort",
+    "awaitDestination": "wartet auf Zielklinik",
+    "toHospital": "Transport",
+    "handover": "Übergabe",
+    "returning": "Rückfahrt"
+  },
+  "vehicles": {
+    "release": "Abbestellen",
+    "destination": "Zielklinik"
+  },
+  "radio": {
+    "status": "Status {{status}} – {{text}}",
+    "alarmed": "Alarmierung quittiert",
+    "arrived": "Status 4 – am Einsatzort",
+    "requestDoctor": "Sprechwunsch: Patient kritisch, erbitten Notarzt nach!",
+    "requestTransport": "Brauchen ein Transportmittel, bitte RTW schicken.",
+    "doctorNotNeeded": "Notarzt wird nicht benötigt, NEF wieder frei.",
+    "secondUnitNotNeeded": "Nur ein Patient – zweites Fahrzeug wird nicht benötigt.",
+    "requestDestination": "Sprechwunsch: Patient transportbereit, erbitten Zielklinik.",
+    "destinationSelf": "Keine Rückmeldung – fahren selbstständig das nächste Krankenhaus an.",
+    "noTransport": "Patient verbleibt vor Ort, kein Transport erforderlich.",
+    "noPatient": "Kein Patient vor Ort angetroffen, rücken wieder ein.",
+    "wrongLocation": "Einsatzort nicht auffindbar – bitte Rückruf beim Anrufer!",
+    "locationFound": "Neue Adresse übernommen, fahren an.",
+    "accompany": "Notarzt begleitet den Transport.",
+    "released": "Einsatz für uns beendet, frei über Funk."
+  },
   "events": {
-    "call/incoming": "Notruf {{callId}} geht ein",
-    "call/accepted": "Notruf {{callId}} angenommen nach {{waited}}",
-    "call/abandoned": "Anrufer {{callId}} hat aufgelegt",
-    "command/rejected": "Befehl abgelehnt: {{reason}}",
-    "reason": {
-      "unknownCall": "Notruf nicht mehr vorhanden"
+    "call/incoming": "Notruf {{id}} klingelt",
+    "call/accepted": "Notruf {{id}} angenommen nach {{waited}}",
+    "call/abandoned": "Anrufer {{id}} hat aufgelegt – niemand hat abgenommen!",
+    "call/closed": "Gespräch {{id}} ohne Einsatz beendet",
+    "incident/created": "Einsatz {{id}} angelegt",
+    "incident/closed": "Einsatz {{id}} beendet – Patient: {{outcome}}",
+    "command/rejected": "Nicht möglich: {{reason}}",
+    "shift/ended": "Schichtwechsel – Auswertung der Schicht {{index}}"
+  },
+  "reason": {
+    "unknownCall": "Notruf nicht mehr vorhanden",
+    "callNotWaiting": "Notruf wird bereits bearbeitet",
+    "callNotTalking": "Gespräch nicht aktiv",
+    "unknownAddress": "Adresse unbekannt",
+    "unknownKeyword": "Stichwort unbekannt",
+    "unknownIncident": "Einsatz unbekannt",
+    "incidentClosed": "Einsatz bereits beendet",
+    "unknownVehicle": "Fahrzeug unbekannt",
+    "vehicleBusy": "Fahrzeug ist nicht verfügbar",
+    "notAwaitingDestination": "Fahrzeug wartet nicht auf eine Zielklinik",
+    "unknownHospital": "Krankenhaus unbekannt",
+    "notReleasable": "Fahrzeug kann jetzt nicht abbestellt werden"
+  },
+  "outcome": {
+    "gut": "gut versorgt",
+    "beeintraechtigt": "mit Folgeschäden",
+    "verstorben": "verstorben",
+    "keinPatient": "kein Patient"
+  },
+  "error": {
+    "callAbandoned": "Anrufer aufgelegt (Notruf nicht angenommen)",
+    "callClosedWithEmergency": "Notruf ohne Einsatz beendet, obwohl ein Notfall vorlag",
+    "undertriage": "Stichwort zu niedrig gewählt (Notarzt fehlte)",
+    "overtriage": "Notarzt ohne Indikation alarmiert",
+    "wrongLocation": "Falscher Einsatzort",
+    "notNearestVehicle": "Nicht das nächste freie Fahrzeug alarmiert",
+    "slowDispatch": "Alarmierung verzögert",
+    "doctorLate": "Notarzt verspätet alarmiert",
+    "unsuitableHospital": "Zielklinik ohne passende Fachabteilung",
+    "destinationTimeout": "Zielklinik nicht rechtzeitig zugewiesen"
+  },
+  "evaluation": {
+    "title": "Schichtauswertung",
+    "current": "Laufende Schicht {{n}}",
+    "finished": "Schicht {{n}} beendet",
+    "score": "Punkte",
+    "hilfsfrist": "Hilfsfrist",
+    "hilfsfristValue": "{{met}} von {{total}} ({{quota}} %)",
+    "target": "Ziel: {{label}}",
+    "response": "Ø Eintreffzeit",
+    "answer": "Ø Annahmezeit",
+    "calls": "Notrufe",
+    "incidents": "Einsätze",
+    "outcomes": "Patienten",
+    "errors": "Fehler",
+    "noErrors": "Keine Fehler – ausgezeichnet!",
+    "utilization": "Auslastung",
+    "continue": "Weiterspielen",
+    "rating": {
+      "excellent": "Hervorragende Schicht",
+      "good": "Solide Schicht",
+      "poor": "Da ist noch Luft nach oben"
     }
+  },
+  "saves": {
+    "title": "Spielstände",
+    "name": "Name des Spielstands",
+    "save": "Speichern",
+    "load": "Laden",
+    "empty": "Noch keine Spielstände",
+    "auto": "automatisch",
+    "manual": "manuell"
+  },
+  "start": {
+    "subtitle": "Integrierte Leitstelle für Rettungsdienst, Brandschutz und Katastrophenschutz",
+    "free": "Freies Spiel",
+    "freeText": "Eine endlose Schicht im Landkreis Brakenfeld. Jeder Einsatz ist anders.",
+    "tutorial": "Tutorial",
+    "tutorialText": "Geführter erster Einsatz: vom Notruf bis ins Krankenhaus.",
+    "load": "Spielstand laden",
+    "loadText": "Gespeicherte Schicht fortsetzen.",
+    "disclaimer": "Ein Spiel – kein Schulungswerkzeug. Alle Orte und Personen sind frei erfunden."
+  },
+  "help": {
+    "title": "Tastatur und Ablauf",
+    "flow": "Notruf annehmen → Adresse und Stichwort erfassen → Einsatz anlegen → Fahrzeuge alarmieren → Sprechwünsche bearbeiten (Zielklinik) → nächster Notruf.",
+    "keys": {
+      "space": "Pause / Weiter",
+      "speed": "Zeitraffer 1× / 2× / 5× / 10×",
+      "f2": "Ältesten Notruf annehmen",
+      "f3": "Einsatz ohne Kräfte disponieren",
+      "f4": "Ältesten Sprechwunsch (Zielklinik) bearbeiten",
+      "enter": "Vorschlag bestätigen (Alarmieren, Zuweisen)",
+      "ctrlEnter": "Einsatz anlegen (in der Notrufmaske)",
+      "esc": "Dialog schließen"
+    }
+  },
+  "tutorial": {
+    "title": "Tutorial",
+    "s1": "Ein Notruf klingelt! Nimm ihn mit F2 oder dem Knopf „Annehmen“ an. Achte auf die Zeit: Jede Sekunde zählt.",
+    "s2": "Lies, was der Anrufer sagt. Klicke auf „Angaben übernehmen“ und wähle die passende Adresse aus der Trefferliste.",
+    "s3": "Wähle das Stichwort passend zum Meldebild: RD 1 ohne, RD 2 mit Notarzt, RD 3 bei Reanimation. Im Zweifel lieber mit Notarzt.",
+    "s4": "Alles erfasst? Lege den Einsatz mit Strg+Enter an.",
+    "s5": "Die Alarm- und Ausrückeordnung schlägt die schnellsten passenden Fahrzeuge vor. Alarmiere sie mit Enter.",
+    "s6": "Die Kräfte sind unterwegs (Status 3). Verfolge die Anfahrt auf der Karte – mit 5× oder 10× vergeht die Zeit schneller.",
+    "s7": "Status 4: Die Kräfte sind vor Ort und melden gleich den Befund. Er erscheint in der Einsatzliste.",
+    "s8": "Status 5 – Sprechwunsch! Der Patient ist transportbereit. Drücke F4 und weise eine geeignete Zielklinik zu.",
+    "s9": "Geschafft! Der Patient ist auf dem Weg ins Krankenhaus. Im freien Spiel wartet eine ganze Schicht – und kein Tag ist wie der andere.",
+    "close": "Tutorial beenden"
   },
   "stats": {
     "received": "Eingegangen",
-    "accepted": "Angenommen",
-    "abandoned": "Aufgelegt",
-    "avgWait": "Ø Annahmezeit"
+    "incidents": "Einsätze",
+    "hilfsfrist": "Hilfsfrist",
+    "score": "Punkte"
   },
   "shortcuts": {
     "title": "Tastatur",
     "pause": "Pause",
     "speed": "Zeitraffer",
-    "accept": "Ältesten Notruf annehmen"
+    "accept": "Notruf",
+    "dispatch": "Disponieren",
+    "destination": "Sprechwunsch"
+  },
+  "map": {
+    "station": "Rettungswache",
+    "doctor": "Notarztstandort",
+    "hospital": "Krankenhaus",
+    "fictional": "Fiktiver Landkreis – Kartendaten: eigenes Werk (CC BY-SA 4.0)"
   }
 }
