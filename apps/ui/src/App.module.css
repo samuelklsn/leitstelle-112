@@ -242,3 +242,18 @@
   border-color: var(--warn);
   color: var(--warn);
 }
+
+/* Nebenfenster: ein Bereich füllt das ganze Fenster. */
+.single {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 6px;
+  gap: 6px;
+}
+
+.single > * {
+  flex: 1;
+  min-height: 0;
+}

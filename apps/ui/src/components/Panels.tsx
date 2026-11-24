@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import type { IncidentView, VehicleView } from '@ls112/protocol';
@@ -468,7 +467,8 @@ type Tab = (typeof TABS)[number];
 
 export function BottomTabs() {
   const { t } = useTranslation();
-  const [tab, setTab] = useState<Tab>('incidents');
+  const tab = useSim((s) => s.bottomTab);
+  const setTab = useSim((s) => s.setBottomTab);
   const open = useSim(
     (s) =>
       (s.host?.view.incidents ?? EMPTY).filter((i) => !i.order && i.status !== 'closed').length,
