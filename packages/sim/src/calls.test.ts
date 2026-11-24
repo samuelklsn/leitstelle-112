@@ -1,7 +1,7 @@
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 import type { Simulation } from './simulation';
-import { createCall } from './systems/calls';
+import { createCall, isOutdoor } from './systems/calls';
 import { botAct, newSim } from './test-support';
 import { QUESTIONS, type CallKind, type SimEvent } from './types';
 import { buildView } from './view';
@@ -57,10 +57,10 @@ describe('Notrufabfrage', () => {
       const c = createCall(ctxOf(sim), 'emergency');
       if (c.source === '110') police = c;
     }
-    expect(police).toBeDefined();
-    expect(police?.answered).toEqual([...QUESTIONS]);
-    expect(sim.content.diagnoses.get(police?.truth.diagnosisId ?? '')?.outdoor).toBe(true);
-    expect(police?.report.misjudge).toBe(0);
+    if (!police) throw new Error('Keine Polizei-Übergabe erzeugt');
+    expect(police.answered).toEqual([...QUESTIONS]);
+    expect(isOutdoor(ctxOf(sim), police.truth)).toBe(true);
+    expect(police.report.misjudge).toBe(0);
   });
 
   it('Fehlanrufe sind still, Scherzanrufe haben keine Rückrufnummer', () => {

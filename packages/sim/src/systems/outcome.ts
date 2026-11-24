@@ -27,7 +27,18 @@ export function closeIncident(ctx: Ctx, incident: IncidentState): void {
     incident.firstArrivalAt !== undefined
       ? incident.firstArrivalAt - incident.receivedAt
       : undefined;
-  const realPatient = incident.callKind === 'emergency' && incident.duplicateOf === undefined;
+  const realCall = incident.callKind === 'emergency' && incident.duplicateOf === undefined;
+  const realPatient = realCall && incident.truth.patient;
+  // Eintreffzeit der Feuerwehr (erstes Feuerwehrfahrzeug) separat messen.
+  const fire = incident.truth.fire;
+  if (realCall && fire && incident.firstFireArrivalAt !== undefined) {
+    shift.fireMeasured++;
+    if (incident.firstFireArrivalAt - incident.receivedAt <= hf.fireMinutes * MS_PER_MINUTE) {
+      shift.fireMet++;
+    } else {
+      shift.score -= 20;
+    }
+  }
   if (emergency && realPatient && responseMs !== undefined && d?.transport !== 0) {
     shift.hilfsfristMeasured++;
     shift.totalResponseMs += responseMs;
@@ -39,7 +50,16 @@ export function closeIncident(ctx: Ctx, incident: IncidentState): void {
   const chosen = ctx.content.keywords.get(incident.keywordId);
   const correct = ctx.content.keywords.get(d?.keyword ?? '');
   const chosenHasDoctor = chosen?.aao.some((a) => ctx.content.doctorTypes.has(a.type)) ?? false;
-  if (chosen && correct && realPatient) {
+  const fireKeyword = fire
+    ? ctx.content.keywords.get(
+        ctx.content.fireScenarios.get(fire.originalScenarioId)?.keyword ?? '',
+      )
+    : undefined;
+  if (chosen && fireKeyword && realCall && fireKeyword.priority < chosen.priority) {
+    // Brand zu niedrig eingestuft (z. B. B 1 statt B 2): zu wenige Kräfte unterwegs.
+    addError(ctx, incident, 'undertriage');
+  }
+  if (chosen && correct && realPatient && !fire) {
     // Bewertet wird nur, was am Telefon erkennbar war: das fachlich passende Stichwort zum
     // Meldebild. Ein erst vor Ort sichtbarer Notarzt-Bedarf ist kein Dispositionsfehler.
     const correctHasDoctor = correct.aao.some((a) => ctx.content.doctorTypes.has(a.type));
@@ -74,8 +94,30 @@ function addError(ctx: Ctx, incident: IncidentState, code: ErrorCode): void {
 }
 
 export function computeOutcome(ctx: Ctx, incident: IncidentState): Outcome {
-  const d = ctx.content.diagnoses.get(incident.truth.diagnosisId);
   if (incident.callKind !== 'emergency' || incident.duplicateOf !== undefined) return 'keinPatient';
+  const fire = incident.truth.fire;
+  if (fire) {
+    // Brandausbreitung bedeutet größeren Schaden – auch ohne Verletzte.
+    const fireOutcome: Outcome = fire.escalations > 0 ? 'beeintraechtigt' : 'gut';
+    if (!incident.truth.patient) return fireOutcome;
+    const patientOutcome = patientOutcomeOf(ctx, incident);
+    return worse(fireOutcome, patientOutcome);
+  }
+  return patientOutcomeOf(ctx, incident);
+}
+
+const SEVERITY: Record<Outcome, number> = {
+  keinPatient: 0,
+  gut: 1,
+  beeintraechtigt: 2,
+  verstorben: 3,
+};
+function worse(a: Outcome, b: Outcome): Outcome {
+  return SEVERITY[a] >= SEVERITY[b] ? a : b;
+}
+
+function patientOutcomeOf(ctx: Ctx, incident: IncidentState): Outcome {
+  const d = ctx.content.diagnoses.get(incident.truth.diagnosisId);
   if (!d || (d.transport === 0 && !incident.truth.transport)) return 'keinPatient';
   const min = (t: number | undefined) =>
     t === undefined ? Infinity : (t - incident.receivedAt) / MS_PER_MINUTE;

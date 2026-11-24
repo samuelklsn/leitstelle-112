@@ -37,6 +37,10 @@ import {
   onArrive,
   onAssessed,
   onCallbackDone,
+  onFireDone,
+  onFireEscalate,
+  missingNeeds,
+  type Need,
   onDestinationTimeout,
   onHandoverDone,
   onSceneDone,
@@ -89,6 +93,8 @@ function newShift(index: number, startedAt: number): ShiftStats {
     incidents: 0,
     hilfsfristMeasured: 0,
     hilfsfristMet: 0,
+    fireMeasured: 0,
+    fireMet: 0,
     totalResponseMs: 0,
     outcomes: { gut: 0, beeintraechtigt: 0, verstorben: 0, keinPatient: 0 },
     errors: {},
@@ -283,6 +289,12 @@ export class Simulation {
     return suggestVehicles(this.ctx, incidentId);
   }
 
+  /** Was dem Einsatz laut Lage noch fehlt (Nachforderung). */
+  missingNeeds(incidentId: string): Need[] {
+    const incident = this.state.incidents.find((i) => i.id === incidentId);
+    return incident ? missingNeeds(this.ctx, incident) : [];
+  }
+
   suggestHospitals(vehicleId: string): HospitalSuggestion[] {
     return suggestHospitals(this.ctx, vehicleId);
   }
@@ -344,6 +356,14 @@ export class Simulation {
     }
     if (p.kind === 'incident/callbackDone') {
       onCallbackDone(ctx, p.incidentId);
+      return;
+    }
+    if (p.kind === 'fire/escalate') {
+      onFireEscalate(ctx, p.callId);
+      return;
+    }
+    if (p.kind === 'fire/done') {
+      onFireDone(ctx, p.incidentId, p.escalations);
       return;
     }
     if (p.kind === 'shift/end') {

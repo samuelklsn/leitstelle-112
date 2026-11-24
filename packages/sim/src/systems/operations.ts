@@ -45,6 +45,51 @@ export function canTransport(ctx: Ctx, v: VehicleState): boolean {
   return ctx.content.vehicleTypes.get(v.typeId)?.canTransport ?? false;
 }
 
+/** Feuerwehrfahrzeug = weder Transportmittel noch Notarzt. */
+export function isFireUnit(ctx: Ctx, v: VehicleState): boolean {
+  return !canTransport(ctx, v) && !isDoctor(ctx, v);
+}
+
+/** Rettungsdienst-Fahrzeug (RTW, NEF …). */
+function isRdUnit(ctx: Ctx, v: VehicleState): boolean {
+  return !isFireUnit(ctx, v);
+}
+
+export interface Need {
+  readonly type: string;
+  readonly count: number;
+  readonly alternatives: readonly string[];
+}
+
+/** Deckt ein Fahrzeug den Bedarf (Typ oder Ersatztyp)? */
+function fits(need: Need, v: VehicleState): boolean {
+  return v.typeId === need.type || need.alternatives.includes(v.typeId);
+}
+
+/**
+ * Zieht vorhandene Fahrzeuge vom Bedarf ab. Jedes Fahrzeug zählt nur einmal – exakte Typen werden
+ * zuerst verbraucht, damit ein HLF nicht für einen LF-Bedarf „verschwendet" wird.
+ */
+export function subtractUnits(needs: readonly Need[], vehicles: readonly VehicleState[]): Need[] {
+  const pool = [...vehicles];
+  const rest: Need[] = [];
+  for (const need of needs) {
+    let missing = need.count;
+    for (const pass of [true, false]) {
+      for (let i = pool.length - 1; i >= 0 && missing > 0; i--) {
+        const v = pool[i];
+        if (!v) continue;
+        if (pass ? v.typeId === need.type : fits(need, v)) {
+          pool.splice(i, 1);
+          missing--;
+        }
+      }
+    }
+    if (missing > 0) rest.push({ ...need, count: missing });
+  }
+  return rest;
+}
+
 export function isAvailable(v: VehicleState): boolean {
   return v.incidentId === null && (v.status === 1 || v.status === 2);
 }
@@ -249,28 +294,20 @@ export function suggestVehicles(ctx: Ctx, incidentId: string): VehicleSuggestion
     incidentNode(ctx, incident),
     travelContext(ctx.state.time, keyword?.emergency ?? true),
   );
-  const night = isNight(ctx.state.time);
-  const t = ctx.content.bundle.settings.times;
   const eta = (v: VehicleState): number | undefined => {
     if (!isAvailable(v)) return undefined;
     const drive = tree.dist[currentNode(v, ctx.state.time)] ?? UNREACHABLE;
     if (drive === UNREACHABLE) return undefined;
-    const turnout =
-      v.status === 2
-        ? night
-          ? t.turnoutNightSeconds
-          : t.turnoutDaySeconds
-        : t.turnoutMobileSeconds;
+    const turnout = turnoutRange(ctx, v);
     return drive + ((turnout[0] + turnout[1]) / 2) * 1000;
   };
   const list = ctx.state.vehicles.map((v) => ({ v, eta: eta(v) }));
   const recommended = new Set<string>();
-  const need = missingUnits(ctx, incident, keyword?.aao ?? []);
-  for (const [type, count] of need) {
+  for (const need of missingNeeds(ctx, incident)) {
     list
-      .filter((x) => x.v.typeId === type && x.eta !== undefined)
+      .filter((x) => x.eta !== undefined && !recommended.has(x.v.id) && fits(need, x.v))
       .sort((a, b) => (a.eta ?? 0) - (b.eta ?? 0) || a.v.id.localeCompare(b.v.id))
-      .slice(0, Math.max(0, count))
+      .slice(0, need.count)
       .forEach((x) => recommended.add(x.v.id));
   }
   return list
@@ -287,39 +324,44 @@ export function suggestVehicles(ctx: Ctx, incidentId: string): VehicleSuggestion
 }
 
 /**
- * Welche Fahrzeugtypen dem Einsatz noch fehlen – abhängig von der Phase:
- * vor dem Erstbefund gilt die AAO, danach nur noch der tatsächliche Bedarf
- * (Nachforderung Notarzt, fehlendes Transportmittel). Nach Transportbeginn: nichts mehr.
+ * Was dem Einsatz noch fehlt – abhängig von der Phase: vor der Lagemeldung gilt die AAO, danach
+ * der tatsächliche Bedarf (Notarzt, Transportmittel, Kräfte für die Feuerwehrlage).
  */
-function missingUnits(
-  ctx: Ctx,
-  incident: IncidentState,
-  aao: readonly { type: string; count: number }[],
-): Map<string, number> {
-  const need = new Map<string, number>();
-  if (incident.status === 'closed' || incident.hospitalId !== undefined) return need;
+export function missingNeeds(ctx: Ctx, incident: IncidentState): Need[] {
+  if (incident.status === 'closed') return [];
   const assigned = incident.vehicleIds
     .map((id) => findVehicle(ctx, id))
     .filter((v): v is VehicleState => !!v);
+  const needs: Need[] = [];
+  const truth = incident.truth;
   if (!incident.assessed) {
-    for (const a of aao) need.set(a.type, a.count);
+    needs.push(...(ctx.content.keywords.get(incident.keywordId)?.aao ?? []));
     if (incident.doctorRequested) {
-      for (const type of ctx.content.doctorTypes) need.set(type, Math.max(need.get(type) ?? 0, 1));
+      const doctor = [...ctx.content.doctorTypes][0];
+      if (doctor) needs.push({ type: doctor, count: 1, alternatives: [] });
     }
-  } else {
-    const firstTransport = ctx.content.bundle.vehicleTypes.find((t) => t.canTransport)?.id;
-    const firstDoctor = [...ctx.content.doctorTypes][0];
-    if (incident.truth.transport && firstTransport) need.set(firstTransport, 1);
-    if (incident.truth.needsDoctor && firstDoctor) need.set(firstDoctor, 1);
-    // Ein beliebiges Transportmittel bzw. ein beliebiger Notarzt deckt den Bedarf.
-    for (const v of assigned) {
-      if (canTransport(ctx, v) && firstTransport) need.set(firstTransport, 0);
-      if (isDoctor(ctx, v) && firstDoctor) need.set(firstDoctor, 0);
-    }
-    return need;
+    return subtractUnits(needs, assigned);
   }
-  for (const v of assigned) need.set(v.typeId, (need.get(v.typeId) ?? 0) - 1);
-  return need;
+  // Rettungsdienst: ein Transportmittel bzw. ein Notarzt deckt den Bedarf – bis der Transport läuft.
+  if (truth.patient && incident.hospitalId === undefined) {
+    const transport = ctx.content.bundle.vehicleTypes
+      .filter((x) => x.canTransport)
+      .map((x) => x.id);
+    const doctors = [...ctx.content.doctorTypes];
+    if (truth.transport && transport[0] && !assigned.some((v) => canTransport(ctx, v))) {
+      needs.push({ type: transport[0], count: 1, alternatives: transport.slice(1) });
+    }
+    if (truth.needsDoctor && doctors[0] && !assigned.some((v) => isDoctor(ctx, v))) {
+      needs.push({ type: doctors[0], count: 1, alternatives: doctors.slice(1) });
+    }
+  }
+  // Feuerwehr: Kräftebedarf der aktuellen (ggf. ausgebreiteten) Lage.
+  if (truth.fire && !truth.fire.done) {
+    const scenario = ctx.content.fireScenarios.get(truth.fire.scenarioId);
+    const fireUnits = assigned.filter((v) => isFireUnit(ctx, v));
+    needs.push(...subtractUnits(scenario?.needs ?? [], fireUnits));
+  }
+  return needs;
 }
 
 export interface HospitalSuggestion {
@@ -347,6 +389,16 @@ export function suggestHospitals(ctx: Ctx, vehicleId: string): HospitalSuggestio
   }));
   list.sort((a, b) => Number(b.suitable) - Number(a.suitable) || a.etaMs - b.etaMs);
   return list.map((h, i) => ({ ...h, recommended: i === 0 }));
+}
+
+/** Ausrückzeit: wachenspezifisch (Freiwillige Feuerwehr) oder aus den Einstellungen. */
+function turnoutRange(ctx: Ctx, v: VehicleState): readonly [number, number] {
+  const t = ctx.content.bundle.settings.times;
+  const night = isNight(ctx.state.time);
+  if (v.status !== 2) return t.turnoutMobileSeconds;
+  const own = ctx.content.stationTurnout.get(v.stationId);
+  if (own) return night ? own.night : own.day;
+  return night ? t.turnoutNightSeconds : t.turnoutDaySeconds;
 }
 
 function isNight(time: SimTime): boolean {
@@ -390,20 +442,13 @@ export function dispatch(
       addIncidentError(ctx, incident, 'slowDispatch');
   }
 
-  const t = ctx.content.bundle.settings.times;
-  const night = isNight(ctx.state.time);
   if ((vehicles as VehicleState[]).some((v) => isDoctor(ctx, v)))
     checkDoctorDispatch(ctx, incident);
   for (const v of vehicles as VehicleState[]) {
     v.incidentId = incident.id;
     incident.vehicleIds.push(v.id);
     markBusy(v, ctx.state.time);
-    const range =
-      v.status === 2
-        ? night
-          ? t.turnoutNightSeconds
-          : t.turnoutDaySeconds
-        : t.turnoutMobileSeconds;
+    const range = turnoutRange(ctx, v);
     // Ein fahrendes Fahrzeug rollt während der kurzen Reaktionszeit auf seiner Strecke weiter;
     // die geplante Ankunft der alten Fahrt verfällt über die neue Aufgabennummer.
     const seq = newTask(v, 'turnout');
@@ -477,7 +522,11 @@ function arriveAtScene(ctx: Ctx, v: VehicleState): void {
   }
   if (incident.locating) return;
 
-  incident.firstArrivalAt ??= ctx.state.time;
+  if (incident.firstArrivalAt === undefined) {
+    incident.firstArrivalAt = ctx.state.time;
+    deteriorate(ctx, incident);
+  }
+  if (isFireUnit(ctx, v)) incident.firstFireArrivalAt ??= ctx.state.time;
   if (isDoctor(ctx, v)) {
     incident.doctorArrivalAt ??= ctx.state.time;
     if (incident.assessed && !incident.truth.needsDoctor) {
@@ -491,6 +540,91 @@ function arriveAtScene(ctx: Ctx, v: VehicleState): void {
     ctx.schedule(ctx.state.time + delay, { kind: 'vehicle/assessed', vehicleId: v.id, seq });
   }
   scheduleSceneDone(ctx, incident);
+  checkFireWork(ctx, incident);
+}
+
+/**
+ * Lageentwicklung beim Patienten: Wer lange auf Hilfe wartet, dem geht es schlechter. Ab der
+ * Hilfsfrist steigt die Wahrscheinlichkeit, dass sich der Zustand um eine NACA-Stufe verschlechtert.
+ */
+function deteriorate(ctx: Ctx, incident: IncidentState): void {
+  const truth = incident.truth;
+  if (!truth.patient || truth.naca >= 7) return;
+  const waitedMin = (ctx.state.time - incident.receivedAt) / MS_PER_MINUTE;
+  const over = waitedMin - ctx.content.bundle.settings.hilfsfrist.minutes;
+  if (over <= 0) return;
+  if (ctx.rng.outcome.chance(Math.min(0.6, over / 30))) {
+    truth.naca += 1;
+    if (truth.naca >= 5) truth.needsDoctor = true;
+  }
+}
+
+/** Feuerwehr: Abarbeitung beginnt, sobald alle nötigen Kräfte vor Ort sind. */
+function checkFireWork(ctx: Ctx, incident: IncidentState): void {
+  const fire = incident.truth.fire;
+  if (!fire || fire.done || fire.workUntil !== undefined || !incident.assessed) return;
+  const scenario = ctx.content.fireScenarios.get(fire.scenarioId);
+  if (!scenario) return;
+  const onScene = incident.vehicleIds
+    .map((id) => findVehicle(ctx, id))
+    .filter((o): o is VehicleState => !!o && o.task === 'onScene' && isFireUnit(ctx, o));
+  if (subtractUnits(scenario.needs, onScene).length > 0) return;
+  fire.workUntil = ctx.state.time + rangeInt(ctx.rng.crews, scenario.workMinutes) * MS_PER_MINUTE;
+  ctx.schedule(fire.workUntil, {
+    kind: 'fire/done',
+    incidentId: incident.id,
+    escalations: fire.escalations,
+  });
+}
+
+/** Feuer aus bzw. Einsatzstelle abgearbeitet: Feuerwehr rückt ein. */
+export function onFireDone(ctx: Ctx, incidentId: string, escalations: number): void {
+  const incident = findIncident(ctx, incidentId);
+  const fire = incident?.truth.fire;
+  if (!incident || !fire || fire.done || fire.escalations !== escalations) return;
+  fire.done = true;
+  const units = incident.vehicleIds
+    .map((id) => findVehicle(ctx, id))
+    .filter((o): o is VehicleState => !!o && isFireUnit(ctx, o));
+  const reporter = units.find((o) => o.task === 'onScene');
+  if (reporter) radio(ctx, reporter, 'fireUnderControl');
+  for (const o of units) releaseVehicle(ctx, o, 'released');
+  // Eingeklemmte Person ist befreit: Jetzt kann der Rettungsdienst transportieren.
+  scheduleSceneDone(ctx, incident);
+  maybeClose(ctx, incident);
+}
+
+/**
+ * Ausbreitung: Ist bis jetzt kein Feuerwehrfahrzeug vor Ort, wird aus dem Küchenbrand ein
+ * Wohnungsbrand, aus dem Wohnungsbrand ein Dachstuhlbrand (ADR-0014, Lageentwicklung).
+ */
+export function onFireEscalate(ctx: Ctx, callId: string): void {
+  const incident = ctx.state.incidents.find((i) => i.callId === callId);
+  const call = ctx.state.calls.find((c) => c.id === callId);
+  const truth = incident?.truth ?? call?.truth;
+  const fire = truth?.fire;
+  if (!fire || fire.done) return;
+  if (incident?.status === 'closed' || incident?.firstFireArrivalAt !== undefined) return;
+  if (!incident && !call) return;
+  const from = ctx.content.fireScenarios.get(fire.scenarioId);
+  const to = from?.escalation ? ctx.content.fireScenarios.get(from.escalation.to) : undefined;
+  if (!to) return;
+  fire.scenarioId = to.id;
+  fire.escalations++;
+  delete fire.workUntil;
+  if (incident) {
+    addIncidentError(ctx, incident, 'fireSpread');
+    const witness = incident.vehicleIds
+      .map((id) => findVehicle(ctx, id))
+      .find((o) => o?.task === 'onScene');
+    if (witness) radio(ctx, witness, 'fireSpread');
+  } else {
+    countError(ctx, 'fireSpread');
+  }
+  if (to.escalation) {
+    const after = rangeInt(ctx.rng.patients, to.escalation.after) * MS_PER_MINUTE;
+    ctx.schedule(ctx.state.time + after, { kind: 'fire/escalate', callId });
+  }
 }
 
 function releaseAll(ctx: Ctx, incident: IncidentState): void {
@@ -552,7 +686,29 @@ export function onAssessed(ctx: Ctx, v: VehicleState): void {
     return;
   }
 
-  if (d?.transport === 0 && !incident.truth.transport) {
+  const fire = incident.truth.fire;
+  if (fire) {
+    // Lagemeldung der Feuerwehr bzw. des ersten Fahrzeugs: was brennt, was fehlt.
+    const scenario = ctx.content.fireScenarios.get(fire.scenarioId);
+    const units = incident.vehicleIds
+      .map((id) => findVehicle(ctx, id))
+      .filter((o): o is VehicleState => !!o && isFireUnit(ctx, o));
+    const missing = subtractUnits(scenario?.needs ?? [], units);
+    radio(ctx, v, missing.length > 0 ? 'requestUnits' : 'fireReport');
+    if (!incident.truth.patient) {
+      // Niemand verletzt: Rettungsdienst wird nicht gebraucht.
+      for (const id of [...incident.vehicleIds]) {
+        const o = findVehicle(ctx, id);
+        if (o && isRdUnit(ctx, o)) releaseVehicle(ctx, o, 'released');
+      }
+      checkFireWork(ctx, incident);
+      maybeClose(ctx, incident);
+      return;
+    }
+    checkFireWork(ctx, incident);
+  }
+
+  if (!fire && d?.transport === 0 && !incident.truth.transport) {
     // Kein Patient vor Ort (z. B. bereits weg, Fehlalarm in guter Absicht).
     radio(ctx, v, 'noPatient');
     for (const id of [...incident.vehicleIds]) {
@@ -595,6 +751,10 @@ export function onAssessed(ctx: Ctx, v: VehicleState): void {
  */
 function scheduleSceneDone(ctx: Ctx, incident: IncidentState): void {
   if (incident.treatmentDoneAt !== undefined || !incident.assessed || incident.locating) return;
+  if (!incident.truth.patient) return;
+  // Eingeklemmte Person: Erst nach der technischen Rettung transportfähig.
+  const fire = incident.truth.fire;
+  if (fire && !fire.done && ctx.content.fireScenarios.get(fire.scenarioId)?.kind === 'th') return;
   const rtw = incident.vehicleIds
     .map((id) => findVehicle(ctx, id))
     .find((o): o is VehicleState => !!o && canTransport(ctx, o) && o.task === 'onScene');
@@ -616,7 +776,7 @@ export function onSceneDone(ctx: Ctx, v: VehicleState): void {
     radio(ctx, v, 'noTransport');
     for (const id of [...incident.vehicleIds]) {
       const o = findVehicle(ctx, id);
-      if (o) releaseVehicle(ctx, o, 'released');
+      if (o && isRdUnit(ctx, o)) releaseVehicle(ctx, o, 'released');
     }
     return;
   }
@@ -688,7 +848,10 @@ function startTransport(ctx: Ctx, v: VehicleState, hospitalId: string): void {
       o.status = 7;
       drive(ctx, o, target, emergency, 'toHospital');
       radio(ctx, o, 'accompany');
-    } else if (o.task === 'onScene' || o.task === 'turnout' || o.task === 'toScene') {
+    } else if (
+      isRdUnit(ctx, o) &&
+      (o.task === 'onScene' || o.task === 'turnout' || o.task === 'toScene')
+    ) {
       releaseVehicle(ctx, o, 'released');
     }
   }
@@ -724,17 +887,21 @@ export function releaseVehicle(ctx: Ctx, v: VehicleState, message: RadioMessage)
   v.status = 1;
   radio(ctx, v, message);
   drive(ctx, v, v.homeNode, false, 'returning');
-  if (incident && incident.vehicleIds.length === 0 && incident.status === 'active') {
-    const finished =
-      incident.hospitalArrivalAt !== undefined ||
-      (incident.assessed && !incidentNeedsTransport(incident));
-    if (finished || (incident.assessed && !incident.truth.transport)) closeIncident(ctx, incident);
-    else incident.status = 'open';
-  }
+  if (incident) maybeClose(ctx, incident);
 }
 
-function incidentNeedsTransport(incident: IncidentState): boolean {
-  return incident.truth.transport;
+/**
+ * Ein Einsatz ist erledigt, wenn kein Fahrzeug mehr gebunden ist, der Patient versorgt bzw. in
+ * der Klinik ist und die Feuerwehrlage abgearbeitet ist. Fehlt noch etwas, ist er wieder offen.
+ */
+function maybeClose(ctx: Ctx, incident: IncidentState): void {
+  if (incident.vehicleIds.length > 0 || incident.status !== 'active') return;
+  const t = incident.truth;
+  const patientDone =
+    !t.patient || incident.hospitalArrivalAt !== undefined || (incident.assessed && !t.transport);
+  const fireDone = !t.fire || t.fire.done;
+  if (incident.assessed && patientDone && fireDone) closeIncident(ctx, incident);
+  else incident.status = 'open';
 }
 
 /** Spieler bestellt ein Fahrzeug ab (nur vor dem Transport). */

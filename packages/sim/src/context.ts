@@ -1,6 +1,7 @@
 import type {
   ContentBundle,
   Diagnosis,
+  FireScenario,
   Hospital,
   Keyword,
   Station,
@@ -21,6 +22,13 @@ export interface ContentIndex {
   readonly keywords: ReadonlyMap<string, Keyword>;
   readonly diagnoses: ReadonlyMap<string, Diagnosis>;
   readonly diagnosisCumWeights: readonly number[];
+  readonly fireScenarios: ReadonlyMap<string, FireScenario>;
+  readonly fireCumWeights: readonly number[];
+  /** Wachenspezifische Ausrückzeiten (Freiwillige Feuerwehr). */
+  readonly stationTurnout: ReadonlyMap<
+    string,
+    { day: readonly [number, number]; night: readonly [number, number] }
+  >;
   readonly hospitalNode: ReadonlyMap<string, number>;
   readonly stationNode: ReadonlyMap<string, number>;
   readonly population: number;
@@ -31,7 +39,10 @@ export interface ContentIndex {
 export function indexContent(bundle: ContentBundle, world: World): ContentIndex {
   const byId = <T extends { id: string }>(xs: readonly T[]) => new Map(xs.map((x) => [x.id, x]));
   let cum = 0;
-  const diagnosisCumWeights = bundle.diagnoses.map((d) => (cum += d.weight));
+  // Krankheitsbilder, die nur als Verletzte einer Feuerwehrlage vorkommen, zählen nicht mit.
+  const diagnosisCumWeights = bundle.diagnoses.map((d) => (cum += d.onlyAsCasualty ? 0 : d.weight));
+  let fireCum = 0;
+  const fireCumWeights = bundle.fireScenarios.map((s) => (fireCum += s.weight));
   const snap = (p: readonly [number, number]) => nearestNode(world.graph, p[0], p[1]);
   return {
     bundle,
@@ -41,6 +52,11 @@ export function indexContent(bundle: ContentBundle, world: World): ContentIndex 
     keywords: byId(bundle.keywords),
     diagnoses: byId(bundle.diagnoses),
     diagnosisCumWeights,
+    fireScenarios: byId(bundle.fireScenarios),
+    fireCumWeights,
+    stationTurnout: new Map(
+      bundle.stations.flatMap((s) => (s.turnout ? [[s.id, s.turnout] as const] : [])),
+    ),
     hospitalNode: new Map(bundle.hospitals.map((h) => [h.id, snap(h.position)])),
     stationNode: new Map(bundle.stations.map((s) => [s.id, snap(s.position)])),
     population: bundle.region.towns.reduce((s, t) => s + t.population, 0),
