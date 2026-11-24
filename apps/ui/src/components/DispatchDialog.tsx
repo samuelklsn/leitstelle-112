@@ -252,8 +252,12 @@ export function DestinationDialog({ vehicleId }: { vehicleId: string }) {
                       <strong>{hospital?.name}</strong>
                       <div className={css.hint}>{hospital?.departments.join(', ')}</div>
                     </td>
-                    <td className={h.suitable ? css.ok : css.bad}>
-                      {h.suitable ? t('destination.suitable') : t('destination.unsuitable')}
+                    <td className={h.suitable && h.open ? css.ok : css.bad}>
+                      {!h.suitable
+                        ? t('destination.unsuitable')
+                        : h.open
+                          ? t('destination.suitable')
+                          : t('destination.closed')}
                     </td>
                     <td className={css.mono}>{formatDuration(h.etaMs)}</td>
                     <td>

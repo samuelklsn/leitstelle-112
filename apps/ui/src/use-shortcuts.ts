@@ -40,9 +40,13 @@ export function useGlobalShortcuts(): void {
       if (event.key === 'F3') {
         event.preventDefault();
         const world = sim.world;
-        const incident = world
-          ? view?.incidents.find((i) => needsUnits(i, lookup(world)))
-          : undefined;
+        // Notfälle zuerst; Transportaufträge nach Termin.
+        const open = world
+          ? (view?.incidents ?? []).filter((i) => needsUnits(i, lookup(world)))
+          : [];
+        const incident =
+          open.find((i) => !i.order) ??
+          [...open].sort((a, b) => (a.order?.dueAt ?? 0) - (b.order?.dueAt ?? 0))[0];
         if (incident) {
           sim.selectIncident(incident.id);
           sim.openDialog({ kind: 'dispatch', incidentId: incident.id });

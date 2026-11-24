@@ -375,3 +375,52 @@
   color: var(--text-muted);
   cursor: not-allowed;
 }
+
+/* ---------- Logistik (Status 6, Pausen, Kliniken) ---------- */
+.vehicleOff {
+  opacity: 0.72;
+}
+
+.smallWarn {
+  background: var(--warn);
+  border-color: var(--warn);
+  color: #1a1a1a;
+}
+
+.countWarn {
+  background: var(--warn);
+  color: #1a1a1a;
+}
+
+.hospitalGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 8px;
+  padding: 8px;
+}
+
+.hospitalCard {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 0 8px;
+}
+
+.departments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 2px 10px;
+}
+
+.department {
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+.departmentClosed {
+  border-color: var(--alarm);
+  background: rgb(255 80 80 / 0.14);
+}

@@ -230,7 +230,9 @@ export function MapView() {
       tw.el.textContent = `${v.status.toString()} ${label}`;
       tw.el.dataset.testid = 'vehicle-marker';
       // Fahrzeuge auf ihrer Wache (Status 2) zeigt das Wachensymbol – sonst stapeln sie sich.
-      tw.marker.getElement().style.display = v.status === 2 && v.task === 'idle' ? 'none' : '';
+      // Fahrzeuge auf der Wache (frei oder außer Dienst) zeigt die Wachenmarkierung.
+      tw.marker.getElement().style.display =
+        (v.status === 2 && v.task === 'idle') || v.task === 'service' ? 'none' : '';
     }
 
     function syncIncidents(m: MapLibre, list: readonly IncidentView[]) {
@@ -252,9 +254,11 @@ export function MapView() {
           incidents.current.set(i.id, entry);
         }
         entry.marker.setLngLat(L.toLonLat(a.x, a.y));
-        const urgent =
-          i.status === 'open' || (i.doctorRequested && !i.finding?.needsDoctor) || i.locating;
-        entry.el.className = `${css.incident ?? ''} ${urgent ? (css.incidentUrgent ?? '') : ''} ${i.id === selectedIncidentId ? (css.incidentSelected ?? '') : ''}`;
+        // Aufträge sind geplant: Sie blinken erst, wenn der Termin ohne Fahrzeug verstrichen ist.
+        const urgent = i.order
+          ? i.status === 'open' && i.order.dueAt < (host?.view.time ?? 0)
+          : i.status === 'open' || (i.doctorRequested && !i.finding?.needsDoctor) || i.locating;
+        entry.el.className = `${css.incident ?? ''} ${i.order ? (css.incidentOrder ?? '') : ''} ${urgent ? (css.incidentUrgent ?? '') : ''} ${i.id === selectedIncidentId ? (css.incidentSelected ?? '') : ''}`;
         entry.el.textContent = L.keywordCode(i.keywordId);
         entry.el.title = `${i.id} – ${L.addressLabel(i.addressId)}`;
       }

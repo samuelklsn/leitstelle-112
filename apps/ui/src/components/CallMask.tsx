@@ -255,24 +255,26 @@ export function CallMask({ callId }: { callId: string }) {
               <div className={css.section}>
                 <span className={css.label}>{t('mask.keyword')}</span>
                 <div className={css.keywords} role="radiogroup">
-                  {world.keywords.map((k) => (
-                    <button
-                      type="button"
-                      key={k.id}
-                      role="radio"
-                      aria-checked={keywordId === k.id}
-                      className={`${css.keyword ?? ''} ${keywordId === k.id ? (css.keywordActive ?? '') : ''}`}
-                      onClick={() => {
-                        setKeywordId(k.id);
-                      }}
-                      data-testid={`keyword-${k.code.replace(' ', '')}`}
-                    >
-                      <strong>
-                        {k.code} · {k.name}
-                      </strong>
-                      <small>{k.description}</small>
-                    </button>
-                  ))}
+                  {world.keywords
+                    .filter((k) => !k.planned)
+                    .map((k) => (
+                      <button
+                        type="button"
+                        key={k.id}
+                        role="radio"
+                        aria-checked={keywordId === k.id}
+                        className={`${css.keyword ?? ''} ${keywordId === k.id ? (css.keywordActive ?? '') : ''}`}
+                        onClick={() => {
+                          setKeywordId(k.id);
+                        }}
+                        data-testid={`keyword-${k.code.replace(' ', '')}`}
+                      >
+                        <strong>
+                          {k.code} · {k.name}
+                        </strong>
+                        <small>{k.description}</small>
+                      </button>
+                    ))}
                 </div>
               </div>
             </div>
