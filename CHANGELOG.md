@@ -6,6 +6,22 @@ Versionierung nach [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+## [0.6.0] – 2026-11-24 – Mehrfenster und Mehrmonitor (M9)
+
+### Hinzugefügt
+
+- **Mehrere Fenster (#50):** Lagekarte, Listen (Einsätze, Aufträge, Kliniken, Funk) und
+  Fahrzeugstatus lassen sich in eigene Fenster für weitere Bildschirme auslagern. Dialoge öffnen
+  sich im Hauptfenster, die Auswahl gilt in allen Fenstern.
+- **Layout-Profile:** mitgelieferte Anordnungen für einen, zwei und drei Bildschirme sowie eigene,
+  gespeicherte Layouts. Das zuletzt benutzte Layout wird beim Start wiederhergestellt; Fenster
+  eines abgesteckten Monitors landen auf dem Hauptbildschirm.
+- **Tastenbelegung (#30):** Alle globalen Aktionen lassen sich neu belegen; bei Konflikten
+  tauschen die Aktionen ihre Tasten. Neue Kürzel für Hilfe (F1), Fenster (F8), Auswertung (F9)
+  und die Reiter (Strg+1–4).
+- **Diagnosepaket (#34):** Protokolle, Absturzberichte und Systeminformationen als ZIP – ohne
+  automatischen Versand.
+
 ## [0.5.0] – 2026-11-24 – Welt-Dynamik (M8)
 
 ### Hinzugefügt
@@ -207,7 +223,8 @@ eigentlichen Sinn – das kommt ab M2/M3.
 - Nach einem Absturz startet die Simulation neu beim Schichtbeginn; Autosave folgt in M4.
 - Der Installer wird nur in der CI gebaut (Richtlinie des Entwicklungsrechners, PLAN Kapitel 9).
 
-[Unreleased]: https://github.com/samuelklsn/leitstelle-112/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/samuelklsn/leitstelle-112/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/samuelklsn/leitstelle-112/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/samuelklsn/leitstelle-112/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/samuelklsn/leitstelle-112/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/samuelklsn/leitstelle-112/compare/v0.2.0...v0.3.0
