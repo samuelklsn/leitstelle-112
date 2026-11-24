@@ -23,3 +23,4 @@ Entscheidung bekommt ein neues ADR, das alte wird auf „Abgelöst" gesetzt. Nac
 | [0014](0014-endlosspiel-prozedurale-vielfalt.md) | Endlosspiel und prozedurale Vielfalt                 | Angenommen |
 | [0015](0015-rd-logistik.md)                      | Rettungsdienst-Logistik                              | Angenommen |
 | [0016](0016-welt-dynamik.md)                     | Welt-Dynamik: Wetter, Kalender, Ereignisse, Regie    | Angenommen |
+| [0017](0017-manv-grosslagen.md)                  | Massenanfall von Verletzten und Großlagen            | Angenommen |

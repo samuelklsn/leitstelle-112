@@ -16,4 +16,5 @@ die Issue-Vorlage „Fachliches Feedback“.
 | [feuerwehr.md](feuerwehr.md)                 | Feuerwachen, Stichworte, Lagemeldung, Ausbreitung    |
 | [logistik.md](logistik.md)                   | Krankentransport, Kliniken, Dienst, Pausen, Status 6 |
 | [welt.md](welt.md)                           | Wetter, Feiertage, Ereignisse, Regie, Luftrettung    |
+| [manv.md](manv.md)                           | MANV und Großlagen: Sichtung, Verteilung, Reserven   |
 | [region-brakenfeld.md](region-brakenfeld.md) | Der fiktive Landkreis und seine Vorhaltung           |

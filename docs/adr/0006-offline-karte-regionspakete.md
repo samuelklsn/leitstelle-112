@@ -48,3 +48,25 @@ wenn echte Regionen deutlich größer werden.
 Beschriftungen kommen als HTML-Marker statt als Kartensymbole – damit entfallen eingebettete
 Glyphen (Schriftdateien) vorerst ganz. Der Karten-Worker von MapLibre wird als lokales Asset
 ausgeliefert (`setWorkerUrl`), die CSP erlaubt nur `self` und `blob:`.
+
+## Nachtrag 2026-11-24 (M13, Spike #12: MBTiles oder PMTiles)
+
+**Entscheidung: PMTiles, sobald Kacheln nötig werden – vorerst weiter GeoJSON.**
+
+- **PMTiles** ist eine einzelne Datei, die MapLibre über HTTP-Range-Anfragen direkt liest; ein
+  Kachelserver entfällt. Offline genügt es, die Datei mit der App auszuliefern und über das
+  eigene `app://`-Schema mit Range-Unterstützung bereitzustellen ([Protomaps-Doku][pm],
+  [MapLibre][ml]).
+- **MBTiles** ist eine SQLite-Datenbank. Ein Browser kann sie nicht direkt lesen; es bräuchte
+  einen Kachelserver im Main-Prozess. Für native Apps ist das etabliert, für uns aber ein
+  zusätzlicher Dienst ohne Vorteil ([Protomaps-FAQ][faq]).
+- Beide Formate lassen sich ineinander umwandeln (`pmtiles convert`), die Entscheidung ist also
+  umkehrbar.
+- Die importierten OSM-Regionen der Pipeline (M13) sind Landkreise mit einigen Tausend
+  Straßenstücken. Das bleibt als GeoJSON aus dem Regionspaket voraussichtlich schnell genug (wie
+  bei der fiktiven Region). Kacheln werden erst bei Regionen nötig, die deutlich größer als ein
+  Landkreis sind; dann kommt ein PMTiles-Schritt in den Region-Builder.
+
+[pm]: https://docs.protomaps.com/pmtiles/
+[ml]: https://docs.protomaps.com/pmtiles/maplibre
+[faq]: https://protomaps.com/faq

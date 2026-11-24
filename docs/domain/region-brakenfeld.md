@@ -39,12 +39,16 @@ Ergebnis: rund 1.300 Kreuzungen, 2.000 Straßenstücke, 15.000 Hausadressen und
 | Notarztstandort Klinik Ellerbach | NEF 2/82-1                                                                                  |
 | Rettungswache Tannrode           | RTW 3/83-1, KTW 3/85-1 (Mo–Fr 7–15)                                                         |
 | Luftrettungsstation Hohenwarte   | RTH 1/10-1 (Tageslicht, Flugwetter; fliegt auch für Nachbarbereiche)                        |
+| Einsatzleitung Rettungsdienst    | LNA 1/01-1, OrgL 1/02-1 (Rufbereitschaft, nur Großlagen)                                    |
+| SEG Sanität Brakenfeld           | 2 RTW, 2 KTW, GW-San (ehrenamtlich, nur Großlagen)                                          |
 
-| Krankenhaus              | Versorgungsstufe | Fachabteilungen                                                                                             |
-| ------------------------ | ---------------- | ----------------------------------------------------------------------------------------------------------- |
-| Kreisklinikum Brakenfeld | Schwerpunkt      | Innere, Chirurgie, Unfallchirurgie, Neurologie, Stroke Unit, Herzkatheter, Pädiatrie, Gynäkologie, Intensiv |
-| Klinik Ellerbach         | Grundversorgung  | Innere, Chirurgie, Psychiatrie                                                                              |
-| Fachklinik am Tannenhang | Fachklinik       | Geriatrie, Psychiatrie (keine Notaufnahme für internistische Notfälle)                                      |
+| Krankenhaus                     | Versorgungsstufe  | Fachabteilungen                                                                                             |
+| ------------------------------- | ----------------- | ----------------------------------------------------------------------------------------------------------- |
+| Kreisklinikum Brakenfeld        | Schwerpunkt       | Innere, Chirurgie, Unfallchirurgie, Neurologie, Stroke Unit, Herzkatheter, Pädiatrie, Gynäkologie, Intensiv |
+| Klinik Ellerbach                | Grundversorgung   | Innere, Chirurgie, Psychiatrie                                                                              |
+| Fachklinik am Tannenhang        | Fachklinik        | Geriatrie, Psychiatrie (keine Notaufnahme für internistische Notfälle)                                      |
+| Klinikum Halvern (Nachbarkreis) | Maximalversorgung | Innere, Chirurgie, Unfallchirurgie, Neurologie, Stroke Unit, Herzkatheter, Pädiatrie, Intensiv              |
+| Klinik Wennbach (Nachbarkreis)  | Regelversorgung   | Innere, Chirurgie, Unfallchirurgie, Gynäkologie                                                             |
 
 Aufnahmeplätze je Abteilung und ihre Abmeldungen beschreibt [logistik.md](logistik.md).
 

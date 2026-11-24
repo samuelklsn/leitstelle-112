@@ -6,6 +6,26 @@ Versionierung nach [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+## [0.7.0] – 2026-11-24 – MANV und Großlagen (M10)
+
+### Hinzugefügt
+
+- **Massenanfall von Verletzten (#51):** Großlagen mit vielen Patienten, Lagemeldung, Sichtung
+  (T1–T4) durch Leitenden Notarzt, Arzt oder Besatzungen, Versorgung vor Ort für Leichtverletzte.
+- **Seltene Großlagen (#52):** Busunfall, Massenkarambolage (bei Nebel und Glätte häufiger),
+  Zugunglück, Großbrand, Chlorgasaustritt, Evakuierung eines Pflegeheims.
+- **Neue Stichworte** MANV 1–3, B 4 und ABC 1; **Führung und Reserven:** LNA, OrgL,
+  SEG mit RTW, KTW und Gerätewagen Sanität, Gerätewagen Gefahrgut der Feuerwehr.
+- **Bereitstellungsraum** gegen Stau an den Ladeplätzen und **Patientenverteilung** nach
+  Kapazität; zwei Kliniken der Nachbarkreise fangen Spitzen auf.
+- **MANV-Übersicht** mit Sichtungsergebnis, Verbleib jedes Patienten und Verteilung.
+- **Spielbeginn „MANV-Übung“:** Die Schicht beginnt mit einer Großlage.
+- Bewertung je Patient mit „goldener Stunde“; ADR-0017 und Fachdoku `docs/domain/manv.md`.
+
+### Geändert
+
+- Spielstände haben die Snapshot-Version 5. Spielstände aus 0.6.0 lassen sich nicht laden.
+
 ## [0.6.0] – 2026-11-24 – Mehrfenster und Mehrmonitor (M9)
 
 ### Hinzugefügt
@@ -223,7 +243,8 @@ eigentlichen Sinn – das kommt ab M2/M3.
 - Nach einem Absturz startet die Simulation neu beim Schichtbeginn; Autosave folgt in M4.
 - Der Installer wird nur in der CI gebaut (Richtlinie des Entwicklungsrechners, PLAN Kapitel 9).
 
-[Unreleased]: https://github.com/samuelklsn/leitstelle-112/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/samuelklsn/leitstelle-112/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/samuelklsn/leitstelle-112/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/samuelklsn/leitstelle-112/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/samuelklsn/leitstelle-112/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/samuelklsn/leitstelle-112/compare/v0.3.0...v0.4.0
