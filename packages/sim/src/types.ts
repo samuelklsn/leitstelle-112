@@ -3,7 +3,16 @@ import type { Scheduled } from './event-queue';
 import type { SimTime } from './time';
 
 /** Namen der Zufalls-Streams. Neue Subsysteme bekommen einen eigenen Namen (ADR-0004). */
-export const RNG_STREAMS = ['calls', 'callers', 'patients', 'crews', 'outcome'] as const;
+export const RNG_STREAMS = [
+  'calls',
+  'callers',
+  'patients',
+  'crews',
+  'outcome',
+  'logistics',
+  'hospitals',
+  'orders',
+] as const;
 export type RngStreamName = (typeof RNG_STREAMS)[number];
 
 /** Serialisierbare Startparameter. Inhalte (Region, Fahrzeuge …) kommen separat. */
@@ -50,6 +59,8 @@ export interface Truth {
   needsDoctor: boolean;
   readonly transport: boolean;
   readonly onSceneMs: number;
+  /** Infektion: Das transportierende Fahrzeug muss danach desinfiziert werden. */
+  readonly infectious: boolean;
   readonly fire?: FireTruth;
 }
 
@@ -120,9 +131,27 @@ export type ErrorCode =
   | 'duplicateIncident'
   | 'prankDispatched'
   | 'nonEmergencyDispatched'
-  | 'fireSpread';
+  | 'fireSpread'
+  | 'transportLate'
+  | 'hospitalClosed'
+  | 'breakMissed'
+  | 'unsuitableTransport';
 
 export type Outcome = 'gut' | 'beeintraechtigt' | 'verstorben' | 'keinPatient';
+
+/** Transportauftrag (Krankentransport, Verlegung) – ADR-0015. */
+export interface TransportOrderState {
+  readonly templateId: string;
+  /** Abholtermin. */
+  readonly dueAt: SimTime;
+  readonly fromHospitalId?: string;
+  readonly toHospitalId?: string;
+  /** Ziel ohne Klinik: Wohnadresse (Entlassung). */
+  readonly toAddressId?: number;
+  readonly handoverMs: number;
+  /** Patient übernommen, Transport läuft. */
+  pickedUpAt?: SimTime;
+}
 
 export interface IncidentState {
   readonly id: string;
@@ -135,8 +164,9 @@ export interface IncidentState {
   addressId: number;
   readonly truth: Truth;
   readonly report: CallerReport;
-  /** Art des zugrunde liegenden Anrufs (Scherzanruf, Doppelmeldung …). */
-  readonly callKind: CallKind;
+  /** Art des zugrunde liegenden Anrufs (Scherzanruf, Doppelmeldung …) oder Transportauftrag. */
+  readonly callKind: CallKind | 'order';
+  readonly order?: TransportOrderState;
   /** Doppelt angelegt: dieser Einsatz existierte schon. */
   readonly duplicateOf?: string;
   status: 'open' | 'active' | 'closed';
@@ -173,7 +203,13 @@ export type VehicleTask =
   | 'awaitDestination'
   | 'toHospital'
   | 'handover'
-  | 'returning';
+  | 'returning'
+  /** Außer Dienst (FMS 6): auf dem Weg zur Wache bzw. dort (Desinfektion, Pause …). */
+  | 'toService'
+  | 'service';
+
+/** Warum ein Fahrzeug außer Dienst ist. */
+export type ServiceReason = 'disinfection' | 'defect' | 'refuel' | 'break' | 'offDuty';
 
 export interface RouteState {
   readonly nodes: readonly number[];
@@ -200,6 +236,26 @@ export interface VehicleState {
   /** Seit wann das Fahrzeug gebunden ist (für die Auslastung). */
   busySince?: SimTime;
   busyMs: number;
+  /** Tankfüllung 0 … 1. */
+  fuel: number;
+  /** Außer Dienst mit Grund; `until` fehlt, solange das Ende offen ist (Dienstende). */
+  service?: { reason: ServiceReason; since: SimTime; until?: SimTime };
+  /** Laut Dienstplan besetzt. */
+  onDuty: boolean;
+  /** Dienstbeginn der aktuellen Besatzung. */
+  crewSince: SimTime;
+  breakTakenMs: number;
+  breakRequestedAt?: SimTime;
+  /** Dienstende während eines Einsatzes: Überstunden laufen seit … */
+  overtimeSince?: SimTime;
+}
+
+/** Aufnahmebereitschaft einer Klinik je Fachabteilung (ADR-0015). */
+export interface HospitalState {
+  /** Freie Aufnahmeplätze je Abteilung (nur Abteilungen mit Kapazität). */
+  free: Record<string, number>;
+  /** Kurzfristig abgemeldet bis … (Geräteausfall). */
+  closedUntil: Record<string, SimTime>;
 }
 
 // ----------------------------------------------------------------------------- Auswertung
@@ -219,6 +275,12 @@ export interface ShiftStats {
   /** Feuerwehr: gemessene und eingehaltene Eintreffzeiten. */
   fireMeasured: number;
   fireMet: number;
+  /** Transportaufträge: eingegangen, abgeschlossen, pünktlich abgeholt. */
+  ordersReceived: number;
+  ordersDone: number;
+  ordersOnTime: number;
+  /** Überstunden der Besatzungen (ms). */
+  overtimeMs: number;
   totalResponseMs: number;
   outcomes: Record<Outcome, number>;
   errors: Partial<Record<ErrorCode, number>>;
@@ -237,6 +299,10 @@ export type ScheduledPayload =
   | { readonly kind: 'vehicle/sceneDone'; readonly vehicleId: string; readonly seq: number }
   | { readonly kind: 'vehicle/destTimeout'; readonly vehicleId: string; readonly seq: number }
   | { readonly kind: 'vehicle/handoverDone'; readonly vehicleId: string; readonly seq: number }
+  | { readonly kind: 'vehicle/serviceDone'; readonly vehicleId: string; readonly seq: number }
+  | { readonly kind: 'hospital/update' }
+  | { readonly kind: 'hospital/reopen'; readonly hospitalId: string; readonly department: string }
+  | { readonly kind: 'order/expire'; readonly incidentId: string }
   | { readonly kind: 'incident/callbackDone'; readonly incidentId: string }
   | { readonly kind: 'shift/end' }
   | { readonly kind: 'fire/escalate'; readonly callId: string }
@@ -250,6 +316,7 @@ export interface SimState {
   calls: CallState[];
   incidents: IncidentState[];
   vehicles: VehicleState[];
+  hospitals: Record<string, HospitalState>;
   shift: ShiftStats;
   shiftHistory: ShiftStats[];
 }
@@ -276,7 +343,11 @@ export type SimCommand =
       readonly vehicleId: string;
       readonly hospitalId: string;
     }
-  | { readonly type: 'vehicle/release'; readonly vehicleId: string };
+  | { readonly type: 'vehicle/release'; readonly vehicleId: string }
+  /** Beantragte Pause genehmigen. */
+  | { readonly type: 'vehicle/break'; readonly vehicleId: string }
+  /** Pause vorzeitig beenden – das Fahrzeug ist sofort wieder einsatzbereit. */
+  | { readonly type: 'vehicle/resume'; readonly vehicleId: string };
 
 export type RejectReason =
   | 'unknownCall'
@@ -291,7 +362,9 @@ export type RejectReason =
   | 'vehicleBusy'
   | 'notAwaitingDestination'
   | 'unknownHospital'
-  | 'notReleasable';
+  | 'notReleasable'
+  | 'noBreakDue'
+  | 'notOnBreak';
 
 /**
  * Ausgabe-Ereignisse. Keine Texte, nur Typ und Parameter; das UI übersetzt (CLAUDE.md, Regel 5).
@@ -340,7 +413,16 @@ export type SimEvent =
       readonly command: SimCommand['type'];
       readonly reason: RejectReason;
     }
-  | { readonly type: 'shift/ended'; readonly at: SimTime; readonly index: number };
+  | { readonly type: 'shift/ended'; readonly at: SimTime; readonly index: number }
+  | {
+      readonly type: 'hospital/status';
+      readonly at: SimTime;
+      readonly hospitalId: string;
+      readonly department: string;
+      readonly open: boolean;
+      /** Abmeldung wegen Belegung oder Geräteausfall. */
+      readonly reason: 'full' | 'closure';
+    };
 
 export type RadioMessage =
   | 'status'
@@ -362,7 +444,19 @@ export type RadioMessage =
   | 'wrongLocation'
   | 'locationFound'
   | 'accompany'
-  | 'released';
+  | 'released'
+  | 'patientPickedUp'
+  | 'disinfection'
+  | 'disinfected'
+  | 'defect'
+  | 'repaired'
+  | 'refuel'
+  | 'refueled'
+  | 'requestBreak'
+  | 'breakStart'
+  | 'breakEnd'
+  | 'offDuty'
+  | 'onDuty';
 
 export interface LoggedCommand {
   /** Tick, nach dem der Befehl angewendet wurde (Spielzeit dieses Ticks). */
@@ -371,7 +465,7 @@ export interface LoggedCommand {
 }
 
 /** Format-Version des Snapshots – bei inkompatiblen Änderungen erhöhen. */
-export const SNAPSHOT_VERSION = 2;
+export const SNAPSHOT_VERSION = 3;
 
 export interface SimSnapshot {
   readonly version: typeof SNAPSHOT_VERSION;

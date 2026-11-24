@@ -205,6 +205,9 @@ export function parseSimCommand(c: unknown): SimCommand | undefined {
         : undefined;
     case 'vehicle/release':
       return isId(c.vehicleId) ? { type: 'vehicle/release', vehicleId: c.vehicleId } : undefined;
+    case 'vehicle/break':
+    case 'vehicle/resume':
+      return isId(c.vehicleId) ? { type: c.type, vehicleId: c.vehicleId } : undefined;
     default:
       return undefined;
   }

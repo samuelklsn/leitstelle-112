@@ -2,7 +2,7 @@ import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 import { Simulation, defaultConfig, replay } from './simulation';
 import { MS_PER_HOUR, TICK_MS } from './time';
-import { baseContent, botAct, newSim } from './test-support';
+import { baseContent, botAct, newSim, testContent } from './test-support';
 import type { FmsStatus, SimEvent, SimSnapshot, VehicleTask } from './types';
 import { buildView, buildWorldInfo } from './view';
 
@@ -26,6 +26,8 @@ const STATUS_FOR_TASK: Record<VehicleTask, readonly FmsStatus[]> = {
   toHospital: [7],
   handover: [8],
   returning: [1],
+  toService: [6],
+  service: [6],
 };
 
 function checkInvariants(sim: Simulation): void {
@@ -37,7 +39,7 @@ function checkInvariants(sim: Simulation): void {
       expect(incident?.vehicleIds).toContain(v.id);
       expect(incident?.status).not.toBe('closed');
     } else {
-      expect(['idle', 'returning']).toContain(v.task);
+      expect(['idle', 'returning', 'toService', 'service']).toContain(v.task);
     }
   }
   for (const i of s.incidents) {
@@ -234,7 +236,7 @@ describe('Simulation – Determinismus', () => {
     playBot(original, 2400, 4);
     const restored = Simulation.restore(
       JSON.parse(JSON.stringify(original.snapshot())) as SimSnapshot,
-      baseContent(),
+      testContent(),
     );
     expect(restored.hash()).toBe(original.hash());
     playBot(original, 2400, 4);
@@ -245,7 +247,7 @@ describe('Simulation – Determinismus', () => {
   it('Replay aus dem Befehlsprotokoll ergibt denselben Zustand', () => {
     const sim = newSim({ seed: 9, callRateFactor: 3 });
     playBot(sim, 3000, 7);
-    const replayed = replay(sim.config, baseContent(), sim.commandLog(), sim.tick);
+    const replayed = replay(sim.config, testContent(), sim.commandLog(), sim.tick);
     expect(replayed.hash()).toBe(sim.hash());
   });
 
@@ -254,7 +256,7 @@ describe('Simulation – Determinismus', () => {
     expect(() => Simulation.restore({ ...snap, contentHash: 'x' }, baseContent())).toThrow(
       RangeError,
     );
-    expect(() => Simulation.restore({ ...snap, version: 1 as 2 }, baseContent())).toThrow(
+    expect(() => Simulation.restore({ ...snap, version: 1 as 3 }, baseContent())).toThrow(
       RangeError,
     );
   });
@@ -352,10 +354,16 @@ describe('Konfiguration', () => {
     );
   });
 
-  it('startet mit allen Fahrzeugen in Status 2 auf ihrer Wache', () => {
+  it('startet mit allen Fahrzeugen auf ihrer Wache – Status 2 oder außer Dienst', () => {
     const sim = newSim();
-    expect(sim.raw.vehicles).toHaveLength(22);
-    expect(sim.raw.vehicles.every((v) => v.status === 2)).toBe(true);
+    expect(sim.raw.vehicles).toHaveLength(28);
+    expect(sim.raw.vehicles.every((v) => v.node === v.homeNode)).toBe(true);
+    // Dienstag, 7 Uhr: Tages-RTW, ITW und ein KTW beginnen erst um 8 Uhr.
+    const off = sim.raw.vehicles.filter((v) => v.status === 6).map((v) => v.id);
+    expect(off).toEqual(['base:rtw-1-83-3', 'base:ktw-1-85-2', 'base:itw-1-81-1']);
+    expect(sim.raw.vehicles.filter((v) => !off.includes(v.id)).every((v) => v.status === 2)).toBe(
+      true,
+    );
   });
 });
 

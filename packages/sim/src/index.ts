@@ -27,6 +27,9 @@ export {
   type VehicleView,
   type ReportView,
   type FindingView,
+  type OrderView,
+  type HospitalView,
+  type DepartmentView,
   type WorldInfo,
   type StaticAddress,
 } from './view';

@@ -8,6 +8,7 @@ import {
   RegionConfig,
   Settings,
   Station,
+  TransportOrder,
   VehicleType,
   type ContentBundle,
 } from './schema';
@@ -47,6 +48,7 @@ const FileSchema = z
     keywords: z.array(Keyword).optional(),
     diagnoses: z.array(Diagnosis).optional(),
     fireScenarios: z.array(FireScenario).optional(),
+    transportOrders: z.array(TransportOrder).optional(),
     settings: Settings.optional(),
   })
   .strict();
@@ -62,6 +64,7 @@ export function loadContent(files: readonly ContentFile[]): ContentBundle {
     keywords: [] as Keyword[],
     diagnoses: [] as Diagnosis[],
     fireScenarios: [] as FireScenario[],
+    transportOrders: [] as TransportOrder[],
     settings: undefined as Settings | undefined,
   };
 
@@ -93,6 +96,7 @@ export function loadContent(files: readonly ContentFile[]): ContentBundle {
     merged.keywords.push(...(data.keywords ?? []));
     merged.diagnoses.push(...(data.diagnoses ?? []));
     merged.fireScenarios.push(...(data.fireScenarios ?? []));
+    merged.transportOrders.push(...(data.transportOrders ?? []));
   }
 
   if (!merged.region)
@@ -130,7 +134,7 @@ export function checkReferences(c: ContentBundle): ContentProblem[] {
     'stations',
     c.stations.map((s) => s.id),
   );
-  unique(
+  const hospitals = unique(
     'hospitals',
     c.hospitals.map((h) => h.id),
   );
@@ -163,7 +167,34 @@ export function checkReferences(c: ContentBundle): ContentProblem[] {
         });
     }
   }
-  for (const h of c.hospitals) inside('hospitals', h.id, h.position);
+  for (const h of c.hospitals) {
+    inside('hospitals', h.id, h.position);
+    for (const dept of Object.keys(h.beds)) {
+      if (!h.departments.includes(dept as never))
+        problems.push({ file: 'hospitals', path: h.id, message: `Betten ohne Abteilung ${dept}` });
+    }
+  }
+  for (const s of c.stations) {
+    for (const v of s.vehicles) {
+      if (v.service && v.service.to <= v.service.from)
+        problems.push({ file: 'stations', path: v.id, message: 'Dienstende vor Dienstbeginn' });
+    }
+  }
+  for (const t of c.vehicleTypes) {
+    if (t.transportClass && !t.canTransport)
+      problems.push({ file: 'vehicleTypes', path: t.id, message: 'Transportklasse ohne Transport' });
+  }
+  unique('transportOrders', c.transportOrders.map((o) => o.id));
+  for (const o of c.transportOrders) {
+    if (!keywords.has(o.keyword))
+      problems.push({ file: 'transportOrders', path: o.id, message: `Unbekanntes Stichwort ${o.keyword}` });
+    for (const h of [...o.fromHospitals, ...o.toHospitals]) {
+      if (!hospitals.has(h))
+        problems.push({ file: 'transportOrders', path: o.id, message: `Unbekannte Klinik ${h}` });
+    }
+    if (o.fromHospitals.length === 0 && o.toHospitals.length === 0)
+      problems.push({ file: 'transportOrders', path: o.id, message: 'Auftrag ohne Klinik' });
+  }
   const checkNeeds = (file: string, id: string, needs: readonly { type: string; alternatives: readonly string[] }[]) => {
     for (const a of needs) {
       for (const t of [a.type, ...a.alternatives]) {

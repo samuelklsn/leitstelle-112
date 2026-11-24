@@ -1,18 +1,44 @@
 import { UNREACHABLE } from '@ls112/routing';
 import { rangeInt, travelContext, type Ctx } from '../context';
 import { MS_PER_MINUTE, toCalendar, type SimTime } from '../time';
-import type {
-  ErrorCode,
-  FmsStatus,
-  IncidentState,
-  RadioMessage,
-  RejectReason,
-  RouteState,
-  VehicleState,
-  VehicleTask,
-} from '../types';
+import type { ErrorCode, IncidentState, RadioMessage, RejectReason, VehicleState } from '../types';
 import { countError } from './calls';
+import {
+  afterMission,
+  arriveForService,
+  isDepartmentOpen,
+  occupyBed,
+  orderPickupOnTime,
+} from './logistics';
 import { closeIncident } from './outcome';
+import {
+  accountDriving,
+  canTransport,
+  currentNode,
+  drive,
+  findVehicle,
+  isAvailable,
+  isDoctor,
+  isDoctorOnly,
+  isEmergencyTransport,
+  isFireUnit,
+  isRdUnit,
+  markBusy,
+  markFree,
+  newTask,
+  radio,
+  setStatus,
+  transportClassOf,
+} from './vehicles';
+
+export {
+  canTransport,
+  currentNode,
+  findVehicle,
+  isAvailable,
+  isDoctor,
+  isFireUnit,
+} from './vehicles';
 
 /** Ab dieser Abweichung finden die Einsatzkräfte den Patienten nicht ohne Rückruf (m). */
 const FIND_RADIUS_M = 150;
@@ -26,33 +52,15 @@ const DOCTOR_HANDOVER_MINUTES: readonly [number, number] = [8, 12];
 const NEAREST_TOLERANCE_MS = 3 * MS_PER_MINUTE;
 /** Zwischen Einsatzanlage und Alarmierung sollte nicht mehr Zeit vergehen. */
 const DISPATCH_TARGET_MS = 2 * MS_PER_MINUTE;
+/** Rangfolge der Transportklassen: Wer höher steht, darf auch Aufträge darunter fahren. */
+const CLASS_RANK = { krankentransport: 1, notfall: 2, intensiv: 3 } as const;
+/** Ab diesem NACA-Wert nimmt jede geeignete Klinik auf, auch wenn sie abgemeldet ist. */
+const VITAL_NACA = 5;
 
 // ---------------------------------------------------------------------------- Hilfsfunktionen
 
 export function findIncident(ctx: Ctx, id: string): IncidentState | undefined {
   return ctx.state.incidents.find((i) => i.id === id);
-}
-
-export function findVehicle(ctx: Ctx, id: string): VehicleState | undefined {
-  return ctx.state.vehicles.find((v) => v.id === id);
-}
-
-export function isDoctor(ctx: Ctx, v: VehicleState): boolean {
-  return ctx.content.doctorTypes.has(v.typeId);
-}
-
-export function canTransport(ctx: Ctx, v: VehicleState): boolean {
-  return ctx.content.vehicleTypes.get(v.typeId)?.canTransport ?? false;
-}
-
-/** Feuerwehrfahrzeug = weder Transportmittel noch Notarzt. */
-export function isFireUnit(ctx: Ctx, v: VehicleState): boolean {
-  return !canTransport(ctx, v) && !isDoctor(ctx, v);
-}
-
-/** Rettungsdienst-Fahrzeug (RTW, NEF …). */
-function isRdUnit(ctx: Ctx, v: VehicleState): boolean {
-  return !isFireUnit(ctx, v);
 }
 
 export interface Need {
@@ -90,136 +98,8 @@ export function subtractUnits(needs: readonly Need[], vehicles: readonly Vehicle
   return rest;
 }
 
-export function isAvailable(v: VehicleState): boolean {
-  return v.incidentId === null && (v.status === 1 || v.status === 2);
-}
-
-function radio(ctx: Ctx, v: VehicleState, message: RadioMessage): void {
-  ctx.emit({
-    type: 'radio',
-    at: ctx.state.time,
-    vehicleId: v.id,
-    status: v.status,
-    message,
-    incidentId: v.incidentId,
-  });
-}
-
-function setStatus(
-  ctx: Ctx,
-  v: VehicleState,
-  status: FmsStatus,
-  message: RadioMessage = 'status',
-): void {
-  v.status = status;
-  radio(ctx, v, message);
-}
-
-function newTask(v: VehicleState, task: VehicleTask): number {
-  v.task = task;
-  v.taskSeq++;
-  return v.taskSeq;
-}
-
-/** Knoten, an dem sich ein fahrendes Fahrzeug gerade befindet (zuletzt passierter Knoten). */
-export function currentNode(v: VehicleState, time: SimTime): number {
-  if (!v.route) return v.node;
-  const elapsed = time - v.route.startedAt;
-  let node = v.route.nodes[0] ?? v.node;
-  for (let i = 0; i < v.route.nodes.length; i++) {
-    if ((v.route.cumulativeMs[i] ?? 0) <= elapsed) node = v.route.nodes[i] ?? node;
-    else break;
-  }
-  return node;
-}
-
 export function incidentNode(ctx: Ctx, incident: IncidentState): number {
   return ctx.world.addresses[incident.addressId]?.node ?? 0;
-}
-
-/**
- * Startet eine Fahrt und plant die Ankunft. Ist das Fahrzeug gerade unterwegs, fährt es bis zur
- * nächsten Kreuzung weiter und biegt dort ab – kein Zurückspringen auf der Karte, und ein
- * Wendemanöver mitten auf der Strecke gibt es auch in der Realität nicht.
- */
-function drive(
-  ctx: Ctx,
-  v: VehicleState,
-  target: number,
-  emergency: boolean,
-  task: VehicleTask,
-): void {
-  const now = ctx.state.time;
-  const seq = newTask(v, task);
-  const travel = travelContext(now, emergency);
-  const partial = partialEdge(v, now);
-  let route: RouteState;
-  if (partial) {
-    const times = ctx.router.edgeTimes(travel);
-    const edgeMs = edgeTime(ctx, times, partial.from, partial.to);
-    const rest = ctx.router.route(partial.to, target, travel);
-    const tail = rest ?? { nodes: [partial.to], cumulativeMs: [0] };
-    route = {
-      nodes: [partial.from, ...tail.nodes],
-      cumulativeMs: [0, ...tail.cumulativeMs.map((t) => t + edgeMs)],
-      startedAt: now - Math.round(partial.fraction * edgeMs),
-      emergency,
-    };
-    v.node = partial.from;
-  } else {
-    const from = currentNode(v, now);
-    const r = ctx.router.route(from, target, travel);
-    route = r
-      ? { nodes: r.nodes, cumulativeMs: r.cumulativeMs, startedAt: now, emergency }
-      : { nodes: [from], cumulativeMs: [0], startedAt: now, emergency };
-    v.node = from;
-  }
-  v.route = route;
-  const arrival = route.startedAt + (route.cumulativeMs.at(-1) ?? 0);
-  ctx.schedule(Math.max(now, arrival), { kind: 'vehicle/arrive', vehicleId: v.id, seq });
-}
-
-/** Kante, auf der sich ein fahrendes Fahrzeug gerade befindet, und der zurückgelegte Anteil. */
-function partialEdge(
-  v: VehicleState,
-  time: SimTime,
-): { from: number; to: number; fraction: number } | undefined {
-  const r = v.route;
-  if (!r || r.nodes.length < 2) return undefined;
-  const elapsed = time - r.startedAt;
-  const total = r.cumulativeMs.at(-1) ?? 0;
-  if (elapsed <= 0 || elapsed >= total) return undefined;
-  let i = 0;
-  while (i + 1 < r.cumulativeMs.length && (r.cumulativeMs[i + 1] ?? 0) <= elapsed) i++;
-  const t0 = r.cumulativeMs[i] ?? 0;
-  const t1 = r.cumulativeMs[i + 1] ?? t0;
-  if (t1 <= t0) return undefined;
-  return {
-    from: r.nodes[i] ?? v.node,
-    to: r.nodes[i + 1] ?? v.node,
-    fraction: (elapsed - t0) / (t1 - t0),
-  };
-}
-
-function edgeTime(ctx: Ctx, times: Uint32Array, from: number, to: number): number {
-  const g = ctx.world.graph;
-  let best = Number.POSITIVE_INFINITY;
-  for (let k = g.outOffsets[from] ?? 0; k < (g.outOffsets[from + 1] ?? 0); k++) {
-    const e = g.outEdges[k] ?? 0;
-    if (g.edgeTo[e] === to) best = Math.min(best, times[e] ?? best);
-  }
-  return Number.isFinite(best) ? best : 1000;
-}
-
-function markBusy(v: VehicleState, time: SimTime): void {
-  v.busySince ??= time;
-}
-
-function markFree(v: VehicleState, time: SimTime): void {
-  if (v.busySince !== undefined) {
-    v.busyMs += time - v.busySince;
-    delete v.busySince;
-  }
 }
 
 function addIncidentError(ctx: Ctx, incident: IncidentState, code: ErrorCode): void {
@@ -334,6 +214,12 @@ export function missingNeeds(ctx: Ctx, incident: IncidentState): Need[] {
     .filter((v): v is VehicleState => !!v);
   const needs: Need[] = [];
   const truth = incident.truth;
+  if (incident.order) {
+    // Transportauftrag: ein Fahrzeug laut AAO, bis der Patient übernommen ist.
+    if (incident.order.pickedUpAt !== undefined || assigned.some((v) => canTransport(ctx, v)))
+      return [];
+    return subtractUnits(ctx.content.keywords.get(incident.keywordId)?.aao ?? [], assigned);
+  }
   if (!incident.assessed) {
     needs.push(...(ctx.content.keywords.get(incident.keywordId)?.aao ?? []));
     if (incident.doctorRequested) {
@@ -345,10 +231,10 @@ export function missingNeeds(ctx: Ctx, incident: IncidentState): Need[] {
   // Rettungsdienst: ein Transportmittel bzw. ein Notarzt deckt den Bedarf – bis der Transport läuft.
   if (truth.patient && incident.hospitalId === undefined) {
     const transport = ctx.content.bundle.vehicleTypes
-      .filter((x) => x.canTransport)
+      .filter((x) => transportClassOf(ctx, x.id) === 'notfall')
       .map((x) => x.id);
     const doctors = [...ctx.content.doctorTypes];
-    if (truth.transport && transport[0] && !assigned.some((v) => canTransport(ctx, v))) {
+    if (truth.transport && transport[0] && !assigned.some((v) => isEmergencyTransport(ctx, v))) {
       needs.push({ type: transport[0], count: 1, alternatives: transport.slice(1) });
     }
     if (truth.needsDoctor && doctors[0] && !assigned.some((v) => isDoctor(ctx, v))) {
@@ -369,6 +255,8 @@ export interface HospitalSuggestion {
   readonly etaMs: number;
   /** Hat die benötigte Fachabteilung (sofern bekannt). */
   readonly suitable: boolean;
+  /** Abteilung nimmt auf (nicht abgemeldet). */
+  readonly open: boolean;
   readonly recommended: boolean;
 }
 
@@ -382,12 +270,20 @@ export function suggestHospitals(ctx: Ctx, vehicleId: string): HospitalSuggestio
     currentNode(v, ctx.state.time),
     travelContext(ctx.state.time, emergency),
   );
+  // Bei vitaler Bedrohung gilt die Aufnahmepflicht – dann zählt nur die nächste geeignete Klinik.
+  const vital = incident.truth.naca >= VITAL_NACA;
   const list = ctx.content.bundle.hospitals.map((h) => ({
     hospitalId: h.id,
     etaMs: tree.dist[ctx.content.hospitalNode.get(h.id) ?? 0] ?? UNREACHABLE,
     suitable: dept === undefined || h.departments.includes(dept),
+    open: dept === undefined || isDepartmentOpen(ctx, h.id, dept),
   }));
-  list.sort((a, b) => Number(b.suitable) - Number(a.suitable) || a.etaMs - b.etaMs);
+  list.sort(
+    (a, b) =>
+      Number(b.suitable) - Number(a.suitable) ||
+      (vital ? 0 : Number(b.open) - Number(a.open)) ||
+      a.etaMs - b.etaMs,
+  );
   return list.map((h, i) => ({ ...h, recommended: i === 0 }));
 }
 
@@ -438,7 +334,8 @@ export function dispatch(
   }
   if (incident.firstAlarmAt === undefined) {
     incident.firstAlarmAt = ctx.state.time;
-    if (ctx.state.time - incident.createdAt > DISPATCH_TARGET_MS)
+    // Aufträge mit Termin werden bewusst später disponiert – das ist kein Fehler.
+    if (!incident.order && ctx.state.time - incident.createdAt > DISPATCH_TARGET_MS)
       addIncidentError(ctx, incident, 'slowDispatch');
   }
 
@@ -475,9 +372,13 @@ export function onTurnoutDone(ctx: Ctx, v: VehicleState): void {
 
 export function onArrive(ctx: Ctx, v: VehicleState): void {
   const target = v.route?.nodes.at(-1) ?? v.node;
+  accountDriving(ctx, v, ctx.state.time);
   v.node = target;
   v.route = null;
   switch (v.task) {
+    case 'toService':
+      arriveForService(ctx, v);
+      return;
     case 'toScene':
       arriveAtScene(ctx, v);
       return;
@@ -498,6 +399,10 @@ function arriveAtScene(ctx: Ctx, v: VehicleState): void {
   if (!incident) return;
   newTask(v, 'onScene');
   setStatus(ctx, v, 4, 'arrived');
+  if (incident.order) {
+    arriveForPickup(ctx, incident, v);
+    return;
+  }
 
   // Falsche Adresse? Dann Rückruf beim Anrufer, bevor es weitergeht.
   const chosen = ctx.world.addresses[incident.addressId];
@@ -522,14 +427,16 @@ function arriveAtScene(ctx: Ctx, v: VehicleState): void {
   }
   if (incident.locating) return;
 
-  if (incident.firstArrivalAt === undefined) {
+  // KTW und ITW sind keine Rettungsmittel im Sinne der Hilfsfrist.
+  const counts = !canTransport(ctx, v) || isEmergencyTransport(ctx, v);
+  if (incident.firstArrivalAt === undefined && counts) {
     incident.firstArrivalAt = ctx.state.time;
     deteriorate(ctx, incident);
   }
   if (isFireUnit(ctx, v)) incident.firstFireArrivalAt ??= ctx.state.time;
   if (isDoctor(ctx, v)) {
     incident.doctorArrivalAt ??= ctx.state.time;
-    if (incident.assessed && !incident.truth.needsDoctor) {
+    if (isDoctorOnly(ctx, v) && incident.assessed && !incident.truth.needsDoctor) {
       releaseVehicle(ctx, v, 'doctorNotNeeded');
       return;
     }
@@ -541,6 +448,31 @@ function arriveAtScene(ctx: Ctx, v: VehicleState): void {
   }
   scheduleSceneDone(ctx, incident);
   checkFireWork(ctx, incident);
+}
+
+/**
+ * Transportauftrag: Der Patient ist zum Termin fertig. Wer zu früh kommt, wartet; wer zu spät
+ * kommt, macht einen Fehler. Die Klasse des Fahrzeugs muss zum Auftrag passen.
+ */
+function arriveForPickup(ctx: Ctx, incident: IncidentState, v: VehicleState): void {
+  const order = incident.order;
+  if (!order) return;
+  if (!canTransport(ctx, v) || incident.firstArrivalAt !== undefined) {
+    releaseVehicle(ctx, v, 'secondUnitNotNeeded');
+    return;
+  }
+  incident.firstArrivalAt = ctx.state.time;
+  incident.assessed = true;
+  if (!orderPickupOnTime(ctx, order, ctx.state.time))
+    addIncidentError(ctx, incident, 'transportLate');
+  const need = ctx.content.keywords.get(incident.keywordId)?.aao[0]?.type;
+  const required = need ? transportClassOf(ctx, need) : undefined;
+  const own = transportClassOf(ctx, v.typeId);
+  if (required && own && CLASS_RANK[own] < CLASS_RANK[required])
+    addIncidentError(ctx, incident, 'unsuitableTransport');
+  const at = Math.max(ctx.state.time, order.dueAt) + incident.truth.onSceneMs;
+  incident.treatmentDoneAt = at;
+  ctx.schedule(at, { kind: 'vehicle/sceneDone', vehicleId: v.id, seq: v.taskSeq });
 }
 
 /**
@@ -722,7 +654,7 @@ export function onAssessed(ctx: Ctx, v: VehicleState): void {
     .map((id) => findVehicle(ctx, id))
     .filter((x): x is VehicleState => !!x);
   const doctorAssigned = assigned.some((o) => isDoctor(ctx, o));
-  if (incident.truth.transport && !assigned.some((o) => canTransport(ctx, o))) {
+  if (incident.truth.transport && !assigned.some((o) => isEmergencyTransport(ctx, o))) {
     radio(ctx, v, 'requestTransport');
   }
   if (incident.truth.needsDoctor && !doctorAssigned) {
@@ -733,11 +665,11 @@ export function onAssessed(ctx: Ctx, v: VehicleState): void {
   }
   if (!incident.truth.needsDoctor) {
     for (const o of assigned) {
-      if (isDoctor(ctx, o)) releaseVehicle(ctx, o, 'doctorNotNeeded');
+      if (isDoctorOnly(ctx, o)) releaseVehicle(ctx, o, 'doctorNotNeeded');
     }
   }
   // Nur ein Patient: überzählige Transportmittel werden abbestellt (das zuerst eingetroffene bleibt).
-  const transporters = assigned.filter((o) => canTransport(ctx, o));
+  const transporters = assigned.filter((o) => isEmergencyTransport(ctx, o));
   const keep = transporters.find((o) => o.task === 'onScene') ?? transporters[0];
   for (const o of transporters) {
     if (o !== keep) releaseVehicle(ctx, o, 'secondUnitNotNeeded');
@@ -757,7 +689,7 @@ function scheduleSceneDone(ctx: Ctx, incident: IncidentState): void {
   if (fire && !fire.done && ctx.content.fireScenarios.get(fire.scenarioId)?.kind === 'th') return;
   const rtw = incident.vehicleIds
     .map((id) => findVehicle(ctx, id))
-    .find((o): o is VehicleState => !!o && canTransport(ctx, o) && o.task === 'onScene');
+    .find((o): o is VehicleState => !!o && isEmergencyTransport(ctx, o) && o.task === 'onScene');
   if (!rtw || incident.firstArrivalAt === undefined) return;
   if (incident.truth.needsDoctor && incident.doctorArrivalAt === undefined) return;
   const at = Math.max(
@@ -772,6 +704,10 @@ function scheduleSceneDone(ctx: Ctx, incident: IncidentState): void {
 export function onSceneDone(ctx: Ctx, v: VehicleState): void {
   const incident = v.incidentId ? findIncident(ctx, v.incidentId) : undefined;
   if (!incident) return;
+  if (incident.order) {
+    startOrderTransport(ctx, incident, v);
+    return;
+  }
   if (!incident.truth.transport) {
     radio(ctx, v, 'noTransport');
     for (const id of [...incident.vehicleIds]) {
@@ -818,6 +754,22 @@ export function onDestinationTimeout(ctx: Ctx, v: VehicleState): void {
   startTransport(ctx, v, best.hospitalId);
 }
 
+/** Auftrag: Patient übernommen, direkt zum vereinbarten Ziel (Klinik oder Wohnadresse). */
+function startOrderTransport(ctx: Ctx, incident: IncidentState, v: VehicleState): void {
+  const order = incident.order;
+  if (!order) return;
+  order.pickedUpAt = ctx.state.time;
+  radio(ctx, v, 'patientPickedUp');
+  if (order.toHospitalId !== undefined) {
+    startTransport(ctx, v, order.toHospitalId);
+    return;
+  }
+  const target = ctx.world.addresses[order.toAddressId ?? incident.addressId]?.node ?? v.node;
+  v.status = 7;
+  drive(ctx, v, target, false, 'toHospital');
+  radio(ctx, v, 'status');
+}
+
 function startTransport(ctx: Ctx, v: VehicleState, hospitalId: string): void {
   const incident = v.incidentId ? findIncident(ctx, v.incidentId) : undefined;
   if (!incident) return;
@@ -825,11 +777,26 @@ function startTransport(ctx: Ctx, v: VehicleState, hospitalId: string): void {
   const dept = ctx.content.diagnoses.get(incident.truth.diagnosisId)?.department;
   if (hospital && dept && !hospital.departments.includes(dept))
     addIncidentError(ctx, incident, 'unsuitableHospital');
+  // Abgemeldete Abteilung angefahren, obwohl eine andere geeignete Klinik aufnahmebereit war.
+  if (
+    hospital &&
+    dept &&
+    hospital.departments.includes(dept) &&
+    !isDepartmentOpen(ctx, hospitalId, dept) &&
+    incident.truth.naca < VITAL_NACA &&
+    ctx.content.bundle.hospitals.some(
+      (h) =>
+        h.id !== hospitalId && h.departments.includes(dept) && isDepartmentOpen(ctx, h.id, dept),
+    )
+  ) {
+    addIncidentError(ctx, incident, 'hospitalClosed');
+  }
   incident.hospitalId = hospitalId;
   delete v.requestSince;
   v.hospitalId = hospitalId;
   const target = ctx.content.hospitalNode.get(hospitalId) ?? v.node;
-  const emergency = transportIsEmergency(ctx, incident);
+  // Aufträge fahren ohne Sonderrechte; Verlegungen sind geplant.
+  const emergency = !incident.order && transportIsEmergency(ctx, incident);
   v.status = 7;
   drive(ctx, v, target, emergency, 'toHospital');
   radio(ctx, v, 'status');
@@ -839,7 +806,7 @@ function startTransport(ctx: Ctx, v: VehicleState, hospitalId: string): void {
     const o = findVehicle(ctx, id);
     if (!o || o === v) continue;
     if (
-      isDoctor(ctx, o) &&
+      isDoctorOnly(ctx, o) &&
       o.task === 'onScene' &&
       incident.truth.needsDoctor &&
       incident.truth.naca >= 4
@@ -861,11 +828,21 @@ function arriveAtHospital(ctx: Ctx, v: VehicleState): void {
   const incident = v.incidentId ? findIncident(ctx, v.incidentId) : undefined;
   const seq = newTask(v, 'handover');
   setStatus(ctx, v, 8);
-  if (incident && canTransport(ctx, v)) incident.hospitalArrivalAt ??= ctx.state.time;
-  const range = isDoctor(ctx, v)
-    ? DOCTOR_HANDOVER_MINUTES
-    : ctx.content.bundle.settings.times.handoverMinutes;
-  ctx.schedule(ctx.state.time + rangeInt(ctx.rng.crews, range) * MS_PER_MINUTE, {
+  if (incident && canTransport(ctx, v) && incident.hospitalArrivalAt === undefined) {
+    incident.hospitalArrivalAt = ctx.state.time;
+    // Ein Notfallpatient belegt einen Aufnahmeplatz der Fachabteilung.
+    const dept = ctx.content.diagnoses.get(incident.truth.diagnosisId)?.department;
+    if (!incident.order && v.hospitalId && dept) occupyBed(ctx, v.hospitalId, dept);
+  }
+  const handoverMs = incident?.order
+    ? incident.order.handoverMs
+    : rangeInt(
+        ctx.rng.crews,
+        isDoctorOnly(ctx, v)
+          ? DOCTOR_HANDOVER_MINUTES
+          : ctx.content.bundle.settings.times.handoverMinutes,
+      ) * MS_PER_MINUTE;
+  ctx.schedule(ctx.state.time + handoverMs, {
     kind: 'vehicle/handoverDone',
     vehicleId: v.id,
     seq,
@@ -873,11 +850,22 @@ function arriveAtHospital(ctx: Ctx, v: VehicleState): void {
 }
 
 export function onHandoverDone(ctx: Ctx, v: VehicleState): void {
-  releaseVehicle(ctx, v, 'status');
+  const incident = v.incidentId ? findIncident(ctx, v.incidentId) : undefined;
+  // Nach einem Infektionstransport muss das Fahrzeug auf der Wache desinfiziert werden.
+  const disinfect = !!incident?.truth.infectious && canTransport(ctx, v);
+  releaseVehicle(ctx, v, 'status', disinfect);
 }
 
-/** Fahrzeug aus dem Einsatz lösen: Status 1, Rückfahrt zur Wache. Schließt ggf. den Einsatz. */
-export function releaseVehicle(ctx: Ctx, v: VehicleState, message: RadioMessage): void {
+/**
+ * Fahrzeug aus dem Einsatz lösen: Status 1, Rückfahrt zur Wache – oder außer Dienst
+ * (Desinfektion, Defekt, Tanken, Dienstende). Schließt ggf. den Einsatz.
+ */
+export function releaseVehicle(
+  ctx: Ctx,
+  v: VehicleState,
+  message: RadioMessage,
+  disinfect = false,
+): void {
   const incident = v.incidentId ? findIncident(ctx, v.incidentId) : undefined;
   if (incident) incident.vehicleIds = incident.vehicleIds.filter((id) => id !== v.id);
   v.incidentId = null;
@@ -886,7 +874,7 @@ export function releaseVehicle(ctx: Ctx, v: VehicleState, message: RadioMessage)
   markFree(v, ctx.state.time);
   v.status = 1;
   radio(ctx, v, message);
-  drive(ctx, v, v.homeNode, false, 'returning');
+  if (!afterMission(ctx, v, disinfect)) drive(ctx, v, v.homeNode, false, 'returning');
   if (incident) maybeClose(ctx, incident);
 }
 
@@ -898,7 +886,9 @@ function maybeClose(ctx: Ctx, incident: IncidentState): void {
   if (incident.vehicleIds.length > 0 || incident.status !== 'active') return;
   const t = incident.truth;
   const patientDone =
-    !t.patient || incident.hospitalArrivalAt !== undefined || (incident.assessed && !t.transport);
+    !t.patient ||
+    incident.hospitalArrivalAt !== undefined ||
+    (incident.assessed && !t.transport && !incident.order);
   const fireDone = !t.fire || t.fire.done;
   if (incident.assessed && patientDone && fireDone) closeIncident(ctx, incident);
   else incident.status = 'open';

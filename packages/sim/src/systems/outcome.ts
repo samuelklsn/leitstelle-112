@@ -20,6 +20,24 @@ export function closeIncident(ctx: Ctx, incident: IncidentState): void {
   const d = ctx.content.diagnoses.get(incident.truth.diagnosisId);
   const shift = ctx.state.shift;
 
+  if (incident.order) {
+    // Transportauftrag: Bewertet wird die Pünktlichkeit der Abholung, nicht der Patient.
+    const tolerance = ctx.content.bundle.settings.transports.toleranceMinutes * MS_PER_MINUTE;
+    const onTime =
+      incident.firstArrivalAt !== undefined &&
+      incident.firstArrivalAt <= incident.order.dueAt + tolerance;
+    shift.ordersDone++;
+    if (onTime) {
+      shift.ordersOnTime++;
+      shift.score += ORDER_POINTS;
+    }
+    const outcome: Outcome = onTime ? 'gut' : 'beeintraechtigt';
+    incident.outcome = outcome;
+    ctx.emit({ type: 'incident/closed', at: ctx.state.time, incidentId: incident.id, outcome });
+    pruneClosed(ctx);
+    return;
+  }
+
   // Hilfsfrist nur für Notfälle mit Patient.
   const hf = ctx.content.bundle.settings.hilfsfrist;
   const emergency = ctx.content.keywords.get(d?.keyword ?? '')?.emergency ?? true;
@@ -75,10 +93,17 @@ export function closeIncident(ctx: Ctx, incident: IncidentState): void {
   if (outcome === 'verstorben' && d?.tracer !== 'cardiac_arrest') shift.score -= 30;
 
   ctx.emit({ type: 'incident/closed', at: ctx.state.time, incidentId: incident.id, outcome });
+  pruneClosed(ctx);
+}
+
+function pruneClosed(ctx: Ctx): void {
   ctx.state.incidents = ctx.state.incidents.filter(
     (i) => i.status !== 'closed' || (i.closedAt ?? 0) > ctx.state.time - KEEP_CLOSED_MS,
   );
 }
+
+/** Pünktlicher Transportauftrag – weniger als ein Notfall, aber spürbar. */
+const ORDER_POINTS = 30;
 
 const OUTCOME_POINTS: Record<Outcome, number> = {
   gut: 100,

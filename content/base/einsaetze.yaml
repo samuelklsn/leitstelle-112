@@ -65,6 +65,7 @@ diagnoses:
     doctorNeeded: 0.4
     transport: 0.9
     department: innere
+    infectious: 0.15
     onSceneMinutes: [15, 25]
     reports: [{key: breathing, weight: 9}, {key: unwell, weight: 1}]
   - id: base:fall
@@ -123,6 +124,7 @@ diagnoses:
     doctorNeeded: 0.3
     transport: 1
     department: paediatrie
+    infectious: 0.1
     onSceneMinutes: [15, 20]
     reports: [{key: child_seizure, weight: 1}]
   - id: base:seizure
@@ -179,6 +181,7 @@ diagnoses:
     doctorNeeded: 0.05
     transport: 0.95
     department: chirurgie
+    infectious: 0.06
     onSceneMinutes: [12, 20]
     reports: [{key: abdominal, weight: 8}, {key: unwell, weight: 2}]
   - id: base:no-patient
