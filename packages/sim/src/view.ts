@@ -61,7 +61,12 @@ export interface CallView {
 }
 
 export interface FindingView {
+  /** Leer, wenn es keinen Patienten gibt. */
   readonly diagnosisId: string;
+  readonly patient: boolean;
+  /** Feuerwehrlage laut Lagemeldung (kann sich ausbreiten). */
+  readonly fireScenarioId?: string;
+  readonly fireDone?: boolean;
   readonly naca: number;
   readonly needsDoctor: boolean;
   readonly transport: boolean;
@@ -77,6 +82,8 @@ export interface IncidentView {
   readonly vehicleIds: readonly string[];
   readonly report: ReportView;
   readonly doctorRequested: boolean;
+  /** Laut Lage fehlen noch Kräfte (Nachforderung). */
+  readonly unitsMissing: boolean;
   readonly locating: boolean;
   readonly finding?: FindingView;
   readonly firstArrivalAt?: SimTime;
@@ -142,12 +149,17 @@ export function buildView(sim: Simulation): GameView {
       vehicleIds: [...i.vehicleIds],
       report: reportView(i.report, QUESTIONS, false, false),
       doctorRequested: i.doctorRequested,
+      unitsMissing: i.assessed && i.status !== 'closed' && sim.missingNeeds(i.id).length > 0,
       locating: i.locating,
       errors: [...i.errors],
       ...(i.assessed
         ? {
             finding: {
               diagnosisId: i.truth.diagnosisId,
+              patient: i.truth.patient,
+              ...(i.truth.fire
+                ? { fireScenarioId: i.truth.fire.scenarioId, fireDone: i.truth.fire.done }
+                : {}),
               naca: i.truth.naca,
               needsDoctor: i.truth.needsDoctor,
               transport: i.truth.transport,
@@ -270,6 +282,7 @@ export interface WorldInfo {
   readonly hospitals: ContentBundle['hospitals'];
   readonly keywords: ContentBundle['keywords'];
   readonly diagnoses: readonly { id: string; name: string }[];
+  readonly fireScenarios: readonly { id: string; name: string; kind: 'brand' | 'th' }[];
   readonly hilfsfrist: ContentBundle['settings']['hilfsfrist'];
   readonly shift: ContentBundle['settings']['shift'];
 }
@@ -298,6 +311,7 @@ export function buildWorldInfo(sim: Simulation): WorldInfo {
     hospitals: c.hospitals,
     keywords: c.keywords,
     diagnoses: c.diagnoses.map((d) => ({ id: d.id, name: d.name })),
+    fireScenarios: c.fireScenarios.map((s) => ({ id: s.id, name: s.name, kind: s.kind })),
     hilfsfrist: c.settings.hilfsfrist,
     shift: c.settings.shift,
   };

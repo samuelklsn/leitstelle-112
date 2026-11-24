@@ -2,6 +2,7 @@ import { parse } from 'yaml';
 import { z } from 'zod';
 import {
   Diagnosis,
+  FireScenario,
   Hospital,
   Keyword,
   RegionConfig,
@@ -45,6 +46,7 @@ const FileSchema = z
     hospitals: z.array(Hospital).optional(),
     keywords: z.array(Keyword).optional(),
     diagnoses: z.array(Diagnosis).optional(),
+    fireScenarios: z.array(FireScenario).optional(),
     settings: Settings.optional(),
   })
   .strict();
@@ -59,6 +61,7 @@ export function loadContent(files: readonly ContentFile[]): ContentBundle {
     hospitals: [] as Hospital[],
     keywords: [] as Keyword[],
     diagnoses: [] as Diagnosis[],
+    fireScenarios: [] as FireScenario[],
     settings: undefined as Settings | undefined,
   };
 
@@ -89,6 +92,7 @@ export function loadContent(files: readonly ContentFile[]): ContentBundle {
     merged.hospitals.push(...(data.hospitals ?? []));
     merged.keywords.push(...(data.keywords ?? []));
     merged.diagnoses.push(...(data.diagnoses ?? []));
+    merged.fireScenarios.push(...(data.fireScenarios ?? []));
   }
 
   if (!merged.region)
@@ -160,14 +164,26 @@ export function checkReferences(c: ContentBundle): ContentProblem[] {
     }
   }
   for (const h of c.hospitals) inside('hospitals', h.id, h.position);
-  for (const k of c.keywords) {
-    for (const a of k.aao) {
-      if (!types.has(a.type))
-        problems.push({
-          file: 'keywords',
-          path: k.id,
-          message: `AAO verweist auf unbekannten Fahrzeugtyp ${a.type}`,
-        });
+  const checkNeeds = (file: string, id: string, needs: readonly { type: string; alternatives: readonly string[] }[]) => {
+    for (const a of needs) {
+      for (const t of [a.type, ...a.alternatives]) {
+        if (!types.has(t)) problems.push({ file, path: id, message: `Unbekannter Fahrzeugtyp ${t}` });
+      }
+    }
+  };
+  for (const k of c.keywords) checkNeeds('keywords', k.id, k.aao);
+  const scenarios = unique('fireScenarios', c.fireScenarios.map((s) => s.id));
+  const diagnosisIds = new Set(c.diagnoses.map((d) => d.id));
+  for (const s of c.fireScenarios) {
+    checkNeeds('fireScenarios', s.id, s.needs);
+    if (!keywords.has(s.keyword)) {
+      problems.push({ file: 'fireScenarios', path: s.id, message: `Unbekanntes Stichwort ${s.keyword}` });
+    }
+    if (s.casualty && !diagnosisIds.has(s.casualty.diagnosis)) {
+      problems.push({ file: 'fireScenarios', path: s.id, message: `Unbekanntes Krankheitsbild ${s.casualty.diagnosis}` });
+    }
+    if (s.escalation && !scenarios.has(s.escalation.to)) {
+      problems.push({ file: 'fireScenarios', path: s.id, message: `Unbekannte Folgelage ${s.escalation.to}` });
     }
   }
   for (const d of c.diagnoses) {

@@ -146,6 +146,14 @@ export function EvaluationDialog({ shift }: { shift: ShiftStats | undefined }) {
           <strong className={quota >= target ? css.ok : css.bad}>{quota} %</strong>
         </div>
         <div className={css.kpi}>
+          <span>{t('evaluation.fire')}</span>
+          <strong>
+            {s.fireMeasured > 0
+              ? `${Math.round((100 * s.fireMet) / s.fireMeasured).toString()} %`
+              : '–'}
+          </strong>
+        </div>
+        <div className={css.kpi}>
           <span>{t('evaluation.response')}</span>
           <strong>
             {formatDuration(s.hilfsfristMeasured ? s.totalResponseMs / s.hilfsfristMeasured : 0)}

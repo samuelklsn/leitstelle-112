@@ -56,6 +56,11 @@ export function DispatchDialog({ incidentId }: { incidentId: string }) {
         <div className={css.head}>
           <span className={css.title}>{t('dispatch.title', { id: incidentId })}</span>
           <span className={css.badge}>{L.keywordCode(incident.keywordId)}</span>
+          {incident.unitsMissing && (
+            <span className={`${css.badge ?? ''} ${css.badgeAlarm ?? ''}`}>
+              {t('dispatch.unitsMissing')}
+            </span>
+          )}
           {incident.doctorRequested && (
             <span className={`${css.badge ?? ''} ${css.badgeAlarm ?? ''}`}>
               {t('dispatch.doctorRequested')}
@@ -122,7 +127,9 @@ export function DispatchDialog({ incidentId }: { incidentId: string }) {
                       <td>
                         {station?.name
                           .replace('Rettungswache ', 'RW ')
-                          .replace('Notarztstandort ', 'NA ')}
+                          .replace('Notarztstandort ', 'NA ')
+                          .replace('Freiwillige Feuerwehr ', 'FF ')
+                          .replace('Feuerwache ', 'FW ')}
                       </td>
                       <td className={css.mono}>
                         {s.etaMs !== undefined

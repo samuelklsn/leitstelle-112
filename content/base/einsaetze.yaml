@@ -192,3 +192,15 @@ diagnoses:
     onSceneMinutes: [5, 10]
     outdoor: true
     reports: [{key: helpless_person, weight: 6}, {key: drunk, weight: 2}]
+  - id: base:smoke-inhalation
+    name: Rauchgasvergiftung
+    weight: 1
+    onlyAsCasualty: true
+    ageRange: [5, 90]
+    naca: [2, 4]
+    keyword: base:rd1
+    doctorNeeded: 0.3
+    transport: 0.9
+    department: innere
+    onSceneMinutes: [15, 25]
+    reports: [{key: fire_smoke, weight: 1}]

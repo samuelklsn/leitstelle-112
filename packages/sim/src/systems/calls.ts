@@ -75,10 +75,9 @@ export function createCall(ctx: Ctx, kind: CallKind = 'emergency'): CallState {
   } else {
     truth = createNonEmergencyTruth(ctx);
   }
-  const d = ctx.content.diagnoses.get(truth.diagnosisId);
   // Die Polizei übergibt vor allem Einsätze im Freien – mit geprüften Angaben.
   const source: CallSource =
-    kind === 'emergency' && d?.outdoor === true && ctx.rng.callers.chance(settings.kinds.police)
+    kind === 'emergency' && isOutdoor(ctx, truth) && ctx.rng.callers.chance(settings.kinds.police)
       ? '110'
       : '112';
   const report = createReport(ctx, truth, kind, source);
@@ -99,26 +98,46 @@ export function createCall(ctx: Ctx, kind: CallKind = 'emergency'): CallState {
   const patience = rangeInt(ctx.rng.callers, settings.abandonAfterSeconds);
   ctx.schedule(ctx.state.time + patience * 1000, { kind: 'call/abandon', callId: call.id });
   ctx.emit({ type: 'call/incoming', at: ctx.state.time, callId: call.id });
+  // Lageentwicklung: Ein Brand wartet nicht auf die Feuerwehr.
+  const escalation =
+    truth.fire && kind === 'emergency'
+      ? ctx.content.fireScenarios.get(truth.fire.scenarioId)?.escalation
+      : undefined;
+  if (escalation) {
+    const after = rangeInt(ctx.rng.patients, escalation.after) * MS_PER_MINUTE;
+    ctx.schedule(ctx.state.time + after, { kind: 'fire/escalate', callId: call.id });
+  }
   return call;
 }
 
-/** Die tatsächliche Lage: Krankheitsbild, Ort, Patient (ADR-0014). */
-function createTruth(ctx: Ctx): Truth {
+/** Liegt der Einsatzort draußen (Verkehrsunfall, PKW-Brand, Ölspur …)? */
+export function isOutdoor(ctx: Ctx, truth: Truth): boolean {
+  if (truth.fire) return ctx.content.fireScenarios.get(truth.fire.scenarioId)?.outdoor ?? false;
+  return ctx.content.diagnoses.get(truth.diagnosisId)?.outdoor ?? false;
+}
+
+function pickAddress(ctx: Ctx, outdoor: boolean): number {
   const rng = ctx.rng.patients;
-  const diagnoses = ctx.content.bundle.diagnoses;
-  const d = diagnoses[pickCumulative(rng, ctx.content.diagnosisCumWeights)];
-  if (!d) throw new Error('Keine Krankheitsbilder');
   const { world } = ctx;
-  let addressId: number;
-  if (d.outdoor && world.roadAddressIds.length > 0 && rng.chance(0.5)) {
-    addressId = world.roadAddressIds[rng.nextInt(0, world.roadAddressIds.length - 1)] ?? 0;
-  } else {
-    addressId = world.houseIds[pickCumulative(rng, world.houseWeights)] ?? 0;
+  if (outdoor && world.roadAddressIds.length > 0 && rng.chance(0.5)) {
+    return world.roadAddressIds[rng.nextInt(0, world.roadAddressIds.length - 1)] ?? 0;
   }
+  return world.houseIds[pickCumulative(rng, world.houseWeights)] ?? 0;
+}
+
+type PatientPart = Pick<
+  Truth,
+  'diagnosisId' | 'age' | 'sex' | 'naca' | 'needsDoctor' | 'transport' | 'onSceneMs'
+>;
+
+/** Patient nach Krankheitsbild – für Rettungsdienst-Notrufe und Verletzte bei Feuerwehrlagen. */
+function patientFrom(ctx: Ctx, diagnosisId: string): PatientPart {
+  const rng = ctx.rng.patients;
+  const d = ctx.content.diagnoses.get(diagnosisId);
+  if (!d) throw new Error(`Unbekanntes Krankheitsbild ${diagnosisId}`);
   const naca = rangeInt(rng, d.naca);
   return {
     diagnosisId: d.id,
-    addressId,
     age: rangeInt(rng, d.ageRange),
     sex: rng.chance(0.5) ? 'w' : 'm',
     naca,
@@ -129,6 +148,46 @@ function createTruth(ctx: Ctx): Truth {
   };
 }
 
+/** Brand- oder Hilfeleistungslage, ggf. mit verletzter Person. */
+function createFireTruth(ctx: Ctx): Truth {
+  const rng = ctx.rng.patients;
+  const s = ctx.content.bundle.fireScenarios[pickCumulative(rng, ctx.content.fireCumWeights)];
+  if (!s) throw new Error('Keine Feuerwehrlagen');
+  const addressId = pickAddress(ctx, s.outdoor);
+  const fire = { scenarioId: s.id, originalScenarioId: s.id, escalations: 0, done: false };
+  if (s.casualty && rng.chance(s.casualty.probability)) {
+    return { ...patientFrom(ctx, s.casualty.diagnosis), addressId, patient: true, fire };
+  }
+  return {
+    diagnosisId: '',
+    addressId,
+    patient: false,
+    age: rng.nextInt(20, 80),
+    sex: rng.chance(0.5) ? 'w' : 'm',
+    naca: 0,
+    needsDoctor: false,
+    transport: false,
+    onSceneMs: 0,
+    fire,
+  };
+}
+
+/** Die tatsächliche Lage: Krankheitsbild bzw. Feuerwehrlage, Ort, Patient (ADR-0014). */
+function createTruth(ctx: Ctx): Truth {
+  const rng = ctx.rng.patients;
+  const fireShare = ctx.content.bundle.settings.calls.fireShare;
+  if (
+    ctx.content.bundle.fireScenarios.length > 0 &&
+    !ctx.config.tutorial &&
+    rng.chance(fireShare)
+  ) {
+    return createFireTruth(ctx);
+  }
+  const d = ctx.content.bundle.diagnoses[pickCumulative(rng, ctx.content.diagnosisCumWeights)];
+  if (!d) throw new Error('Keine Krankheitsbilder');
+  return { ...patientFrom(ctx, d.id), addressId: pickAddress(ctx, d.outdoor), patient: true };
+}
+
 /** Fehl-, Scherz- und Auskunftsanrufe: niemand braucht vor Ort Hilfe. */
 function createNonEmergencyTruth(ctx: Ctx): Truth {
   const rng = ctx.rng.patients;
@@ -136,6 +195,7 @@ function createNonEmergencyTruth(ctx: Ctx): Truth {
   return {
     diagnosisId: none?.id ?? ctx.content.bundle.diagnoses[0]?.id ?? '',
     addressId: ctx.world.houseIds[pickCumulative(rng, ctx.world.houseWeights)] ?? 0,
+    patient: false,
     age: rng.nextInt(18, 70),
     sex: rng.chance(0.5) ? 'w' : 'm',
     naca: 1,
@@ -152,12 +212,16 @@ function createReport(ctx: Ctx, truth: Truth, kind: CallKind, source: CallSource
   const rng = ctx.rng.callers;
   const settings = ctx.content.bundle.settings.caller;
   const d = ctx.content.diagnoses.get(truth.diagnosisId);
+  const scenario = truth.fire ? ctx.content.fireScenarios.get(truth.fire.scenarioId) : undefined;
   const address = ctx.world.addresses[truth.addressId];
-  if (!d || !address) throw new Error('Inkonsistente Wahrheit');
+  const reports = scenario?.reports ?? d?.reports;
+  if (!reports || !address) throw new Error('Inkonsistente Wahrheit');
+  const outdoor = isOutdoor(ctx, truth);
   const official = source === '110';
 
   let caller: CallerKind;
-  if (address.kind === 'road' || d.outdoor || kind === 'duplicate') caller = 'passerby';
+  if (address.kind === 'road' || outdoor || kind === 'duplicate') caller = 'passerby';
+  else if (scenario) caller = rng.pick<CallerKind>(['self', 'neighbor', 'neighbor', 'passerby']);
   else if (truth.age < 14) caller = 'relative';
   else if (truth.age >= 75)
     caller = rng.pick<CallerKind>(['relative', 'neighbor', 'caregiver', 'relative']);
@@ -190,13 +254,13 @@ function createReport(ctx: Ctx, truth: Truth, kind: CallKind, source: CallSource
         : `0${rng.pick(['5671', '5672', '5675', '5678'])} ${Array.from({ length: 5 }, digits).join('')}`;
   const ageGuess = Math.max(1, Math.round(truth.age / 5) * 5 + rng.nextInt(-1, 1) * 5);
 
-  let reportKey = pickWeighted(rng, d.reports).key;
+  let reportKey = pickWeighted(rng, reports).key;
   if (kind === 'misdial') reportKey = 'silence';
   if (kind === 'info') reportKey = rng.pick(['info_pharmacy', 'info_doctor', 'info_transport']);
   if (kind === 'prank') reportKey = rng.pick(PRANK_REPORTS);
-  if (kind === 'duplicate') reportKey = d.outdoor ? 'witness' : reportKey;
+  if (kind === 'duplicate') reportKey = outdoor ? 'witness' : reportKey;
 
-  const tracer = d.tracer;
+  const tracer = d?.tracer ?? 'none';
   let conscious: CallerReport['conscious'] = 'yes';
   let breathing: CallerReport['breathing'] = 'normal';
   if (tracer === 'cardiac_arrest') {
@@ -205,8 +269,15 @@ function createReport(ctx: Ctx, truth: Truth, kind: CallKind, source: CallSource
   } else if (['unconscious', 'not_responding', 'child_seizure', 'seizure'].includes(reportKey)) {
     conscious = 'no';
   }
-  if (reportKey === 'breathing' || reportKey === 'allergy' || d.id.includes('dyspnea'))
+  const breathless = ['breathing', 'allergy', 'fire_smoke'].includes(reportKey);
+  if (breathless || truth.diagnosisId.includes('dyspnea') || truth.diagnosisId.includes('smoke')) {
     breathing = 'difficult';
+  }
+  // Feuerwehrlage ohne Verletzte: „Nein, verletzt ist niemand."
+  if (scenario && !truth.patient && kind === 'emergency') {
+    conscious = 'nobody';
+    breathing = 'nobody';
+  }
   if (kind === 'prank') {
     conscious = rng.pick(['no', 'unclear']);
     breathing = 'unclear';
@@ -286,7 +357,7 @@ export function closeCall(ctx: Ctx, callId: string): RejectReason | undefined {
   if (!call) return 'unknownCall';
   if (call.status !== 'talking') return 'callNotTalking';
   ctx.state.calls = ctx.state.calls.filter((c) => c.id !== callId);
-  if (call.kind === 'emergency' && call.truth.transport) {
+  if (call.kind === 'emergency' && (call.truth.transport || call.truth.fire !== undefined)) {
     // Hinter dem Anruf stand ein echter Notfall – schwerer Fehler.
     countError(ctx, 'callClosedWithEmergency');
   }
@@ -304,7 +375,9 @@ export function linkCall(ctx: Ctx, callId: string, incidentId: string): RejectRe
   if (incident.status === 'closed') return 'incidentClosed';
   ctx.state.calls = ctx.state.calls.filter((c) => c.id !== callId);
   // Wer einen echten neuen Notfall einem fremden Einsatz zuordnet, lässt einen Patienten liegen.
-  if (call.kind === 'emergency' && call.truth.transport) countError(ctx, 'callClosedWithEmergency');
+  if (call.kind === 'emergency' && (call.truth.transport || call.truth.fire !== undefined)) {
+    countError(ctx, 'callClosedWithEmergency');
+  }
   ctx.emit({ type: 'call/linked', at: ctx.state.time, callId, incidentId });
   return undefined;
 }
@@ -340,4 +413,5 @@ export const ERROR_PENALTY = {
   duplicateIncident: 15,
   prankDispatched: 10,
   nonEmergencyDispatched: 10,
+  fireSpread: 20,
 } as const;

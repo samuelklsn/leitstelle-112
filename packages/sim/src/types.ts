@@ -26,15 +26,31 @@ export type FmsStatus = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
 export type CallerKind = 'self' | 'relative' | 'neighbor' | 'passerby' | 'caregiver';
 
 /** Die verborgene, tatsächliche Lage hinter einem Notruf (ADR-0014, „wahre Lage"). */
+/** Feuerwehrlage hinter einem Notruf; ändert sich, wenn sie sich ausbreitet. */
+export interface FireTruth {
+  scenarioId: string;
+  /** Lage beim Notruf – Maßstab für die Stichwortwahl. */
+  readonly originalScenarioId: string;
+  escalations: number;
+  /** Abarbeitung läuft bis … (gesetzt, sobald alle nötigen Kräfte vor Ort sind). */
+  workUntil?: SimTime;
+  done: boolean;
+}
+
 export interface Truth {
+  /** Krankheitsbild – leer, wenn es (bei Feuerwehrlagen) keinen Patienten gibt. */
   readonly diagnosisId: string;
   readonly addressId: number;
+  /** Gibt es einen Patienten? (Fehlt bei Ölspur, Mülleimerbrand …) */
+  readonly patient: boolean;
   readonly age: number;
   readonly sex: 'm' | 'w';
-  readonly naca: number;
-  readonly needsDoctor: boolean;
+  /** Kann sich bis zum Eintreffen verschlechtern (Lageentwicklung). */
+  naca: number;
+  needsDoctor: boolean;
   readonly transport: boolean;
   readonly onSceneMs: number;
+  readonly fire?: FireTruth;
 }
 
 /** Was der Anrufer sagt – nicht immer richtig. */
@@ -53,9 +69,9 @@ export interface CallerReport {
   /** Anrufer schätzt die Lage schlimmer (+1) oder harmloser (-1) ein als sie ist. */
   readonly misjudge: -1 | 0 | 1;
   /** Antwort auf „Ist die Person ansprechbar?" */
-  readonly conscious: 'yes' | 'no' | 'unclear';
+  readonly conscious: 'yes' | 'no' | 'unclear' | 'nobody';
   /** Antwort auf „Atmet die Person normal?" */
-  readonly breathing: 'normal' | 'difficult' | 'none' | 'unclear';
+  readonly breathing: 'normal' | 'difficult' | 'none' | 'unclear' | 'nobody';
 }
 
 /**
@@ -103,7 +119,8 @@ export type ErrorCode =
   | 'destinationTimeout'
   | 'duplicateIncident'
   | 'prankDispatched'
-  | 'nonEmergencyDispatched';
+  | 'nonEmergencyDispatched'
+  | 'fireSpread';
 
 export type Outcome = 'gut' | 'beeintraechtigt' | 'verstorben' | 'keinPatient';
 
@@ -126,6 +143,8 @@ export interface IncidentState {
   vehicleIds: string[];
   firstAlarmAt?: SimTime;
   firstArrivalAt?: SimTime;
+  /** Eintreffen des ersten Feuerwehrfahrzeugs (Hilfsfrist Feuerwehr). */
+  firstFireArrivalAt?: SimTime;
   doctorArrivalAt?: SimTime;
   /** Erstbefund vor Ort ist bekannt (Diagnose/NACA für den Disponenten sichtbar). */
   assessed: boolean;
@@ -197,6 +216,9 @@ export interface ShiftStats {
   /** Notfälle mit Hilfsfrist-Messung und davon eingehaltene. */
   hilfsfristMeasured: number;
   hilfsfristMet: number;
+  /** Feuerwehr: gemessene und eingehaltene Eintreffzeiten. */
+  fireMeasured: number;
+  fireMet: number;
   totalResponseMs: number;
   outcomes: Record<Outcome, number>;
   errors: Partial<Record<ErrorCode, number>>;
@@ -216,7 +238,9 @@ export type ScheduledPayload =
   | { readonly kind: 'vehicle/destTimeout'; readonly vehicleId: string; readonly seq: number }
   | { readonly kind: 'vehicle/handoverDone'; readonly vehicleId: string; readonly seq: number }
   | { readonly kind: 'incident/callbackDone'; readonly incidentId: string }
-  | { readonly kind: 'shift/end' };
+  | { readonly kind: 'shift/end' }
+  | { readonly kind: 'fire/escalate'; readonly callId: string }
+  | { readonly kind: 'fire/done'; readonly incidentId: string; readonly escalations: number };
 
 /** Vollständiger, serialisierbarer Zustand. Enthält nur JSON-kompatible Werte. */
 export interface SimState {
@@ -325,6 +349,10 @@ export type RadioMessage =
   | 'requestDoctor'
   | 'requestTransport'
   | 'alreadyHandled'
+  | 'fireReport'
+  | 'requestUnits'
+  | 'fireUnderControl'
+  | 'fireSpread'
   | 'doctorNotNeeded'
   | 'secondUnitNotNeeded'
   | 'requestDestination'

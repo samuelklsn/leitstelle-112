@@ -103,13 +103,15 @@
     "conscious": {
       "yes": "Ja, wach und redet ganz normal mit mir.",
       "no": "Nein! Reagiert überhaupt nicht!",
-      "unclear": "Ich weiß nicht … die Augen sind zu, manchmal kommt ein Brummen …"
+      "unclear": "Ich weiß nicht … die Augen sind zu, manchmal kommt ein Brummen …",
+      "nobody": "Verletzt ist niemand, glaube ich."
     },
     "breathing": {
       "normal": "Ja, atmet ganz normal.",
       "difficult": "Ganz schwer, es pfeift richtig beim Atmen.",
       "none": "Ich … ich glaube nicht! Da ist nur so ein Schnappen!",
-      "unclear": "Kann ich nicht sagen, ich trau mich nicht hin."
+      "unclear": "Kann ich nicht sagen, ich trau mich nicht hin.",
+      "nobody": "Es ist niemand verletzt."
     }
   },
   "report": {
@@ -133,7 +135,17 @@
     "info_pharmacy": "Welche Apotheke hat denn heute Notdienst?",
     "info_doctor": "Mein Hausarzt hat zu – wohin kann ich mit meiner Erkältung?",
     "info_transport": "Ich brauche nächste Woche einen Krankentransport zur Dialyse.",
-    "witness": "Hier ist ein Unfall passiert … ich glaube, da kümmert sich schon jemand. Wissen Sie schon Bescheid?"
+    "witness": "Hier ist ein Unfall passiert … ich glaube, da kümmert sich schon jemand. Wissen Sie schon Bescheid?",
+    "fire_bin": "Hier brennt ein Müllcontainer, die Flammen sind schon richtig hoch!",
+    "fire_car": "Auf dem Parkplatz brennt ein Auto, da kommt schwarzer Rauch raus!",
+    "fire_alarm": "Bei den Nachbarn piept seit zehn Minuten der Rauchmelder, keiner macht auf.",
+    "fire_kitchen": "In der Küche brennt der Topf auf dem Herd, ich krieg das nicht aus!",
+    "fire_smoke": "Aus dem Fenster im zweiten Stock kommt dichter Rauch!",
+    "fire_flames": "Da schlagen Flammen aus dem Fenster, das ganze Treppenhaus ist voller Rauch!",
+    "fire_roof": "Der Dachstuhl brennt lichterloh, man sieht es von weitem!",
+    "th_oil": "Auf der Straße ist eine lange Ölspur, die Autos rutschen schon.",
+    "th_tree": "Ein Baum ist auf die Fahrbahn gestürzt, da kommt keiner mehr durch.",
+    "th_trapped": "Unfall! Ein Auto ist gegen einen Baum, der Fahrer ist eingeklemmt und kommt nicht raus!"
   },
   "keyword": {
     "pick": "Stichwort wählen"
@@ -146,7 +158,8 @@
     "none": "Kein Fahrzeug ausgewählt",
     "unavailable": "nicht verfügbar",
     "doctorRequested": "Nachforderung Notarzt!",
-    "assigned": "Bereits im Einsatz"
+    "assigned": "Bereits im Einsatz",
+    "unitsMissing": "Nachforderung laut Lage"
   },
   "destination": {
     "title": "Zielklinik für {{vehicle}}",
@@ -172,7 +185,8 @@
     "doctorRequested": "NA nachgefordert",
     "locating": "Adresse wird geklärt",
     "needsUnits": "Kräfte fehlen",
-    "dispatch": "Disponieren"
+    "dispatch": "Disponieren",
+    "unitsMissing": "Kräfte nachgefordert"
   },
   "fms": {
     "0": "Priorisierter Sprechwunsch",
@@ -216,7 +230,11 @@
     "locationFound": "Neue Adresse übernommen, fahren an.",
     "accompany": "Notarzt begleitet den Transport.",
     "released": "Einsatz für uns beendet, frei über Funk.",
-    "alreadyHandled": "Die Kollegen sind hier schon vor Ort – Einsatz doppelt, wir rücken wieder ein."
+    "alreadyHandled": "Die Kollegen sind hier schon vor Ort – Einsatz doppelt, wir rücken wieder ein.",
+    "fireReport": "Lagemeldung: Lage wie gemeldet, Kräfte ausreichend.",
+    "requestUnits": "Lagemeldung: Lage größer als gemeldet – erbitten weitere Kräfte nach!",
+    "fireUnderControl": "Feuer aus bzw. Einsatzstelle abgearbeitet, rücken ein.",
+    "fireSpread": "Achtung: Brand hat sich ausgebreitet!"
   },
   "events": {
     "call/incoming": "Notruf {{id}} klingelt",
@@ -264,7 +282,8 @@
     "destinationTimeout": "Zielklinik nicht rechtzeitig zugewiesen",
     "duplicateIncident": "Doppelmeldung als neuer Einsatz angelegt",
     "prankDispatched": "Scherzanruf alarmiert",
-    "nonEmergencyDispatched": "Fehl- oder Auskunftsanruf alarmiert"
+    "nonEmergencyDispatched": "Fehl- oder Auskunftsanruf alarmiert",
+    "fireSpread": "Brand hat sich ausgebreitet, bevor die Feuerwehr da war"
   },
   "evaluation": {
     "title": "Schichtauswertung",
@@ -287,7 +306,8 @@
       "excellent": "Hervorragende Schicht",
       "good": "Solide Schicht",
       "poor": "Da ist noch Luft nach oben"
-    }
+    },
+    "fire": "Feuerwehr ≤ 10 Min."
   },
   "saves": {
     "title": "Spielstände",
@@ -354,7 +374,8 @@
     "station": "Rettungswache",
     "doctor": "Notarztstandort",
     "hospital": "Krankenhaus",
-    "fictional": "Fiktiver Landkreis – Kartendaten: eigenes Werk (CC BY-SA 4.0)"
+    "fictional": "Fiktiver Landkreis – Kartendaten: eigenes Werk (CC BY-SA 4.0)",
+    "fireStation": "Feuerwache"
   },
   "question": {
     "where": "Wo?",

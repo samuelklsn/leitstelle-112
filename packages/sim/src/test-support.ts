@@ -114,12 +114,15 @@ function createFor(
   call: Simulation['raw']['calls'][number],
   addressId: number,
 ): void {
-  const d = sim.content.diagnoses.get(call.truth.diagnosisId);
+  const fire = call.truth.fire;
+  const keywordId = fire
+    ? sim.content.fireScenarios.get(fire.scenarioId)?.keyword
+    : sim.content.diagnoses.get(call.truth.diagnosisId)?.keyword;
   sim.submit({
     type: 'incident/create',
     callId: call.id,
     addressId,
-    keywordId: d?.keyword ?? 'base:rd1',
+    keywordId: keywordId ?? 'base:rd1',
   });
 }
 

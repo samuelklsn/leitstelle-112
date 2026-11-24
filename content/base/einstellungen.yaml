@@ -4,6 +4,8 @@ settings:
     label: 12 Minuten in 95 % der Notfälle
     minutes: 12
     targetQuota: 0.95
+    # Eintreffzeit des ersten Löschfahrzeugs (Annahme, typische Planungsgröße 8–10 Min.).
+    fireMinutes: 10
     # Ehrliche Kennzeichnung: Die Landesregelungen unterscheiden sich in Dauer, Messbeginn und
     # Quote. Presets je Bundesland mit Quellen folgen (Issue #32).
     source: Annahme für den fiktiven Landkreis (gemessen ab Eingang des Notrufs)
@@ -19,6 +21,8 @@ settings:
     abandonAfterSeconds: [45, 180]
     # Antwortzeit je Frage der Notrufabfrage – aufgeregte Anrufer brauchen 3 s länger.
     answerSeconds: [3, 8]
+    # Anteil der Notrufe für die Feuerwehr (Brand und Technische Hilfe), Annahme.
+    fireShare: 0.15
     # Anteile besonderer Anrufe (Annahmen, docs/domain/einsaetze.md).
     kinds: {misdial: 0.06, prank: 0.03, info: 0.05, duplicate: 0.12, police: 0.25}
   times:

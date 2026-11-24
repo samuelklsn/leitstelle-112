@@ -106,6 +106,11 @@ export const Station = z.object({
   name: z.string(),
   kind: z.enum(['rettungswache', 'notarztstandort', 'feuerwache']),
   position: Point,
+  /**
+   * Eigene Ausrückzeit (Sekunden) – z. B. Freiwillige Feuerwehr: Alarm über Meldeempfänger,
+   * Anfahrt zum Gerätehaus, Ausrücken. Ohne Angabe gelten die allgemeinen Einstellungen.
+   */
+  turnout: z.object({ day: Range, night: Range }).optional(),
   vehicles: z
     .array(
       z.object({
@@ -147,6 +152,13 @@ export const Hospital = z.object({
 
 // ---------------------------------------------------------------- Einsätze
 
+/** Bedarf an Fahrzeugen eines Typs; Ersatztypen zählen mit (z. B. LF statt HLF). */
+export const UnitNeed = z.object({
+  type: Id,
+  count: z.number().int().min(1),
+  alternatives: z.array(Id).default([]),
+});
+
 export const Keyword = z.object({
   id: Id,
   /** Anzeige, z. B. „RD 2". */
@@ -157,7 +169,7 @@ export const Keyword = z.object({
   priority: z.number().int().min(1).max(3),
   emergency: z.boolean(),
   /** Alarm- und Ausrückeordnung: Fahrzeugtypen und Anzahl. */
-  aao: z.array(z.object({ type: Id, count: z.number().int().min(1) })).min(1),
+  aao: z.array(UnitNeed).min(1),
 });
 
 export const Tracer = z.enum(['none', 'acs', 'stroke', 'trauma', 'cardiac_arrest']);
@@ -185,6 +197,31 @@ export const Diagnosis = z.object({
   outdoor: z.boolean().default(false),
   /** Meldebilder, wie Anrufer die Lage schildern (i18n-Schlüssel) und deren Gewicht. */
   reports: z.array(z.object({ key: z.string(), weight: z.number().positive() })).min(1),
+  /** Kommt nur als Verletzter einer Feuerwehrlage vor, nicht als eigener Notruf. */
+  onlyAsCasualty: z.boolean().default(false),
+});
+
+/**
+ * Brand- oder Hilfeleistungslage (die „wahre Lage" eines Feuerwehreinsatzes). Der Bedarf an
+ * Kräften zeigt sich erst mit der Lagemeldung; ohne rechtzeitige Kräfte breitet sich die Lage aus.
+ */
+export const FireScenario = z.object({
+  id: Id,
+  name: z.string(),
+  weight: z.number().positive(),
+  kind: z.enum(['brand', 'th']),
+  /** Fachlich angemessenes Stichwort. */
+  keyword: Id,
+  reports: z.array(z.object({ key: z.string(), weight: z.number().positive() })).min(1),
+  outdoor: z.boolean().default(false),
+  /** Kräfte, die zur Abarbeitung tatsächlich nötig sind. */
+  needs: z.array(UnitNeed).min(1),
+  /** Arbeitszeit vor Ort, sobald alle nötigen Kräfte da sind (Minuten). */
+  workMinutes: Range,
+  /** Verletzte Person (Krankheitsbild) mit Wahrscheinlichkeit. */
+  casualty: z.object({ diagnosis: Id, probability: Probability }).optional(),
+  /** Ohne Kräfte vor Ort breitet sich die Lage nach dieser Zeit aus (Minuten ab Notruf). */
+  escalation: z.object({ after: Range, to: Id }).optional(),
 });
 
 // ---------------------------------------------------------------- Einstellungen
@@ -194,6 +231,8 @@ export const Settings = z.object({
     label: z.string(),
     minutes: z.number().positive(),
     targetQuota: Probability,
+    /** Eintreffzeit der Feuerwehr (erstes Löschfahrzeug), Minuten. */
+    fireMinutes: z.number().positive().default(10),
     source: z.string(),
   }),
   shift: z.object({
@@ -207,6 +246,8 @@ export const Settings = z.object({
     abandonAfterSeconds: Range,
     /** Antwortzeit des Anrufers je Frage der Notrufabfrage (Sekunden). */
     answerSeconds: Range.default([3, 8]),
+    /** Anteil der Notrufe, die Brand- oder Hilfeleistungslagen sind. */
+    fireShare: Probability.default(0),
     /** Anteile besonderer Anrufe (ADR-0014). */
     kinds: z
       .object({
@@ -254,6 +295,8 @@ export type Keyword = z.infer<typeof Keyword>;
 export type Diagnosis = z.infer<typeof Diagnosis>;
 export type Tracer = z.infer<typeof Tracer>;
 export type Settings = z.infer<typeof Settings>;
+export type FireScenario = z.infer<typeof FireScenario>;
+export type UnitNeed = z.infer<typeof UnitNeed>;
 
 /** Vollständiger, validierter Inhaltsstand, den die Simulation erhält. */
 export interface ContentBundle {
@@ -263,5 +306,6 @@ export interface ContentBundle {
   readonly hospitals: readonly Hospital[];
   readonly keywords: readonly Keyword[];
   readonly diagnoses: readonly Diagnosis[];
+  readonly fireScenarios: readonly FireScenario[];
   readonly settings: Settings;
 }

@@ -49,12 +49,11 @@ describe('Notrufe', () => {
     for (const seed of [1, 2, 3, 4, 5, 6]) {
       const sim = newSim({ seed, callRateFactor: 0, tutorial: true });
       const call = firstCall(sim);
-      const d = sim.content.diagnoses.get(call.truth.diagnosisId)!;
       sim.submit({ type: 'call/close', callId: call.id });
       const events = sim.flush();
       expect(events.map((e) => e.type)).toContain('call/closed');
       expect(sim.raw.calls).toHaveLength(0);
-      expect(sim.raw.shift.errors.callClosedWithEmergency ?? 0).toBe(d.transport > 0 ? 1 : 0);
+      expect(sim.raw.shift.errors.callClosedWithEmergency ?? 0).toBe(call.truth.transport ? 1 : 0);
     }
   });
 

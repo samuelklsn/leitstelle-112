@@ -86,9 +86,11 @@ export function CallsPanel() {
 }
 
 /** Braucht der Einsatz (noch) Kräfte? Reine Anzeige-Hilfe – die Simulation entscheidet selbst. */
+/** Braucht der Einsatz (noch) Kräfte? Offen, Notarzt nachgefordert oder Nachforderung laut Lage. */
 export function needsUnits(i: IncidentView, L: Lookup): boolean {
   return (
     i.status === 'open' ||
+    i.unitsMissing ||
     (i.doctorRequested &&
       i.hospitalId === undefined &&
       !i.vehicleIds.some((v) => L.vehicle(v)?.doctor))
@@ -133,13 +135,14 @@ export function IncidentList() {
               <td className={css.location}>{L.addressLabel(i.addressId)}</td>
               <td className={css.report}>
                 {i.finding ? (
-                  <span className={css.finding}>
-                    ▶ {L.diagnosisName(i.finding.diagnosisId)} · NACA {i.finding.naca}
-                  </span>
+                  <span className={css.finding}>▶ {describeFinding(i.finding, L)}</span>
                 ) : (
                   <span className={css.meta}>{t(`report.${i.report.reportKey}`)}</span>
                 )}
                 {i.locating && <span className={css.flagAlarm}>{t('incidents.locating')}</span>}
+                {i.unitsMissing && (
+                  <span className={css.flagAlarm}>{t('incidents.unitsMissing')}</span>
+                )}
                 {i.doctorRequested && needsUnits(i, L) && (
                   <span className={css.flagAlarm}>{t('incidents.doctorRequested')}</span>
                 )}
@@ -182,6 +185,14 @@ export function IncidentList() {
       </table>
     </div>
   );
+}
+
+function describeFinding(f: NonNullable<IncidentView['finding']>, L: Lookup): string {
+  const parts: string[] = [];
+  if (f.fireScenarioId) parts.push(L.fireScenarioName(f.fireScenarioId) + (f.fireDone ? ' ✓' : ''));
+  if (f.patient) parts.push(`${L.diagnosisName(f.diagnosisId)} · NACA ${f.naca.toString()}`);
+  if (parts.length === 0) parts.push('kein Patient');
+  return parts.join(' · ');
 }
 
 export function VehiclePanel() {

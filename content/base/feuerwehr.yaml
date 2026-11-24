@@ -1,0 +1,216 @@
+# Feuerwehr im Landkreis Brakenfeld (M6). Eigene Fahrzeugkennzahlen und eigenes Stichwortschema –
+# reale Schemata unterscheiden sich je Land. Zeiten und Häufigkeiten sind Annahmen,
+# siehe docs/domain/feuerwehr.md.
+vehicleTypes:
+  - {id: base:elw1, short: ELW 1, name: Einsatzleitwagen, canTransport: false, radioCode: 11}
+  - {id: base:hlf, short: HLF, name: Hilfeleistungslöschfahrzeug, canTransport: false, radioCode: 46}
+  - {id: base:lf, short: LF, name: Löschgruppenfahrzeug, canTransport: false, radioCode: 44}
+  - {id: base:dlk, short: DLK, name: Drehleiter, canTransport: false, radioCode: 33}
+  - {id: base:rw, short: RW, name: Rüstwagen, canTransport: false, radioCode: 52}
+  - {id: base:tlf, short: TLF, name: Tanklöschfahrzeug, canTransport: false, radioCode: 24}
+
+stations:
+  # Stadt mit hauptamtlicher Wachbereitschaft: kurze Ausrückzeit rund um die Uhr.
+  - id: base:fw-brakenfeld
+    name: Feuerwache Brakenfeld
+    kind: feuerwache
+    position: [12350, 9900]
+    turnout: {day: [60, 110], night: [80, 140]}
+    vehicles:
+      - {id: base:elw1-1-11-1, callsign: Florian Brakenfeld 1/11-1, type: base:elw1}
+      - {id: base:hlf-1-46-1, callsign: Florian Brakenfeld 1/46-1, type: base:hlf}
+      - {id: base:hlf-1-46-2, callsign: Florian Brakenfeld 1/46-2, type: base:hlf}
+      - {id: base:dlk-1-33-1, callsign: Florian Brakenfeld 1/33-1, type: base:dlk}
+      - {id: base:rw-1-52-1, callsign: Florian Brakenfeld 1/52-1, type: base:rw}
+      - {id: base:tlf-1-24-1, callsign: Florian Brakenfeld 1/24-1, type: base:tlf}
+  # Freiwillige Feuerwehren: Alarm über Meldeempfänger, Anfahrt zum Gerätehaus, Ausrücken.
+  - id: base:ff-ellerbach
+    name: Freiwillige Feuerwehr Ellerbach
+    kind: feuerwache
+    position: [5450, 14550]
+    turnout: {day: [240, 420], night: [300, 480]}
+    vehicles:
+      - {id: base:hlf-2-46-1, callsign: Florian Ellerbach 2/46-1, type: base:hlf}
+      - {id: base:lf-2-44-1, callsign: Florian Ellerbach 2/44-1, type: base:lf}
+      - {id: base:dlk-2-33-1, callsign: Florian Ellerbach 2/33-1, type: base:dlk}
+  - id: base:ff-tannrode
+    name: Freiwillige Feuerwehr Tannrode
+    kind: feuerwache
+    position: [20850, 4700]
+    turnout: {day: [240, 420], night: [300, 480]}
+    vehicles:
+      - {id: base:hlf-3-46-1, callsign: Florian Tannrode 3/46-1, type: base:hlf}
+      - {id: base:lf-3-44-1, callsign: Florian Tannrode 3/44-1, type: base:lf}
+  - id: base:ff-hagenried
+    name: Freiwillige Feuerwehr Hagenried
+    kind: feuerwache
+    position: [6550, 4800]
+    turnout: {day: [300, 480], night: [300, 540]}
+    vehicles:
+      - {id: base:lf-4-44-1, callsign: Florian Hagenried 4/44-1, type: base:lf}
+  - id: base:ff-oberwiesel
+    name: Freiwillige Feuerwehr Oberwiesel
+    kind: feuerwache
+    position: [19650, 16350]
+    turnout: {day: [300, 480], night: [300, 540]}
+    vehicles:
+      - {id: base:lf-5-44-1, callsign: Florian Oberwiesel 5/44-1, type: base:lf}
+  - id: base:ff-muehlsteg
+    name: Freiwillige Feuerwehr Mühlsteg
+    kind: feuerwache
+    position: [10250, 16850]
+    turnout: {day: [300, 480], night: [300, 540]}
+    vehicles:
+      - {id: base:lf-6-44-1, callsign: Florian Mühlsteg 6/44-1, type: base:lf}
+  - id: base:ff-kaltenhof
+    name: Freiwillige Feuerwehr Kaltenhof
+    kind: feuerwache
+    position: [23750, 10950]
+    turnout: {day: [300, 480], night: [300, 540]}
+    vehicles:
+      - {id: base:lf-7-44-1, callsign: Florian Kaltenhof 7/44-1, type: base:lf}
+
+keywords:
+  - id: base:b1
+    code: B 1
+    name: Kleinbrand
+    description: Kleinbrand im Freien, Mülleimer, PKW, ausgelöster Heimrauchmelder
+    priority: 2
+    emergency: true
+    aao: [{type: base:hlf, count: 1, alternatives: [base:lf]}]
+  - id: base:b2
+    code: B 2
+    name: Brand Gebäude
+    description: Zimmer-, Küchen- oder Wohnungsbrand, Menschenleben ggf. in Gefahr
+    priority: 1
+    emergency: true
+    aao:
+      - {type: base:elw1, count: 1}
+      - {type: base:hlf, count: 2, alternatives: [base:lf]}
+      - {type: base:dlk, count: 1}
+      - {type: base:rtw, count: 1}
+  - id: base:b3
+    code: B 3
+    name: Großbrand
+    description: Ausgedehnter Gebäudebrand, Dachstuhlbrand, mehrere Einheiten nötig
+    priority: 1
+    emergency: true
+    aao:
+      - {type: base:elw1, count: 1}
+      - {type: base:hlf, count: 3, alternatives: [base:lf]}
+      - {type: base:dlk, count: 1}
+      - {type: base:tlf, count: 1}
+      - {type: base:rtw, count: 1}
+      - {type: base:nef, count: 1}
+  - id: base:th1
+    code: TH 1
+    name: Hilfeleistung klein
+    description: Ölspur, Baum auf Fahrbahn, Wasser im Keller – keine Menschen in Gefahr
+    priority: 3
+    emergency: false
+    aao: [{type: base:lf, count: 1, alternatives: [base:hlf]}]
+  - id: base:th2
+    code: TH 2
+    name: VU eingeklemmt
+    description: Verkehrsunfall mit eingeklemmter Person
+    priority: 1
+    emergency: true
+    aao:
+      - {type: base:hlf, count: 1, alternatives: [base:lf]}
+      - {type: base:rw, count: 1}
+      - {type: base:rtw, count: 1}
+      - {type: base:nef, count: 1}
+
+fireScenarios:
+  - id: base:fire-bin
+    name: Mülleimer- oder Containerbrand
+    weight: 5
+    kind: brand
+    keyword: base:b1
+    outdoor: true
+    reports: [{key: fire_bin, weight: 1}]
+    needs: [{type: base:hlf, count: 1, alternatives: [base:lf]}]
+    workMinutes: [10, 20]
+  - id: base:fire-car
+    name: PKW-Brand
+    weight: 4
+    kind: brand
+    keyword: base:b1
+    outdoor: true
+    reports: [{key: fire_car, weight: 1}]
+    needs: [{type: base:hlf, count: 1, alternatives: [base:lf]}]
+    workMinutes: [20, 35]
+  - id: base:fire-alarm
+    name: Heimrauchmelder ausgelöst (angebranntes Essen)
+    weight: 5
+    kind: brand
+    keyword: base:b1
+    reports: [{key: fire_alarm, weight: 1}]
+    needs: [{type: base:hlf, count: 1, alternatives: [base:lf]}]
+    workMinutes: [10, 20]
+  - id: base:fire-kitchen
+    name: Küchenbrand
+    weight: 4
+    kind: brand
+    keyword: base:b2
+    reports: [{key: fire_kitchen, weight: 3}, {key: fire_smoke, weight: 1}]
+    needs: [{type: base:hlf, count: 1, alternatives: [base:lf]}]
+    workMinutes: [20, 35]
+    casualty: {diagnosis: base:smoke-inhalation, probability: 0.3}
+    escalation: {after: [9, 15], to: base:fire-flat}
+  - id: base:fire-flat
+    name: Wohnungsbrand
+    weight: 3
+    kind: brand
+    keyword: base:b2
+    reports: [{key: fire_smoke, weight: 3}, {key: fire_flames, weight: 1}]
+    needs:
+      - {type: base:elw1, count: 1}
+      - {type: base:hlf, count: 2, alternatives: [base:lf]}
+      - {type: base:dlk, count: 1}
+    workMinutes: [45, 75]
+    casualty: {diagnosis: base:smoke-inhalation, probability: 0.5}
+    escalation: {after: [16, 25], to: base:fire-roof}
+  - id: base:fire-roof
+    name: Dachstuhlbrand
+    weight: 1
+    kind: brand
+    keyword: base:b3
+    reports: [{key: fire_roof, weight: 1}]
+    needs:
+      - {type: base:elw1, count: 1}
+      - {type: base:hlf, count: 3, alternatives: [base:lf]}
+      - {type: base:dlk, count: 1}
+      - {type: base:tlf, count: 1}
+    workMinutes: [120, 180]
+    casualty: {diagnosis: base:smoke-inhalation, probability: 0.2}
+  - id: base:th-oil
+    name: Ölspur
+    weight: 4
+    kind: th
+    keyword: base:th1
+    outdoor: true
+    reports: [{key: th_oil, weight: 1}]
+    needs: [{type: base:lf, count: 1, alternatives: [base:hlf]}]
+    workMinutes: [30, 60]
+  - id: base:th-tree
+    name: Baum auf Fahrbahn
+    weight: 3
+    kind: th
+    keyword: base:th1
+    outdoor: true
+    reports: [{key: th_tree, weight: 1}]
+    needs: [{type: base:lf, count: 1, alternatives: [base:hlf]}]
+    workMinutes: [20, 40]
+  - id: base:th-trapped
+    name: Verkehrsunfall mit eingeklemmter Person
+    weight: 2
+    kind: th
+    keyword: base:th2
+    outdoor: true
+    reports: [{key: th_trapped, weight: 1}]
+    needs:
+      - {type: base:hlf, count: 1, alternatives: [base:lf]}
+      - {type: base:rw, count: 1}
+    workMinutes: [35, 55]
+    casualty: {diagnosis: base:traffic-injury, probability: 1}

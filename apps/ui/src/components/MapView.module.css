@@ -62,6 +62,19 @@
   color: #fff;
 }
 
+.fireStation {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  background: #c62828;
+  color: #fff;
+  font-size: 0.6rem;
+  font-weight: 800;
+  box-shadow: 0 0 0 2px #0c1319;
+}
+
 .hospital {
   width: 24px;
   height: 24px;

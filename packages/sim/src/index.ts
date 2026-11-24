@@ -16,7 +16,7 @@ export {
   type IsoWeekday,
 } from './time';
 export { Simulation, replay, defaultConfig, contentHash } from './simulation';
-export type { VehicleSuggestion, HospitalSuggestion } from './systems/operations';
+export type { VehicleSuggestion, HospitalSuggestion, Need } from './systems/operations';
 export { ERROR_PENALTY } from './systems/calls';
 export {
   buildView,
