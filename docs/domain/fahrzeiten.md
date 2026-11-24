@@ -45,3 +45,12 @@ sind es rund 58 bzw. 49 km/h.
 | Wache, tagsüber                        | 50–90              |
 | Wache, nachts (22–6 Uhr)               | 90–150             |
 | Bereits frei auf der Straße (Status 1) | 10–25              |
+
+## Wetter, Ruhetage und Sperrungen (seit 0.5.0)
+
+- Die Wetterlage multipliziert die Geschwindigkeit aller Straßenklassen, z. B. 0,6 bei Glätte
+  oder 0,82 bei Nebel ([welt.md](welt.md)).
+- An Feiertagen gilt das Verkehrsprofil des Wochenendes.
+- Gesperrte Abschnitte (Baustelle, Veranstaltung) sind 15-mal langsamer. Der Router leitet damit
+  praktisch immer um; im Notfall kommen Einsatzfahrzeuge mit Absprache aber noch durch.
+- Hubschrauber fliegen Luftlinie mit 220 km/h; Start 2–4 und Landung 2–3 Minuten.

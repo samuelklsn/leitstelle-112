@@ -344,7 +344,7 @@ Krankenhauses nie negativ; nach Pause ändert sich der Zustand nicht.
 
 ## 6. Meilensteine
 
-**Stand 2026-11-24:** M0–M7 abgeschlossen (v0.4.0: Notrufannahme 2.0, Feuerwehr, RD-Logistik). Nächster Meilenstein: M8.
+**Stand 2026-11-24:** M0–M8 abgeschlossen (v0.5.0: Notrufannahme 2.0, Feuerwehr, RD-Logistik, Welt-Dynamik). Nächster Meilenstein: M9.
 
 Jeder Meilenstein endet lauffähig, getestet, committet, mit CHANGELOG-Eintrag und
 Zusammenfassung an den Product Owner.

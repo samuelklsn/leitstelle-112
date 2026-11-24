@@ -96,7 +96,8 @@ auf Leitung 2 klingelt schon der nächste Notruf.
 | M5 Notrufannahme 2.0 | Strukturierte Abfrage, Fehl-, Scherz- und Doppelanrufe, Polizei-Übergaben  | ✅                                                                 |
 | M6 Feuerwehr         | Feuerwachen, B/TH-Stichworte, Lagemeldung, Nachforderung, Brandausbreitung | ✅                                                                 |
 | M7 RD-Logistik       | KTW/ITW, Krankentransporte, Klinikabmeldungen, Status 6, Pausen            | ✅                                                                 |
-| M8 – M12             | Wetter, Mehrmonitor, MANV, Langzeitspiel, Editoren                         | [geplant](https://github.com/samuelklsn/leitstelle-112/milestones) |
+| M8 Welt-Dynamik      | Wetter, Feiertage, Sommerzeit, Ereignisse, Sperrungen, Regie, RTH          | ✅                                                                 |
+| M9 – M12             | Mehrmonitor, MANV, Langzeitspiel, Editoren                                 | [geplant](https://github.com/samuelklsn/leitstelle-112/milestones) |
 
 ## Technik
 

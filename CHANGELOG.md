@@ -6,6 +6,33 @@ Versionierung nach [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+## [0.5.0] – 2026-11-24 – Welt-Dynamik (M8)
+
+### Hinzugefügt
+
+- **Wetter nach Klima und Jahreszeit:** Klar, Regen, Gewitter, Nebel, Schneefall, Glätte und
+  Hitze mit Temperatur. Das Wetter verlängert Fahrzeiten (Glätte +67 %), ändert das Aufkommen und
+  verschiebt den Einsatzmix: Stürze bei Glätte, Bäume auf der Fahrbahn bei Gewitter, Exsikkose
+  und Flächenbrände bei Hitze.
+- **Ereignisse der Weltlage:** Silvester, Volksfeste, Weihnachtsmärkte, Grippewellen, Baustellen
+  und Veranstaltungen mit Straßensperrung. Die Karte zeigt Sperrungen, der Router leitet um.
+- **Feiertage und Wochenmuster:** gesetzliche Feiertage zählen wie Sonntage (Verkehr, KTW-Dienst,
+  Krankentransporte). Freitag und Wochenende bringen etwas mehr Notrufe.
+- **Sommerzeit (#33):** Die Uhr springt Ende März und Ende Oktober; der Kern läuft gleichmäßig.
+- **Einsatz-Regie:** Das Aufkommen wechselt in Phasen zwischen Ruhe und Spitzen, höchstens ± 25 %.
+- **Rettungshubschrauber** an der Luftrettungsstation Hohenwarte: fliegt Luftlinie, nur bei
+  Tageslicht und Flugwetter, zeitweise im Nachbarbereich gebunden. Die AAO schlägt ihn als
+  Alternative zum NEF vor, wenn er schneller ist.
+- **Neue Einsätze:** Exsikkose, Verletzung durch Feuerwerkskörper, Flächen- und Waldbrand.
+- **Kopfzeile** mit Wetter, Temperatur, Feiertag und laufenden Ereignissen; Wetterwechsel und
+  Ereignisse im Funkprotokoll.
+- **Startbildschirm:** Spielbeginn heute, im Winter, im Sommer oder in der Silvesternacht.
+- ADR-0016 und Fachdoku `docs/domain/welt.md`.
+
+### Geändert
+
+- Spielstände haben die Snapshot-Version 4. Spielstände aus 0.4.0 lassen sich nicht laden.
+
 ## [0.4.0] – 2026-11-24 – Rettungsdienst-Logistik (M7)
 
 ### Hinzugefügt
@@ -180,7 +207,8 @@ eigentlichen Sinn – das kommt ab M2/M3.
 - Nach einem Absturz startet die Simulation neu beim Schichtbeginn; Autosave folgt in M4.
 - Der Installer wird nur in der CI gebaut (Richtlinie des Entwicklungsrechners, PLAN Kapitel 9).
 
-[Unreleased]: https://github.com/samuelklsn/leitstelle-112/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/samuelklsn/leitstelle-112/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/samuelklsn/leitstelle-112/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/samuelklsn/leitstelle-112/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/samuelklsn/leitstelle-112/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/samuelklsn/leitstelle-112/compare/v0.1.0...v0.2.0
