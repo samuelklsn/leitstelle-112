@@ -97,6 +97,46 @@ export interface Truth {
   readonly infectious: boolean;
   readonly fire?: FireTruth;
   readonly mci?: MciTruth;
+  /** Gefahr für Einsatzkräfte (Gewalt, Waffen) – ohne Polizei wird gewartet (ADR-0018). */
+  readonly danger?: boolean;
+  /** Notruf einer bekannten Person (Vielanrufer, Stammpatient, Gefahrenadresse). */
+  readonly personId?: string;
+}
+
+/** Wiederkehrende Person im Bereich (ADR-0018). */
+export interface PersonState {
+  readonly id: string;
+  readonly kind: 'frequent' | 'regular' | 'danger';
+  readonly addressId: number;
+  readonly callback: string;
+  readonly diagnosisId: string;
+  calls: number;
+}
+
+/** Was die Leitstelle über eine Adresse weiß (Einsatzhistorie). */
+export interface AddressHistory {
+  count: number;
+  lastAt: SimTime;
+  /** Letzte Stichworte (neueste zuerst). */
+  keywords: string[];
+  /** Hinweise wie Gefahr für Einsatzkräfte. */
+  flags: ('danger' | 'frequent')[];
+}
+
+/** Laufbahn und Bedarfsplanung (ADR-0018). */
+export interface CareerState {
+  rank: number;
+  xp: number;
+  budget: number;
+  shifts: number;
+  /** Bewilligte Fahrzeuge aus der Bedarfsplanung. */
+  extraVehicles: {
+    readonly id: string;
+    readonly stationId: string;
+    readonly typeId: string;
+    readonly callsign: string;
+    readonly service?: { readonly from: number; readonly to: number };
+  }[];
 }
 
 /** Was der Anrufer sagt – nicht immer richtig. */
@@ -118,6 +158,8 @@ export interface CallerReport {
   readonly conscious: 'yes' | 'no' | 'unclear' | 'nobody';
   /** Antwort auf „Atmet die Person normal?" */
   readonly breathing: 'normal' | 'difficult' | 'none' | 'unclear' | 'nobody';
+  /** Der Anrufer erwähnt Aggression oder Waffen (Hinweis auf Eigensicherung). */
+  readonly aggressive?: boolean;
 }
 
 /**
@@ -171,7 +213,8 @@ export type ErrorCode =
   | 'hospitalClosed'
   | 'breakMissed'
   | 'unsuitableTransport'
-  | 'mciOverload';
+  | 'mciOverload'
+  | 'policeNotRequested';
 
 export type Outcome = 'gut' | 'beeintraechtigt' | 'verstorben' | 'keinPatient';
 
@@ -215,6 +258,10 @@ export interface IncidentState {
   /** Erstbefund vor Ort ist bekannt (Diagnose/NACA für den Disponenten sichtbar). */
   assessed: boolean;
   doctorRequested: boolean;
+  /** Polizei zur Eigensicherung verständigt. */
+  policeRequested?: boolean;
+  /** Bei der Anlage bekannt: Gefahrenadresse laut Historie oder Hinweis des Anrufers. */
+  knownDanger?: boolean;
   /** Seit wann ein (nachgeforderter) Notarzt auf Alarmierung wartet. */
   doctorNeededSince?: SimTime;
   /** War zu diesem Zeitpunkt ein Notarzt verfügbar? */
@@ -397,6 +444,9 @@ export interface SimState {
   vehicles: VehicleState[];
   hospitals: Record<string, HospitalState>;
   world: WorldState;
+  career: CareerState;
+  persons: PersonState[];
+  addressHistory: Record<string, AddressHistory>;
   shift: ShiftStats;
   shiftHistory: ShiftStats[];
 }
@@ -431,7 +481,15 @@ export type SimCommand =
   /** Großlage: Patientenverteilung automatisch nach Kapazität (ADR-0017). */
   | { readonly type: 'mci/autoDistribute'; readonly incidentId: string; readonly on: boolean }
   /** Großlage: Bereitstellungsraum einrichten bzw. auflösen. */
-  | { readonly type: 'mci/staging'; readonly incidentId: string; readonly on: boolean };
+  | { readonly type: 'mci/staging'; readonly incidentId: string; readonly on: boolean }
+  /** Polizei zur Eigensicherung verständigen (ADR-0018). */
+  | { readonly type: 'incident/police'; readonly incidentId: string }
+  /** Bedarfsplanung: zusätzliches Fahrzeug an einer Wache beantragen. */
+  | {
+      readonly type: 'planning/request';
+      readonly stationId: string;
+      readonly kind: 'rtw' | 'rtwDay' | 'ktw' | 'nef';
+    };
 
 export type RejectReason =
   | 'unknownCall'
@@ -449,7 +507,10 @@ export type RejectReason =
   | 'notReleasable'
   | 'noBreakDue'
   | 'notOnBreak'
-  | 'notMci';
+  | 'notMci'
+  | 'unknownStation'
+  | 'noBudget'
+  | 'notJustified';
 
 /**
  * Ausgabe-Ereignisse. Keine Texte, nur Typ und Parameter; das UI übersetzt (CLAUDE.md, Regel 5).
@@ -509,6 +570,13 @@ export type SimEvent =
       readonly reason: 'full' | 'closure';
     }
   | { readonly type: 'world/weather'; readonly at: SimTime; readonly weatherId: string }
+  | { readonly type: 'career/promoted'; readonly at: SimTime; readonly rank: number }
+  | {
+      readonly type: 'planning/approved';
+      readonly at: SimTime;
+      readonly vehicleId: string;
+      readonly stationId: string;
+    }
   | {
       readonly type: 'world/event';
       readonly at: SimTime;
@@ -559,7 +627,9 @@ export type RadioMessage =
   | 'triageDone'
   | 'patientLoaded'
   | 'greenTreated'
-  | 'stagingReady';
+  | 'stagingReady'
+  | 'waitingForPolice'
+  | 'policeOnScene';
 
 export interface LoggedCommand {
   /** Tick, nach dem der Befehl angewendet wurde (Spielzeit dieses Ticks). */
@@ -568,7 +638,7 @@ export interface LoggedCommand {
 }
 
 /** Format-Version des Snapshots – bei inkompatiblen Änderungen erhöhen. */
-export const SNAPSHOT_VERSION = 5;
+export const SNAPSHOT_VERSION = 6;
 
 export interface SimSnapshot {
   readonly version: typeof SNAPSHOT_VERSION;

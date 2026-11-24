@@ -7,6 +7,7 @@ import type { Ctx } from '../context';
 import { MS_PER_MINUTE } from '../time';
 import type { ErrorCode, IncidentState, Outcome } from '../types';
 import { countError } from './calls';
+import { recordHistory } from './persons';
 
 /** Zeitfenster bis zur definitiven Versorgung je Tracer-Diagnose (Minuten ab Notrufeingang). */
 const TRACER_WINDOW_MIN = { acs: 120, stroke: 90, trauma: 60 } as const;
@@ -17,6 +18,8 @@ export function closeIncident(ctx: Ctx, incident: IncidentState): void {
   if (incident.status === 'closed') return;
   incident.status = 'closed';
   incident.closedAt = ctx.state.time;
+  // Einsatzhistorie der Adresse fortschreiben (ADR-0018).
+  recordHistory(ctx, incident);
   const d = ctx.content.diagnoses.get(incident.truth.diagnosisId);
   const shift = ctx.state.shift;
 

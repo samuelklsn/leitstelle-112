@@ -75,6 +75,8 @@ import {
   updateWorld,
 } from './systems/world';
 import { onMciOnSite, onMciTriage, setMciOption } from './systems/mci';
+import { careerAfterShift, initialCareer, requestVehicle } from './systems/career';
+import { initialPersons } from './systems/persons';
 import { generateWorld } from './world/generator';
 import type { World } from './world/types';
 
@@ -221,6 +223,9 @@ export class Simulation {
           phaseEnd: config.startTime,
         },
       },
+      career: initialCareer(),
+      persons: [],
+      addressHistory: {},
       shift: newShift(1, config.startTime),
       shiftHistory: [],
     };
@@ -235,6 +240,7 @@ export class Simulation {
     );
     // Erst die Welt (Wetter entscheidet, ob der Hubschrauber fliegt), dann die Fahrzeuge.
     initWorld(sim.ctx);
+    sim.state.persons = initialPersons(sim.ctx);
     sim.state.vehicles = sim.initialVehicles();
     for (const v of sim.state.vehicles) initVehicleLogistics(sim.ctx, v);
     sim.state.hospitals = initialHospitals(sim.ctx);
@@ -397,6 +403,17 @@ export class Simulation {
         return grantBreak(ctx, command.vehicleId);
       case 'vehicle/resume':
         return resumeFromBreak(ctx, command.vehicleId);
+      case 'incident/police': {
+        const incident = this.state.incidents.find((i) => i.id === command.incidentId);
+        if (!incident) return 'unknownIncident';
+        if (incident.status === 'closed') return 'incidentClosed';
+        incident.policeRequested = true;
+        return undefined;
+      }
+      case 'planning/request': {
+        const result = requestVehicle(ctx, command.stationId, command.kind);
+        return typeof result === 'string' ? result : undefined;
+      }
       case 'mci/autoDistribute':
       case 'mci/staging':
         return setMciOption(
@@ -543,6 +560,8 @@ export class Simulation {
       v.busyMs = 0;
     }
     shift.vehicleBusyMs = busy;
+    // Laufbahn: Erfahrung und Budget aus dieser Schicht (ADR-0018).
+    careerAfterShift(this.ctx, shift);
     this.state.shiftHistory = [...this.state.shiftHistory, shift].slice(-30);
     this.state.shift = newShift(shift.index + 1, this.state.time);
     this.events.push({ type: 'shift/ended', at: this.state.time, index: shift.index });

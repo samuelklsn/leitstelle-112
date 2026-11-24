@@ -522,6 +522,56 @@ export const Settings = z.object({
     .default({ amplitude: 0, phaseMinutes: [30, 90] }),
   /** Tageslicht je Monat (Januar … Dezember): Stunden [hell ab, dunkel ab], Ortszeit. */
   daylight: z.array(Range).length(12).optional(),
+  /**
+   * Langzeitspiel (ADR-0018): Laufbahn mit Erfahrungspunkten; höhere Stufen übernehmen einen
+   * größeren Bereich (mehr Aufkommen). Bedarfsplanung kostet Budget aus guten Schichten.
+   */
+  career: z
+    .object({
+      ranks: z
+        .array(z.object({ id: z.string(), xp: z.number().int().nonnegative(), area: z.number().positive() }))
+        .min(1),
+      /** Budget je Punkt der Schichtauswertung. */
+      budgetPerPoint: z.number().nonnegative(),
+      costs: z.object({
+        rtw: z.number().int().positive(),
+        rtwDay: z.number().int().positive(),
+        ktw: z.number().int().positive(),
+        nef: z.number().int().positive(),
+      }),
+      /** Auslastung der Fahrzeuge dieses Typs an der Wache, ab der ein Antrag begründet ist. */
+      justifyUtilization: Probability,
+    })
+    .default({
+      ranks: [{ id: 'disponent', xp: 0, area: 1 }],
+      budgetPerPoint: 0.25,
+      costs: { rtw: 400, rtwDay: 250, ktw: 150, nef: 350 },
+      justifyUtilization: 0.35,
+    }),
+  /** Wiederkehrende Personen und Adressen (ADR-0018). */
+  persons: z
+    .object({
+      /** Anteil der Notrufe, die von bekannten Personen kommen. */
+      share: Probability,
+      frequent: z.number().int().nonnegative(),
+      regular: z.number().int().nonnegative(),
+      danger: z.number().int().nonnegative(),
+      regularDiagnoses: z.array(Id),
+      frequentDiagnoses: z.array(Id),
+      dangerDiagnoses: z.array(Id),
+      /** Ohne verständigte Polizei warten die Kräfte an einer Gefahrenadresse (Minuten). */
+      policeWaitMinutes: Range,
+    })
+    .default({
+      share: 0,
+      frequent: 0,
+      regular: 0,
+      danger: 0,
+      regularDiagnoses: [],
+      frequentDiagnoses: [],
+      dangerDiagnoses: [],
+      policeWaitMinutes: [5, 10],
+    }),
   /** Großlagen (ADR-0017): Häufigkeit und Zeiten an der Einsatzstelle. */
   mci: z
     .object({

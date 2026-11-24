@@ -18,6 +18,7 @@ import type {
 import { isRestDay } from '../calendar';
 import { countError } from './calls';
 import { flyable } from './world';
+import { areaFactor, extraService } from './career';
 import { closeIncident } from './outcome';
 import {
   drive,
@@ -166,12 +167,20 @@ export function onHospitalReopen(ctx: Ctx, hospitalId: string, dept: string): vo
 
 /** Ist das Fahrzeug laut Dienstplan zu dieser Zeit besetzt? */
 export function inService(ctx: Ctx, vehicleId: string, time: SimTime): boolean {
-  const s = ctx.content.vehicleService.get(vehicleId);
+  const s = serviceOf(ctx, vehicleId);
   if (!s) return true;
   if (s.weekdaysOnly && isRestDay(ctx.content.bundle.holidays, time)) return false;
   const { from, to } = serviceHours(ctx, s, time);
   const hour = toCalendar(time).hour;
   return hour >= from && hour < to;
+}
+
+/** Dienstzeit laut Inhalten oder – bei beantragten Fahrzeugen – laut Bedarfsplanung. */
+function serviceOf(
+  ctx: Ctx,
+  vehicleId: string,
+): { from: number; to: number; weekdaysOnly: boolean; daylight: boolean } | undefined {
+  return ctx.content.vehicleService.get(vehicleId) ?? extraService(ctx, vehicleId);
 }
 
 /** Dienststunden: fest oder – bei der Luftrettung – nach Tageslicht des Monats. */
@@ -189,7 +198,7 @@ function serviceHours(
 function crewStart(ctx: Ctx, vehicleId: string, time: SimTime): SimTime {
   const cal = toCalendar(time);
   const dayStart = time - (cal.hour * 3600 + cal.minute * 60 + cal.second) * 1000;
-  const service = ctx.content.vehicleService.get(vehicleId);
+  const service = serviceOf(ctx, vehicleId);
   if (service)
     return Math.min(time, dayStart + serviceHours(ctx, service, time).from * MS_PER_HOUR);
   const hours = [...ctx.content.bundle.settings.logistics.crewChangeHours].sort((a, b) => a - b);
@@ -268,7 +277,7 @@ function endOpenService(ctx: Ctx, v: VehicleState, message: RadioMessage): void 
 
 function updateDuty(ctx: Ctx, v: VehicleState, hour: number): void {
   const now = ctx.state.time;
-  if (ctx.content.vehicleService.has(v.id)) {
+  if (serviceOf(ctx, v.id)) {
     const should = inService(ctx, v.id, now);
     if (should && !v.onDuty) startDuty(ctx, v);
     else if (!should && v.onDuty) endDuty(ctx, v);
@@ -470,7 +479,9 @@ export function generateOrders(ctx: Ctx): void {
   if (t.ratePer100k <= 0 || ctx.content.bundle.transportOrders.length === 0) return;
   if (ctx.config.tutorial) return;
   const { hour } = toCalendar(ctx.state.time);
-  const perHour = (t.ratePer100k * ctx.content.population * ctx.config.callRateFactor) / 100_000;
+  const perHour =
+    (t.ratePer100k * ctx.content.population * ctx.config.callRateFactor * areaFactor(ctx)) /
+    100_000;
   const rest = isRestDay(ctx.content.bundle.holidays, ctx.state.time) ? t.restDayFactor : 1;
   const p = (perHour * (t.hourlyProfile[hour] ?? 1) * rest * TICK_MS) / MS_PER_HOUR;
   if (ctx.rng.orders.chance(p)) createOrder(ctx);

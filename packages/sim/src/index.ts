@@ -29,6 +29,7 @@ export {
   type ReportView,
   type FindingView,
   type OrderView,
+  type KnownInfo,
   type MciView,
   type WorldView,
   type HospitalView,

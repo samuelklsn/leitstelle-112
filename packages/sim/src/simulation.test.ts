@@ -261,7 +261,7 @@ describe('Simulation – Determinismus', () => {
     expect(() => Simulation.restore({ ...snap, contentHash: 'x' }, baseContent())).toThrow(
       RangeError,
     );
-    expect(() => Simulation.restore({ ...snap, version: 1 as 5 }, baseContent())).toThrow(
+    expect(() => Simulation.restore({ ...snap, version: 1 as 6 }, baseContent())).toThrow(
       RangeError,
     );
   });
