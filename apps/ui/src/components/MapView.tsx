@@ -142,6 +142,15 @@ export function MapView() {
     }
     for (const s of world.stations) {
       const doctor = s.kind === 'notarztstandort';
+      if (s.kind === 'feuerwache') {
+        add(
+          L.toLonLat(s.position[0], s.position[1]),
+          css.fireStation ?? '',
+          'FW',
+          `${s.name} (${t('map.fireStation')})`,
+        );
+        continue;
+      }
       add(
         L.toLonLat(s.position[0], s.position[1]),
         `${css.station ?? ''} ${doctor ? (css.doctorStation ?? '') : ''}`,
@@ -220,6 +229,8 @@ export function MapView() {
       tw.el.className = `${css.vehicle ?? ''} ${css[`fms${v.status.toString()}`] ?? ''} ${v.emergency && v.moving ? (css.blue ?? '') : ''}`;
       tw.el.textContent = `${v.status.toString()} ${label}`;
       tw.el.dataset.testid = 'vehicle-marker';
+      // Fahrzeuge auf ihrer Wache (Status 2) zeigt das Wachensymbol – sonst stapeln sie sich.
+      tw.marker.getElement().style.display = v.status === 2 && v.task === 'idle' ? 'none' : '';
     }
 
     function syncIncidents(m: MapLibre, list: readonly IncidentView[]) {

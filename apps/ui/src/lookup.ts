@@ -18,6 +18,7 @@ export interface Lookup {
   hospitalName(id: string | null | undefined): string;
   keywordCode(id: string): string;
   diagnosisName(id: string): string;
+  fireScenarioName(id: string): string;
   toLonLat(x: number, y: number): [number, number];
   searchAddresses(text: string, limit?: number): StaticAddress[];
 }
@@ -64,6 +65,7 @@ export function lookup(world: WorldInfo): Lookup {
   const hospitals = new Map(world.hospitals.map((h) => [h.id, h.short]));
   const keywords = new Map(world.keywords.map((k) => [k.id, k.code]));
   const diagnoses = new Map(world.diagnoses.map((d) => [d.id, d.name]));
+  const fireScenarios = new Map(world.fireScenarios.map((s) => [s.id, s.name]));
   const addresses = world.addresses;
 
   const label = (a: StaticAddress): string => {
@@ -87,6 +89,7 @@ export function lookup(world: WorldInfo): Lookup {
     hospitalName: (id) => (id ? (hospitals.get(id) ?? '?') : '–'),
     keywordCode: (id) => keywords.get(id) ?? '?',
     diagnosisName: (id) => diagnoses.get(id) ?? '?',
+    fireScenarioName: (id) => fireScenarios.get(id) ?? '?',
     toLonLat: (x, y) => [
       world.geo.originLon + x / world.geo.metersPerDegLon,
       world.geo.originLat + y / world.geo.metersPerDegLat,
