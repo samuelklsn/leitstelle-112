@@ -25,3 +25,4 @@ Entscheidung bekommt ein neues ADR, das alte wird auf „Abgelöst" gesetzt. Nac
 | [0016](0016-welt-dynamik.md)                     | Welt-Dynamik: Wetter, Kalender, Ereignisse, Regie    | Angenommen |
 | [0017](0017-manv-grosslagen.md)                  | Massenanfall von Verletzten und Großlagen            | Angenommen |
 | [0018](0018-langzeitspiel.md)                    | Langzeitspiel: Laufbahn, Bedarfsplanung, Personen    | Angenommen |
+| [0019](0019-mods-editoren.md)                    | Mods, Editoren und Trainingsszenarien                | Angenommen |
