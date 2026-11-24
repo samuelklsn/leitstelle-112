@@ -44,6 +44,34 @@ gilt Folgendes:
 - **Mehrere RTW, nur ein Patient:** Die überzähligen RTW werden frei.
 - **Kein Patient angetroffen:** Alle Kräfte rücken ein.
 
+## Notrufabfrage (seit 0.2.0)
+
+Der Anrufer verrät nichts von selbst. Der Disponent stellt die Fragen der strukturierten Abfrage
+(**Wo? Was? Wer? Bewusstsein? Atmung? Rückrufnummer?**), und jede Antwort kommt nach **3–8 Sekunden**.
+Bei aufgeregten Anrufern dauert es 3 Sekunden länger. Die Zeit läuft in die Hilfsfrist ein: Wer alles
+abfragt, verliert Zeit. Wer zu früh alarmiert, schickt vielleicht das falsche Stichwort oder
+übersieht einen Fehlanruf.
+
+- **Bewusstsein und Atmung** sind die stärksten Hinweise. „Reagiert nicht, atmet nicht“ heißt RD 3.
+- Ein Disponent führt **immer nur ein Gespräch**. Weitere Notrufe klingeln, bis die Leitung frei
+  ist, und legen nach 45–180 s auf.
+- **Polizei-Übergaben (110):** ein Viertel der Einsätze im Freien. Alle Angaben sind bereits
+  abgefragt und korrekt.
+
+## Anrufarten (Anteile, Annahme)
+
+| Art                          | Anteil   | Erkennbar an                                                                                | Richtig          |
+| ---------------------------- | -------- | ------------------------------------------------------------------------------------------- | ---------------- |
+| Hosentaschen- oder Fehlanruf | 6 %      | Stille, Rascheln, unterdrückte Nummer                                                       | Gespräch beenden |
+| Scherzanruf                  | 3 %      | Kichern im Hintergrund, unterdrückte Nummer, dramatische Schilderung                        | Gespräch beenden |
+| Auskunftsanruf               | 5 %      | Fragt nach Apotheke, Bereitschaftsdienst, Krankentransport                                  | Gespräch beenden |
+| Weitere Meldung              | bis 12 % | Gleicher Ort wie ein laufender Einsatz; die Maske schlägt Einsätze im Umkreis von 600 m vor | „Zuordnen“       |
+
+Wer einen Scherz- oder Fehlanruf alarmiert, schickt Kräfte ins Leere. Vor Ort ist niemand, das
+bringt −10 Punkte. Eine doppelt angelegte Meldung löst einen zweiten Einsatz aus, die Kräfte
+treffen auf die Kollegen. Das bringt −15 Punkte. Wird dagegen ein echter Notfall beendet oder einem
+fremden Einsatz zugeordnet, ist das ein schwerer Fehler: Ein Patient bleibt ohne Hilfe.
+
 ## Behandlung, Transport, Übergabe
 
 | Phase                | Dauer (Annahme)                                          | Daten                       |
