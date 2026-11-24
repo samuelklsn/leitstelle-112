@@ -92,6 +92,11 @@ export function botAct(sim: Simulation, options: BotOptions = {}): number {
   }
   for (const incident of s.incidents) {
     if (incident.status === 'closed') continue;
+    // Aufträge erst kurz vor dem Termin und nur alle 30 Takte prüfen – wie ein Disponent, der
+    // die Auftragsliste im Blick behält. Spart Routenberechnungen für wartende Aufträge.
+    if (incident.order && (incident.order.dueAt - s.time > 45 * 60_000 || s.tick % 30 !== 0))
+      continue;
+    if (sim.missingNeeds(incident.id).length === 0) continue;
     const ids = sim
       .suggestVehicles(incident.id)
       .filter((x) => x.recommended)

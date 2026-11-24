@@ -95,7 +95,8 @@ describe('SimHost', () => {
         keywordId: 'base:rd2',
       },
     });
-    const incident = host.sim.raw.incidents[0]!;
+    // Vorbestellte Krankentransporte stehen schon in der Liste – den neuen Einsatz suchen.
+    const incident = host.sim.raw.incidents.find((i) => i.callId === call.id)!;
     port.send({
       type: 'query',
       id: 7,
