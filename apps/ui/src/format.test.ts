@@ -9,6 +9,7 @@ const calendar = {
   minute: 5,
   second: 9,
   weekday: 3 as const,
+  summerTime: false,
 };
 
 describe('format', () => {
@@ -19,6 +20,8 @@ describe('format', () => {
 
   it('formatiert Tageszeit und Dauer', () => {
     expect(formatTimeOfDay(3 * 86_400_000 + 13 * 3_600_000 + 61_000)).toBe('13:01:01');
+    // Im Sommer zeigt die Uhr eine Stunde mehr (MESZ): 1.7.2026, 11:00 MEZ = 12:00 MESZ.
+    expect(formatTimeOfDay(20_635 * 86_400_000 + 11 * 3_600_000)).toBe('12:00:00');
     expect(formatDuration(45_000)).toBe('0:45');
     expect(formatDuration(723_400)).toBe('12:03');
     expect(formatDuration(-5)).toBe('0:00');

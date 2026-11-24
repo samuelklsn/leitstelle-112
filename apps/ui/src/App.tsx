@@ -1,7 +1,8 @@
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SPEEDS } from '@ls112/protocol';
-import { formatClock, formatDate } from './format';
+import { formatClock, formatDate, formatTimeOfDay } from './format';
+import { lookup } from './lookup';
 import { useSim } from './sim-store';
 import { useGlobalShortcuts } from './use-shortcuts';
 import { CallMask } from './components/CallMask';
@@ -116,6 +117,7 @@ function Header() {
             <span className={css.clockTime} data-testid="sim-time">
               {formatClock(host.view.calendar)}
             </span>
+            <WorldChips />
             {paused && (
               <span className={css.pausedBadge} data-testid="paused-badge">
                 {t('clock.paused')}
@@ -218,4 +220,46 @@ function Notice() {
     };
   }, [notice]);
   return notice ? <div className={css.notice}>{notice.text}</div> : null;
+}
+
+/** Weltlage kompakt: Wetter mit Temperatur, Feiertag und laufende Ereignisse (ADR-0016). */
+function WorldChips() {
+  const { t } = useTranslation();
+  const world = useSim((s) => s.world);
+  const view = useSim((s) => s.host?.view.world);
+  if (!world || !view) return null;
+  const L = lookup(world);
+  const weather = world.weather.find((w) => w.id === view.weatherId);
+  return (
+    <span className={css.world} data-testid="world-chips">
+      {weather && (
+        <span
+          className={`${css.chip ?? ''} ${weather.flyable ? '' : (css.chipWarn ?? '')}`}
+          title={`${weather.name}${weather.flyable ? '' : ` – ${t('world.noFlying')}`}`}
+          data-testid="weather-chip"
+        >
+          {weather.symbol} {view.temperature} °C · {weather.name}
+        </span>
+      )}
+      {view.holiday && <span className={css.chip}>{view.holiday}</span>}
+      {view.events.map((e) => {
+        const name = world.worldEvents.find((x) => x.id === e.eventId)?.name ?? e.eventId;
+        const place = e.townId
+          ? L.townName(e.townId)
+          : e.closure
+            ? L.streetName(e.closure.streetId)
+            : undefined;
+        return (
+          <span
+            key={e.key}
+            className={`${css.chip ?? ''} ${css.chipWarn ?? ''}`}
+            title={t('world.until', { time: formatTimeOfDay(e.until) })}
+          >
+            {name}
+            {place ? ` · ${place}` : ''}
+          </span>
+        );
+      })}
+    </span>
+  );
 }

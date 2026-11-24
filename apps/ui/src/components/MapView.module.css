@@ -178,3 +178,23 @@
 .incidentOrder {
   background: #4f6f8f;
 }
+
+/* Luftrettungsstation und Sperrungen (ADR-0016). */
+.airStation {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #f5b335;
+  color: #1a1a1a;
+  font-size: 0.6rem;
+  font-weight: 800;
+}
+
+.closure {
+  font-size: 1rem;
+  line-height: 1;
+  filter: drop-shadow(0 0 2px #000);
+  cursor: help;
+}

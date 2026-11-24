@@ -1,4 +1,4 @@
-import type { GameView } from '@ls112/protocol';
+import { summerTimeOffset, type GameView } from '@ls112/protocol';
 
 type Calendar = GameView['calendar'];
 
@@ -14,9 +14,10 @@ export function formatClock(calendar: Calendar): string {
   return `${pad(calendar.hour)}:${pad(calendar.minute)}:${pad(calendar.second)}`;
 }
 
-/** Spielzeit (ms) als „HH:MM:SS" ab Tagesbeginn – für Protokollzeilen. */
+/** Spielzeit (ms) als Uhrzeit „HH:MM:SS" (mit Sommerzeit) – für Protokollzeilen und Termine. */
 export function formatTimeOfDay(timeMs: number): string {
-  const msOfDay = ((timeMs % 86_400_000) + 86_400_000) % 86_400_000;
+  const wall = timeMs + summerTimeOffset(timeMs);
+  const msOfDay = ((wall % 86_400_000) + 86_400_000) % 86_400_000;
   const s = Math.floor(msOfDay / 1000);
   return `${pad(Math.floor(s / 3600))}:${pad(Math.floor((s % 3600) / 60))}:${pad(s % 60)}`;
 }

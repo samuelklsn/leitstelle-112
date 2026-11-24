@@ -394,11 +394,16 @@ function logClass(e: LogEntry): string | undefined {
       ].includes(e.message)
     )
       return css.logAlarm;
-    if (['requestBreak', 'disinfection', 'refuel', 'offDuty'].includes(e.message))
+    if (
+      ['requestBreak', 'disinfection', 'refuel', 'offDuty', 'grounded', 'externalMission'].includes(
+        e.message,
+      )
+    )
       return css.logWarn;
     return css.logRadio;
   }
   if (e.type === 'hospital/status') return e.open ? css.logOk : css.logWarn;
+  if (e.type === 'world/event' || e.type === 'world/weather') return css.logWarn;
   if (e.type === 'call/abandoned' || e.type === 'command/rejected') return css.logAlarm;
   if (e.type === 'call/incoming') return css.logWarn;
   if (e.type === 'incident/closed' || e.type === 'call/accepted') return css.logOk;
@@ -433,6 +438,23 @@ function describe(e: LogEntry, L: Lookup, t: TFunction): string {
       return t('events.call/answer', { id: e.callId, question: t(`question.${e.question}`) });
     case 'call/linked':
       return t('events.call/linked', { id: e.callId, incident: e.incidentId });
+    case 'world/weather': {
+      const w = L.world.weather.find((x) => x.id === e.weatherId);
+      return t('events.world/weather', { weather: `${w?.symbol ?? ''} ${w?.name ?? ''}` });
+    }
+    case 'world/event': {
+      const name = L.world.worldEvents.find((x) => x.id === e.eventId)?.name ?? e.eventId;
+      const place =
+        e.townId !== undefined
+          ? L.townName(e.townId)
+          : e.streetId !== undefined
+            ? L.streetName(e.streetId)
+            : '';
+      return t(e.started ? 'events.world/eventStart' : 'events.world/eventEnd', {
+        event: name,
+        place: place ? ` – ${place}` : '',
+      });
+    }
     case 'hospital/status':
       return t(`events.hospital/${e.open ? 'open' : e.reason}`, {
         hospital: L.hospitalName(e.hospitalId),

@@ -148,7 +148,9 @@
     "th_oil": "Auf der Straße ist eine lange Ölspur, die Autos rutschen schon.",
     "th_tree": "Ein Baum ist auf die Fahrbahn gestürzt, da kommt keiner mehr durch.",
     "th_trapped": "Unfall! Ein Auto ist gegen einen Baum, der Fahrer ist eingeklemmt und kommt nicht raus!",
-    "order": "Transportauftrag"
+    "order": "Transportauftrag",
+    "firework": "Hier hat sich jemand mit einem Böller verletzt, die Hand blutet stark!",
+    "fire_field": "Hier brennt die Wiese am Waldrand, das Feuer breitet sich aus!"
   },
   "keyword": {
     "pick": "Stichwort wählen"
@@ -257,7 +259,11 @@
     "breakStart": "Beginnen Pause auf der Wache.",
     "breakEnd": "Pause beendet, einsatzbereit.",
     "offDuty": "Dienstende, melden uns ab.",
-    "onDuty": "Dienstbeginn, einsatzbereit."
+    "onDuty": "Dienstbeginn, einsatzbereit.",
+    "grounded": "Kein Flugwetter – bleiben am Boden, Status 6.",
+    "flyable": "Flugwetter wieder gegeben, einsatzbereit.",
+    "externalMission": "Übernehmen Einsatz im Nachbarbereich, Status 6.",
+    "externalBack": "Zurück aus dem Nachbarbereich, einsatzbereit."
   },
   "events": {
     "call/incoming": "Notruf {{id}} klingelt",
@@ -272,7 +278,10 @@
     "call/linked": "Meldung {{id}} dem Einsatz {{incident}} zugeordnet",
     "hospital/full": "{{hospital}} meldet {{department}} ab: keine Aufnahmekapazität.",
     "hospital/closure": "{{hospital}} meldet {{department}} ab: Geräteausfall.",
-    "hospital/open": "{{hospital}}: {{department}} wieder aufnahmebereit."
+    "hospital/open": "{{hospital}}: {{department}} wieder aufnahmebereit.",
+    "world/weather": "Wetter: {{weather}}",
+    "world/eventStart": "Lage: {{event}}{{place}} hat begonnen.",
+    "world/eventEnd": "Lage: {{event}}{{place}} ist beendet."
   },
   "reason": {
     "unknownCall": "Notruf nicht mehr vorhanden",
@@ -361,7 +370,14 @@
     "tutorialText": "Geführter erster Einsatz: vom Notruf bis ins Krankenhaus.",
     "load": "Spielstand laden",
     "loadText": "Gespeicherte Schicht fortsetzen.",
-    "disclaimer": "Ein Spiel – kein Schulungswerkzeug. Alle Orte und Personen sind frei erfunden."
+    "disclaimer": "Ein Spiel – kein Schulungswerkzeug. Alle Orte und Personen sind frei erfunden.",
+    "when": "Spielbeginn (freies Spiel):",
+    "preset": {
+      "today": "Heute – Wetter und Kalender wie draußen",
+      "winter": "Winter – Glätte, Schnee, Grippewelle",
+      "summer": "Sommer – Hitze, Gewitter, Volksfeste",
+      "newYear": "Silvesternacht – ab 19 Uhr"
+    }
   },
   "help": {
     "title": "Tastatur und Ablauf",
@@ -411,7 +427,8 @@
     "doctor": "Notarztstandort",
     "hospital": "Krankenhaus",
     "fictional": "Fiktiver Landkreis – Kartendaten: eigenes Werk (CC BY-SA 4.0)",
-    "fireStation": "Feuerwache"
+    "fireStation": "Feuerwache",
+    "airStation": "Luftrettungsstation"
   },
   "question": {
     "where": "Wo?",
@@ -434,7 +451,9 @@
     "defect": "Defekt – Werkstatt",
     "refuel": "Tanken",
     "break": "Pause",
-    "offDuty": "Dienstende"
+    "offDuty": "Dienstende",
+    "weather": "kein Flugwetter",
+    "external": "Einsatz außerhalb"
   },
   "orders": {
     "empty": "Keine Transportaufträge.",
@@ -472,5 +491,9 @@
     "regelversorgung": "Regelversorgung",
     "schwerpunktversorgung": "Schwerpunktversorgung",
     "maximalversorgung": "Maximalversorgung"
+  },
+  "world": {
+    "noFlying": "kein Flugwetter für den Rettungshubschrauber",
+    "until": "voraussichtlich bis {{time}}"
   }
 }

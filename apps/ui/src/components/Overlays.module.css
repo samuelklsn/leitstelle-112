@@ -135,3 +135,19 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
+
+.startPreset {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.startPreset select {
+  background: var(--surface-2, #16212d);
+  color: inherit;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 4px 8px;
+}
