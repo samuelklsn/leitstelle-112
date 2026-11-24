@@ -240,6 +240,19 @@ test('MANV-Übung: Großlage melden, alarmieren, Sichtung abwarten', async () =>
   await expect(page.getByTestId('mci-dialog')).toBeHidden();
 });
 
+test('Tages-Herausforderung: Laufbahn und Bedarfsplanung in der Auswertung', async () => {
+  await page.getByTestId('menu-new').click();
+  await page.getByTestId('start-preset').selectOption('daily');
+  await page.getByTestId('start-free').click();
+  await expect(page.getByTestId('start-screen')).toBeHidden();
+  await page.keyboard.press('F9');
+  await expect(page.getByTestId('evaluation')).toBeVisible();
+  await expect(page.getByTestId('career')).toContainText('Disponent');
+  await expect(page.getByTestId('daily-challenge')).toBeVisible();
+  await shot('laufbahn');
+  await page.keyboard.press('Escape');
+});
+
 test('stellt die Simulation nach einem Absturz aus dem Autosave wieder her', async () => {
   // Autosave alle 5 Spielminuten – bei 10× genügen gut 30 s Echtzeit.
   await page.getByTestId('btn-speed-10').click();
