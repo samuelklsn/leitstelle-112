@@ -80,11 +80,28 @@ export type ClientMessage =
   | { readonly type: 'clock/setSpeed'; readonly speed: Speed }
   | { readonly type: 'sim/command'; readonly command: SimCommand }
   | { readonly type: 'query'; readonly id: number; readonly query: Query }
-  | { readonly type: 'game/new'; readonly mode: GameMode; readonly start?: StartPreset }
+  | {
+      readonly type: 'game/new';
+      readonly mode: GameMode;
+      readonly start?: StartPreset;
+      /** Trainingsszenario (ADR-0019). */
+      readonly scenario?: string;
+      /** Hilfsfrist-Regel eines Landes (#32). */
+      readonly hilfsfrist?: string;
+    }
   | { readonly type: 'save/write'; readonly name: string }
   | { readonly type: 'save/load'; readonly id: number };
 
 /** Zustand, den jedes Fenster für die Anzeige braucht. */
+export interface ModStatusView {
+  readonly folder: string;
+  readonly id?: string;
+  readonly name?: string;
+  readonly version?: string;
+  readonly ok: boolean;
+  readonly problems?: readonly string[];
+}
+
 export interface HostState {
   readonly view: GameView;
   readonly paused: boolean;
@@ -98,6 +115,8 @@ export interface HostState {
 export type HostMessage =
   | { readonly type: 'welcome'; readonly protocol: number; readonly seed: number }
   | { readonly type: 'world'; readonly world: WorldInfo }
+  /** Geladene und übersprungene Mods (ADR-0019). */
+  | { readonly type: 'mods'; readonly mods: readonly ModStatusView[] }
   | { readonly type: 'state'; readonly state: HostState }
   | { readonly type: 'events'; readonly events: readonly SimEvent[] }
   | { readonly type: 'reply'; readonly id: number; readonly result: QueryResult }
@@ -151,7 +170,17 @@ export function parseClientMessage(data: unknown): ClientMessage | undefined {
       if (data.mode !== 'free' && data.mode !== 'tutorial') return undefined;
       const start = START_PRESETS.find((p) => p === data.start);
       if (data.start !== undefined && !start) return undefined;
-      return { type: 'game/new', mode: data.mode, ...(start ? { start } : {}) };
+      const scenario =
+        typeof data.scenario === 'string' && isId(data.scenario) ? data.scenario : undefined;
+      const hilfsfrist =
+        typeof data.hilfsfrist === 'string' && isId(data.hilfsfrist) ? data.hilfsfrist : undefined;
+      return {
+        type: 'game/new',
+        mode: data.mode,
+        ...(start ? { start } : {}),
+        ...(scenario !== undefined ? { scenario } : {}),
+        ...(hilfsfrist !== undefined ? { hilfsfrist } : {}),
+      };
     }
     case 'save/write':
       return typeof data.name === 'string' && data.name.trim().length > 0

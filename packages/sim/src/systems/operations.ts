@@ -407,6 +407,7 @@ export function onTurnoutDone(ctx: Ctx, v: VehicleState): void {
   const incident = v.incidentId ? findIncident(ctx, v.incidentId) : undefined;
   if (!incident) return;
   const emergency = ctx.content.keywords.get(incident.keywordId)?.emergency ?? true;
+  incident.firstDepartureAt ??= ctx.state.time;
   setStatus(ctx, v, 3);
   drive(ctx, v, incidentNode(ctx, incident), emergency, 'toScene');
 }

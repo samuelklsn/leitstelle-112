@@ -1,0 +1,44 @@
+# Hilfsfrist-Presets einzelner Länder (#32). Werte nach öffentlich zugänglichen Angaben (Stand der
+# Recherche: November 2026). Die Fundstellen ändern sich mit neuen Gesetzen und Plänen – vor der
+# Verwendung für mehr als ein Spiel bitte im aktuellen Landesrecht prüfen.
+hilfsfristPresets:
+  - id: base:hf-brakenfeld
+    label: Landkreis Brakenfeld (fiktiv) – 12 Minuten in 95 %
+    minutes: 12
+    targetQuota: 0.95
+    measure: call
+    source: Annahme für den fiktiven Landkreis (gemessen ab Eingang des Notrufs)
+  - id: base:hf-bw
+    label: Baden-Württemberg – 12 Minuten in 95 %
+    minutes: 12
+    targetQuota: 0.95
+    measure: dispatch
+    source: >-
+      Rettungsdienstplan Baden-Württemberg (in Kraft seit Herbst 2022): Ziel erreicht, wenn der
+      Notfallort in 95 % der Fälle in 12 Minuten erreicht wird; laut Presseberichten, zuvor
+      höchstens 15 Minuten.
+  - id: base:hf-by
+    label: Bayern – 12 Minuten Fahrzeit in 80 %
+    minutes: 12
+    targetQuota: 0.8
+    measure: departure
+    source: >-
+      AVBayRDG: Vorhaltung bedarfsgerecht, wenn bei mindestens 80 % der Einsätze im
+      Versorgungsbereich einer Rettungswache eine Fahrzeit von höchstens 12 Minuten eingehalten
+      wird (nur Fahrzeit, ab Ausrücken).
+  - id: base:hf-he
+    label: Hessen – 10 Minuten in 90 %
+    minutes: 10
+    targetQuota: 0.9
+    measure: dispatch
+    source: >-
+      Rettungsdienstplan des Landes Hessen: 10 Minuten, in 90 % der Notfälle einzuhalten (laut
+      Berichterstattung des Deutschen Ärzteblatts).
+  - id: base:hf-nrw-land
+    label: Nordrhein-Westfalen, ländlicher Bereich – 12 Minuten in 90 %
+    minutes: 12
+    targetQuota: 0.9
+    measure: dispatch
+    source: >-
+      Bedarfspläne der Träger in NRW: 5–8 Minuten im dicht besiedelten, 12 Minuten im ländlichen
+      Bereich (laut Deutschem Ärzteblatt). Erreichungsgrad 90 % ist eine Annahme.

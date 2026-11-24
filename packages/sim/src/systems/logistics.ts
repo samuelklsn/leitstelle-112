@@ -491,6 +491,7 @@ export function generateOrders(ctx: Ctx): void {
 export function seedPreBookedOrders(ctx: Ctx): void {
   const t = ctx.content.bundle.settings.transports;
   if (ctx.config.tutorial || ctx.content.bundle.transportOrders.length === 0) return;
+  if (ctx.config.scenarioId !== undefined && ctx.config.callRateFactor === 0) return;
   // Am Wochenende und an Feiertagen ist kaum etwas vorbestellt.
   const rest = isRestDay(ctx.content.bundle.holidays, ctx.state.time) ? t.restDayFactor : 1;
   const count = Math.round(t.preBooked * rest);

@@ -1,0 +1,50 @@
+# Trainingsszenarien (ADR-0019): feste Startzeit, Wetter und geplante Notrufe mit Zielen.
+# Eigene Szenarien entstehen im Szenario-Editor und landen als Mod im Mod-Ordner.
+scenarios:
+  - id: base:szenario-glatteis
+    name: Blitzeis am Morgen
+    description: >-
+      Kurz vor dem Berufsverkehr friert der Regen. Stürze und Unfälle häufen sich, die Fahrzeiten
+      verlängern sich deutlich. Halten Sie die Hilfsfrist so gut es geht.
+    startHour: 6
+    month: 1
+    weather: base:glaette
+    callRateFactor: 1
+    durationHours: 2
+    calls:
+      - {atMinutes: 1, diagnosis: base:fall, town: base:brakenfeld}
+      - {atMinutes: 6, fire: base:th-trapped}
+      - {atMinutes: 12, diagnosis: base:traffic-injury}
+      - {atMinutes: 20, diagnosis: base:fall, town: base:ellerbach}
+      - {atMinutes: 35, mci: base:mci-pileup}
+    goals: {hilfsfristQuota: 0.75, maxErrors: 4}
+  - id: base:szenario-reanimation
+    name: Zwei Reanimationen gleichzeitig
+    description: >-
+      Ruhiger Nachmittag – bis innerhalb weniger Minuten zwei Herz-Kreislauf-Stillstände gemeldet
+      werden. Wer schickt den Notarzt wohin, und woher kommt der zweite?
+    startHour: 15
+    callRateFactor: 0.3
+    durationHours: 1
+    calls:
+      - {atMinutes: 1, diagnosis: base:cardiac-arrest, town: base:brakenfeld}
+      - {atMinutes: 4, diagnosis: base:cardiac-arrest, town: base:tannrode}
+      - {atMinutes: 15, diagnosis: base:acs}
+    goals: {hilfsfristQuota: 0.9, maxErrors: 1}
+  - id: base:szenario-sommerfest
+    name: Hitzetag mit Volksfest
+    description: >-
+      32 Grad, Flächenbrände am Waldrand und ein Volksfest im Landkreis. Behalten Sie Feuerwehr und
+      Rettungsdienst gleichzeitig im Griff.
+    startHour: 14
+    month: 7
+    weather: base:hitze
+    callRateFactor: 1.2
+    durationHours: 3
+    events: [base:volksfest]
+    calls:
+      - {atMinutes: 2, fire: base:vegetation}
+      - {atMinutes: 9, diagnosis: base:exsiccosis}
+      - {atMinutes: 15, diagnosis: base:intoxication, town: base:brakenfeld}
+      - {atMinutes: 30, fire: base:vegetation, town: base:hagenried}
+    goals: {hilfsfristQuota: 0.8, maxErrors: 5}
