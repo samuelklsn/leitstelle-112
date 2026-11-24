@@ -27,9 +27,10 @@ export function useGlobalShortcuts(): void {
       if (sim.dialog?.kind === 'start') return;
       if (event.key === 'F2') {
         event.preventDefault();
+        // Erst das laufende Gespräch – ein Disponent telefoniert nie doppelt.
         const call =
-          view?.calls.find((c) => c.status === 'waiting') ??
-          view?.calls.find((c) => c.status === 'talking');
+          view?.calls.find((c) => c.status === 'talking') ??
+          view?.calls.find((c) => c.status === 'waiting');
         if (call) {
           if (call.status === 'waiting') sim.command({ type: 'call/accept', callId: call.id });
           sim.openDialog({ kind: 'call', callId: call.id });

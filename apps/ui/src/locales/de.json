@@ -18,7 +18,15 @@
     "paused": "PAUSE",
     "speed": "Zeitraffer {{speed}}×",
     "shift": "Schicht {{n}}",
-    "weekday": { "1": "Mo", "2": "Di", "3": "Mi", "4": "Do", "5": "Fr", "6": "Sa", "7": "So" }
+    "weekday": {
+      "1": "Mo",
+      "2": "Di",
+      "3": "Mi",
+      "4": "Do",
+      "5": "Fr",
+      "6": "Sa",
+      "7": "So"
+    }
   },
   "panel": {
     "calls": "Notrufe",
@@ -47,7 +55,14 @@
     "create": "Einsatz anlegen",
     "end": "Ohne Einsatz beenden",
     "callback": "Rückrufnummer",
-    "hint": "↑/↓ Treffer wählen · Strg+Enter Einsatz anlegen · Esc Maske schließen (Gespräch bleibt)"
+    "hint": "Alt+1–6 Fragen · ↑/↓ Treffer · Strg+Enter Einsatz anlegen · Esc Maske schließen",
+    "police": "Übergabe Polizei 110",
+    "questions": "Abfrage",
+    "askAll": "Alle Fragen",
+    "askWhereFirst": "Erst nach dem Notfallort fragen",
+    "nearby": "Laufende Einsätze in der Nähe – weitere Meldung?",
+    "link": "Zuordnen",
+    "startAsking": "Stell die erste Frage – am besten: Wo?"
   },
   "caller": {
     "kind": {
@@ -59,10 +74,10 @@
     },
     "intro": {
       "self": "Hallo? Ich brauche Hilfe …",
-      "relative": "Ja, hallo, ich rufe für meine Angehörige an …",
-      "neighbor": "Ich bin hier bei meiner Nachbarschaft …",
+      "relative": "Ja, hallo, ich rufe wegen meiner Familie an …",
+      "neighbor": "Ich wohne nebenan, hier stimmt was nicht …",
       "passerby": "Hallo, ich bin hier zufällig vorbeigekommen …",
-      "caregiver": "Pflegedienst hier, ich bin gerade bei einer Patientin …"
+      "caregiver": "Pflegedienst hier, ich bin gerade zur Versorgung im Haus …"
     },
     "tone": {
       "panic": "Bitte, schnell! Ich glaube, es ist ganz schlimm!",
@@ -75,9 +90,27 @@
     "what": "Was ist passiert?",
     "who": "Wer ist betroffen?",
     "patient": "{{sex}}, etwa {{age}} Jahre alt.",
-    "sex": { "m": "Ein Mann", "w": "Eine Frau" },
+    "sex": {
+      "m": "Ein Mann",
+      "w": "Eine Frau"
+    },
     "child": "Ein Kind, etwa {{age}} Jahre alt.",
-    "callbackQ": "Unter welcher Nummer erreichen wir Sie?"
+    "callbackQ": "Unter welcher Nummer erreichen wir Sie?",
+    "silence": "Stille … nur Rascheln und dumpfes Rauschen. „Hallo? Hallo?“",
+    "silenceAnswer": "(Rascheln, keine Antwort)",
+    "giggling": "(Im Hintergrund wird gekichert.)",
+    "suppressed": "Die Nummer sag ich Ihnen nicht.",
+    "conscious": {
+      "yes": "Ja, wach und redet ganz normal mit mir.",
+      "no": "Nein! Reagiert überhaupt nicht!",
+      "unclear": "Ich weiß nicht … die Augen sind zu, manchmal kommt ein Brummen …"
+    },
+    "breathing": {
+      "normal": "Ja, atmet ganz normal.",
+      "difficult": "Ganz schwer, es pfeift richtig beim Atmen.",
+      "none": "Ich … ich glaube nicht! Da ist nur so ein Schnappen!",
+      "unclear": "Kann ich nicht sagen, ich trau mich nicht hin."
+    }
   },
   "report": {
     "chest_pain": "Starke Schmerzen in der Brust, es drückt und zieht in den linken Arm. Schweißgebadet.",
@@ -95,7 +128,12 @@
     "drunk": "Da liegt jemand, ziemlich betrunken, nicht mehr richtig ansprechbar.",
     "allergy": "Nach einem Wespenstich schwillt alles an, das Gesicht, der Hals …",
     "abdominal": "Ganz starke Bauchschmerzen, krümmt sich vor Schmerzen.",
-    "helpless_person": "Hier liegt eine Person am Boden, ich weiß nicht, was los ist."
+    "helpless_person": "Hier liegt eine Person am Boden, ich weiß nicht, was los ist.",
+    "silence": "Rascheln … Stille.",
+    "info_pharmacy": "Welche Apotheke hat denn heute Notdienst?",
+    "info_doctor": "Mein Hausarzt hat zu – wohin kann ich mit meiner Erkältung?",
+    "info_transport": "Ich brauche nächste Woche einen Krankentransport zur Dialyse.",
+    "witness": "Hier ist ein Unfall passiert … ich glaube, da kümmert sich schon jemand. Wissen Sie schon Bescheid?"
   },
   "keyword": {
     "pick": "Stichwort wählen"
@@ -177,7 +215,8 @@
     "wrongLocation": "Einsatzort nicht auffindbar – bitte Rückruf beim Anrufer!",
     "locationFound": "Neue Adresse übernommen, fahren an.",
     "accompany": "Notarzt begleitet den Transport.",
-    "released": "Einsatz für uns beendet, frei über Funk."
+    "released": "Einsatz für uns beendet, frei über Funk.",
+    "alreadyHandled": "Die Kollegen sind hier schon vor Ort – Einsatz doppelt, wir rücken wieder ein."
   },
   "events": {
     "call/incoming": "Notruf {{id}} klingelt",
@@ -187,7 +226,9 @@
     "incident/created": "Einsatz {{id}} angelegt",
     "incident/closed": "Einsatz {{id}} beendet – Patient: {{outcome}}",
     "command/rejected": "Nicht möglich: {{reason}}",
-    "shift/ended": "Schichtwechsel – Auswertung der Schicht {{index}}"
+    "shift/ended": "Schichtwechsel – Auswertung der Schicht {{index}}",
+    "call/answer": "Anrufer {{id}} antwortet ({{question}})",
+    "call/linked": "Meldung {{id}} dem Einsatz {{incident}} zugeordnet"
   },
   "reason": {
     "unknownCall": "Notruf nicht mehr vorhanden",
@@ -201,7 +242,8 @@
     "vehicleBusy": "Fahrzeug ist nicht verfügbar",
     "notAwaitingDestination": "Fahrzeug wartet nicht auf eine Zielklinik",
     "unknownHospital": "Krankenhaus unbekannt",
-    "notReleasable": "Fahrzeug kann jetzt nicht abbestellt werden"
+    "notReleasable": "Fahrzeug kann jetzt nicht abbestellt werden",
+    "lineBusy": "Sie führen bereits ein Gespräch"
   },
   "outcome": {
     "gut": "gut versorgt",
@@ -219,7 +261,10 @@
     "slowDispatch": "Alarmierung verzögert",
     "doctorLate": "Notarzt verspätet alarmiert",
     "unsuitableHospital": "Zielklinik ohne passende Fachabteilung",
-    "destinationTimeout": "Zielklinik nicht rechtzeitig zugewiesen"
+    "destinationTimeout": "Zielklinik nicht rechtzeitig zugewiesen",
+    "duplicateIncident": "Doppelmeldung als neuer Einsatz angelegt",
+    "prankDispatched": "Scherzanruf alarmiert",
+    "nonEmergencyDispatched": "Fehl- oder Auskunftsanruf alarmiert"
   },
   "evaluation": {
     "title": "Schichtauswertung",
@@ -265,7 +310,7 @@
   },
   "help": {
     "title": "Tastatur und Ablauf",
-    "flow": "Notruf annehmen → Adresse und Stichwort erfassen → Einsatz anlegen → Fahrzeuge alarmieren → Sprechwünsche bearbeiten (Zielklinik) → nächster Notruf.",
+    "flow": "Notruf annehmen → abfragen (Wo? Was? Bewusstsein? Atmung?) → Adresse und Stichwort erfassen – oder Fehlanruf beenden bzw. Doppelmeldung zuordnen → Fahrzeuge alarmieren → Sprechwünsche bearbeiten.",
     "keys": {
       "space": "Pause / Weiter",
       "speed": "Zeitraffer 1× / 2× / 5× / 10×",
@@ -274,13 +319,14 @@
       "f4": "Ältesten Sprechwunsch (Zielklinik) bearbeiten",
       "enter": "Vorschlag bestätigen (Alarmieren, Zuweisen)",
       "ctrlEnter": "Einsatz anlegen (in der Notrufmaske)",
-      "esc": "Dialog schließen"
+      "esc": "Dialog schließen",
+      "alt": "Fragen der Notrufabfrage (Alt+0: alle)"
     }
   },
   "tutorial": {
     "title": "Tutorial",
     "s1": "Ein Notruf klingelt! Nimm ihn mit F2 oder dem Knopf „Annehmen“ an. Achte auf die Zeit: Jede Sekunde zählt.",
-    "s2": "Lies, was der Anrufer sagt. Klicke auf „Angaben übernehmen“ und wähle die passende Adresse aus der Trefferliste.",
+    "s2": "Frag zuerst „Wo?“ und „Was?“ (Alt+1, Alt+2) – der Anrufer braucht ein paar Sekunden. Dann „Angaben übernehmen“ und die passende Adresse wählen. Bewusstsein und Atmung verraten, wie dringend es ist.",
     "s3": "Wähle das Stichwort passend zum Meldebild: RD 1 ohne, RD 2 mit Notarzt, RD 3 bei Reanimation. Im Zweifel lieber mit Notarzt.",
     "s4": "Alles erfasst? Lege den Einsatz mit Strg+Enter an.",
     "s5": "Die Alarm- und Ausrückeordnung schlägt die schnellsten passenden Fahrzeuge vor. Alarmiere sie mit Enter.",
@@ -309,5 +355,21 @@
     "doctor": "Notarztstandort",
     "hospital": "Krankenhaus",
     "fictional": "Fiktiver Landkreis – Kartendaten: eigenes Werk (CC BY-SA 4.0)"
+  },
+  "question": {
+    "where": "Wo?",
+    "what": "Was?",
+    "who": "Wer?",
+    "conscious": "Bewusstsein?",
+    "breathing": "Atmung?",
+    "callback": "Rückruf?"
+  },
+  "questionLong": {
+    "where": "Wo genau ist der Notfallort?",
+    "what": "Was ist passiert?",
+    "who": "Wer ist betroffen, wie alt ungefähr?",
+    "conscious": "Ist die Person wach und ansprechbar?",
+    "breathing": "Atmet die Person normal?",
+    "callback": "Unter welcher Nummer erreichen wir Sie?"
   }
 }
