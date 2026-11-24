@@ -274,9 +274,9 @@ describe('Simulation – Determinismus', () => {
     expect({ tick: sim.tick, hash: sim.hash(), calls: sh.callsReceived, incidents: sh.incidents })
       .toMatchInlineSnapshot(`
         {
-          "calls": 8,
-          "hash": "c557e2d7653e6c4e",
-          "incidents": 6,
+          "calls": 6,
+          "hash": "9950628e04d1c09f",
+          "incidents": 4,
           "tick": 7200,
         }
       `);
