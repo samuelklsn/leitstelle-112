@@ -712,5 +712,9 @@
     "pickNow": "Jetzt auf die Karte klicken …",
     "vehicles": "Fahrzeuge",
     "stationHint": "Die geänderte Wache ersetzt die bisherige (gleiche ID) im Mod „eigene-inhalte“. Gilt ab dem nächsten neuen Spiel; alte Spielstände bleiben bei den alten Inhalten."
+  },
+  "sound": {
+    "on": "Töne einschalten",
+    "off": "Töne ausschalten"
   }
 }

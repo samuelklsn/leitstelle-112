@@ -1,4 +1,5 @@
 import { loadKeymap, saveKeymap, type Keymap } from './keymap';
+import { cueFor, loadSoundSettings, play, saveSoundSettings, type SoundSettings } from './sound';
 import { create } from 'zustand';
 import {
   PROTOCOL_VERSION,
@@ -102,6 +103,9 @@ interface SimStore {
   setCapturingKey: (on: boolean) => void;
   bottomTab: BottomTab;
   setBottomTab: (tab: BottomTab) => void;
+  /** Akustische Signale (Notruf, Sprechwunsch, Großlage). */
+  sound: SoundSettings;
+  setSound: (sound: SoundSettings) => void;
 }
 
 let port: MessagePort | undefined;
@@ -186,6 +190,11 @@ export const useSim = create<SimStore>((set, get) => ({
   setBottomTab: (tab) => {
     set({ bottomTab: tab });
   },
+  sound: loadSoundSettings(),
+  setSound: (sound) => {
+    saveSoundSettings(sound);
+    set({ sound });
+  },
 }));
 
 function handleHostMessage(message: HostMessage): void {
@@ -218,6 +227,9 @@ function handleHostMessage(message: HostMessage): void {
       useSim.setState((s) => ({
         events: [...entries.reverse(), ...s.events].slice(0, EVENT_LOG_LIMIT),
       }));
+      // Nur das Hauptfenster gibt Töne aus – sonst klingelt jeder Bildschirm.
+      const cue = WINDOW_VIEW === 'main' ? cueFor(message.events) : undefined;
+      if (cue) play(cue, useSim.getState().sound);
       const created = message.events.find((e) => e.type === 'incident/created');
       if (created?.type === 'incident/created' && useSim.getState().expectDispatch) {
         useSim.setState({

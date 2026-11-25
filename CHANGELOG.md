@@ -6,6 +6,12 @@ Versionierung nach [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+### Hinzugefügt
+
+- **Akustische Signale:** Notrufe klingeln, Sprechwünsche und Nachforderungen piepen, eine Großlage
+  löst einen Gong aus. Die Töne entstehen per Web Audio (keine Tondateien) und lassen sich in der
+  Kopfzeile abschalten; nur das Hauptfenster gibt Töne aus.
+
 ## [1.1.0] – 2026-11-25 – Echte Regionen (M13)
 
 ### Hinzugefügt
