@@ -6,6 +6,22 @@ Versionierung nach [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+## [1.1.0] – 2026-11-25 – Echte Regionen (M13)
+
+### Hinzugefügt
+
+- **OSM-Import (#58):** Der Region-Builder (`tools/region-builder`) wandelt einen
+  OpenStreetMap-Auszug in einen Region-Mod um: Orte, Straßennetz mit Einbahnstraßen, Hausnummern,
+  Einsatzorte im Freien, Wald und Fluss, dazu Wachen, Kliniken und Krankentransport-Vorlagen aus
+  den OSM-Einrichtungen. Anleitung in [docs/regionen.md](docs/regionen.md).
+- **Vorgefertigte Welten im Sim-Kern:** Regionen mit `prebuilt` werden zusammengesetzt statt
+  prozedural erzeugt.
+- **Mods können Listen der Basis ersetzen** (`mod.replaces`), z. B. Wachen und Kliniken einer
+  echten Region.
+- **Spike Offline-Kacheln (#12):** Entscheidung für PMTiles, sobald Kacheln nötig werden
+  (ADR-0006, Nachtrag); bis dahin genügt GeoJSON.
+- ADR-0020.
+
 ## [1.0.0] – 2026-11-24 – Editoren und Modding (M12)
 
 Erste stabile Version. Das Inhaltsformat ist ab jetzt stabil: Änderungen nur abwärtskompatibel
@@ -282,7 +298,8 @@ eigentlichen Sinn – das kommt ab M2/M3.
 - Nach einem Absturz startet die Simulation neu beim Schichtbeginn; Autosave folgt in M4.
 - Der Installer wird nur in der CI gebaut (Richtlinie des Entwicklungsrechners, PLAN Kapitel 9).
 
-[Unreleased]: https://github.com/samuelklsn/leitstelle-112/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/samuelklsn/leitstelle-112/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/samuelklsn/leitstelle-112/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/samuelklsn/leitstelle-112/compare/v0.8.0...v1.0.0
 [0.8.0]: https://github.com/samuelklsn/leitstelle-112/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/samuelklsn/leitstelle-112/compare/v0.6.0...v0.7.0
