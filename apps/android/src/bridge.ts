@@ -7,44 +7,7 @@ import { Capacitor } from '@capacitor/core';
 import { Directory, Filesystem } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 import { strToU8, zipSync } from 'fflate';
-import { hasModFile, writeModFile } from './idb';
-import type { LogLevel } from './worker-protocol';
-
-const LOG_KEY = 'ls112.log';
-/** Wie viele Log-Zeilen das Gerät behält (rollierend) – reicht für ein Diagnosepaket. */
-export const LOG_KEEP = 400;
-
-export interface LogLine {
-  readonly at: string;
-  readonly level: LogLevel;
-  readonly source: 'ui' | 'sim';
-  readonly message: string;
-  readonly context: object;
-}
-
-function readLog(): LogLine[] {
-  try {
-    const raw = JSON.parse(localStorage.getItem(LOG_KEY) ?? '[]') as unknown;
-    return Array.isArray(raw) ? (raw as LogLine[]) : [];
-  } catch {
-    return [];
-  }
-}
-
-export function appendLog(line: Omit<LogLine, 'at'>): void {
-  const entry: LogLine = { at: new Date().toISOString(), ...line };
-  const target =
-    line.level === 'error' ? console.error : line.level === 'warn' ? console.warn : console.info;
-  target(`[${line.source}] ${line.message}`, line.context);
-  try {
-    localStorage.setItem(LOG_KEY, JSON.stringify([...readLog(), entry].slice(-LOG_KEEP)));
-  } catch {
-    // Speicher voll – Log ist verzichtbar.
-  }
-}
-
-const MOD_ID = /^[a-z0-9][a-z0-9-]{1,40}$/;
-const FILE_NAME = /^[a-z0-9][a-z0-9-]{0,60}$/;
+import { appendLog, readLog, saveModFile } from '@ls112/web-host';
 
 export interface BridgeDeps {
   readonly version: string;
@@ -75,29 +38,9 @@ export function createBridge(deps: BridgeDeps): Ls112Bridge {
     createDiagnostics: () => createDiagnostics(deps),
     openModsFolder: () => Promise.resolve(false),
     saveModFile: async (modId, fileName, data) => {
-      if (
-        !MOD_ID.test(modId) ||
-        !FILE_NAME.test(fileName) ||
-        typeof data !== 'object' ||
-        data === null
-      )
-        return false;
-      const text = JSON.stringify(data, null, 2);
-      if (text.length > 1_000_000) return false;
+      let ok: boolean;
       try {
-        const db = await deps.db();
-        // Wie unter Windows: Steckbrief anlegen, falls der Mod neu ist (ADR-0019).
-        if (!(await hasModFile(db, modId, 'mod'))) {
-          const manifest = {
-            mod: { id: modId, name: 'Eigene Inhalte', version: '1.0.0', author: 'Spieler/in' },
-          };
-          await writeModFile(db, {
-            modId,
-            fileName: 'mod',
-            text: JSON.stringify(manifest, null, 2),
-          });
-        }
-        await writeModFile(db, { modId, fileName, text });
+        ok = await saveModFile(await deps.db(), modId, fileName, data);
       } catch (error) {
         appendLog({
           level: 'error',
@@ -107,6 +50,7 @@ export function createBridge(deps: BridgeDeps): Ls112Bridge {
         });
         return false;
       }
+      if (!ok) return false;
       appendLog({
         level: 'info',
         source: 'ui',
