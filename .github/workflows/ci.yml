@@ -78,3 +78,42 @@ jobs:
             playwright-report
             test-results
           retention-days: 7
+
+  android:
+    name: Android-APK (ADR-0021)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: pnpm einrichten
+        uses: pnpm/action-setup@v6
+
+      - name: Node.js einrichten
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: JDK 21 einrichten
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+
+      - name: Abhängigkeiten installieren
+        run: pnpm install --frozen-lockfile
+
+      # Das Android-SDK ist auf den Ubuntu-Runnern vorinstalliert (ANDROID_HOME).
+      - name: APK bauen
+        run: pnpm --filter @ls112/android apk
+
+      - name: APK hochladen
+        uses: actions/upload-artifact@v7
+        with:
+          name: Leitstelle112-Android-${{ github.sha }}
+          path: apps/android/android/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 14

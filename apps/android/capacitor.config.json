@@ -1,0 +1,17 @@
+{
+  "appId": "de.leitstelle112.app",
+  "appName": "Leitstelle 112",
+  "webDir": "dist",
+  "android": {
+    "backgroundColor": "#0b0f14",
+    "allowMixedContent": false,
+    "captureInput": true,
+    "webContentsDebuggingEnabled": false
+  },
+  "plugins": {
+    "SystemBars": {
+      "insetsHandling": "css",
+      "style": "DARK"
+    }
+  }
+}

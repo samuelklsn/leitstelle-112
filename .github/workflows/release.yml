@@ -1,6 +1,7 @@
 name: Release
 
-# Ein Tag „vX.Y.Z" baut den Windows-Installer und veröffentlicht ihn als GitHub-Release.
+# Ein Tag „vX.Y.Z" baut den Windows-Installer und die Android-APK und veröffentlicht beide als
+# GitHub-Release.
 on:
   push:
     tags: ['v*']
@@ -47,3 +48,32 @@ jobs:
             '--title', 'Leitstelle 112 ${{ github.ref_name }}', '--notes-file', 'release-notes.md')
           if ('${{ github.ref_name }}' -match '^v0\.') { $ghArgs += '--prerelease' }
           gh @ghArgs
+
+  android:
+    name: Android-APK anhängen
+    needs: release
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+      - run: pnpm install --frozen-lockfile
+      # Noch ohne eigenen Signaturschlüssel: Debug-signierte APK zum direkten Installieren
+      # (docs/android.md, „Veröffentlichen").
+      - run: pnpm --filter @ls112/android apk
+      - name: APK an das Release hängen
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          cp apps/android/android/app/build/outputs/apk/debug/app-debug.apk "Leitstelle112-${version}-android.apk"
+          gh release upload "$GITHUB_REF_NAME" "Leitstelle112-${version}-android.apk"

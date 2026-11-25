@@ -6,12 +6,18 @@ import { randomInt } from 'node:crypto';
 import { performance } from 'node:perf_hooks';
 import type { MessagePortMain } from 'electron';
 import { loadWithMods } from '@ls112/content/node';
-import { hashString32, simTimeFrom } from '@ls112/sim';
-import type { HostMessage, StartPreset } from '@ls112/protocol';
+import type { HostMessage } from '@ls112/protocol';
+import {
+  SimHost,
+  dailySeed,
+  scenarioStart,
+  shiftStart,
+  type ClientPort,
+  type SaveStore,
+} from '@ls112/host';
 import { createLogger } from '../shared/logger';
 import { writeCrashReport } from '../shared/crash';
-import { SimHost, type ClientPort } from './host';
-import { SqliteSaveStore, type SaveStore } from './saves';
+import { SqliteSaveStore } from './saves';
 
 const LOOP_INTERVAL_MS = 50;
 
@@ -40,29 +46,6 @@ try {
   log.error({ err: error }, 'Spielstand-Datenbank nicht verfügbar – Speichern deaktiviert');
 }
 
-/**
- * Spielbeginn (Ortszeit): heutiger Schichtbeginn oder der nächste passende Tag einer Jahreszeit.
- * Die Silvesternacht beginnt mit dem Nachtdienst um 19 Uhr. Der Host darf die Systemzeit lesen.
- */
-function shiftStart(preset: StartPreset = 'today'): number {
-  const now = new Date();
-  const year = now.getFullYear();
-  const hour = content.settings.shift.startHour;
-  const month = now.getMonth() + 1;
-  switch (preset) {
-    case 'winter':
-      return simTimeFrom(month === 1 && now.getDate() <= 20 ? year : year + 1, 1, 20, hour);
-    case 'summer':
-      return simTimeFrom(month <= 7 ? year : year + 1, 7, 18, hour);
-    case 'newYear':
-      return simTimeFrom(year, 12, 31, 19);
-    case 'today':
-    case 'drill':
-    case 'daily':
-      return simTimeFrom(year, month, now.getDate(), hour);
-  }
-}
-
 const fixedSeed = env.LS112_SEED ? Number(env.LS112_SEED) >>> 0 : undefined;
 // Nur für Tests: höheres Notrufaufkommen, damit kurze E2E-Läufe genug zu tun haben.
 const rate = env.LS112_E2E === '1' && env.LS112_CALL_RATE ? Number(env.LS112_CALL_RATE) : 1;
@@ -72,24 +55,14 @@ const host = new SimHost({
   log,
   ...(store ? { store } : {}),
   newSeed: () => fixedSeed ?? randomInt(0, 2 ** 32 - 1),
-  dailySeed: () => {
-    const now = new Date();
-    const date = `${now.getFullYear().toString()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}`;
-    return { seed: hashString32(`ls112-tag-${date}`), date };
-  },
-  startTime: shiftStart,
+  dailySeed: () => dailySeed(),
+  startTime: (preset) => shiftStart(content, preset),
   mods: loaded.mods,
   reloadContent: () => {
     const next = loadAll();
     return { content: next.bundle, mods: next.mods };
   },
-  scenarioStart: (hour, month) => {
-    const now = new Date();
-    const m = month ?? now.getMonth() + 1;
-    // Nächster passender Monat ab heute (das Datum selbst ist für Szenarien nebensächlich).
-    const year = m < now.getMonth() + 1 ? now.getFullYear() + 1 : now.getFullYear();
-    return simTimeFrom(year, m, month === undefined ? now.getDate() : 15, hour);
-  },
+  scenarioStart: (hour, month) => scenarioStart(hour, month),
   callRateFactor: Number.isFinite(rate) && rate > 0 ? rate : 1,
 });
 
@@ -155,7 +128,7 @@ process.parentPort.on('message', (event) => {
     host.reloadContent();
   } else if (data?.type === 'shutdown') {
     // Beim Beenden den aktuellen Stand sichern.
-    host.save('auto', 'Beim Beenden');
+    host.suspend('Beim Beenden');
     store?.close();
     log.flush();
     process.exit(0);

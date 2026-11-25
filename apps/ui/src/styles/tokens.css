@@ -84,3 +84,28 @@ button {
     transition: none !important;
   }
 }
+
+/*
+ * Touch-Bedienung (Android, Tablets – ADR-0021): größere Tippflächen, kein Tipp-Aufblitzen,
+ * kein Gummiband-Scrollen der ganzen Seite. Mit Maus bleibt alles wie gehabt.
+ */
+@media (pointer: coarse) {
+  html {
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior: none;
+    touch-action: manipulation;
+  }
+
+  button,
+  select,
+  input {
+    min-height: 40px;
+  }
+
+  input,
+  select,
+  textarea {
+    /* Unter 16 px zoomt mancher Browser beim Antippen ins Feld. */
+    font-size: max(16px, 1rem);
+  }
+}

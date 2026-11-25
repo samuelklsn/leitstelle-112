@@ -6,8 +6,8 @@ gilt das neuere, angenommene ADR; diese Datei wird dann angepasst.
 ## Projekt in einem Satz
 
 Realistischer, offline lauffähiger Leitstellensimulator (Rettungsdienst, Feuerwehr,
-Katastrophenschutz) für Windows: Electron + React + MapLibre, deterministischer
-TypeScript-Simulationskern. Plan: `docs/PLAN.md`, Entscheidungen: `docs/adr/`.
+Katastrophenschutz) für Windows und Android: Electron bzw. Capacitor + React + MapLibre,
+deterministischer TypeScript-Simulationskern. Plan: `docs/PLAN.md`, Entscheidungen: `docs/adr/`.
 
 ## Harte Regeln
 
@@ -30,7 +30,9 @@ TypeScript-Simulationskern. Plan: `docs/PLAN.md`, Entscheidungen: `docs/adr/`.
 
 ```
 apps/desktop        Electron Main, Preload, Sim-Host (utilityProcess), SQLite, Logging
-apps/ui             React-Renderer (Vite)
+apps/android        Capacitor-App: Sim-Worker, IndexedDB, Brücke, Android-Projekt (ADR-0021)
+apps/ui             React-Renderer (Vite), auch Telefon-Layout
+packages/host       Plattformneutraler Sim-Host (Takt, Spielstände, Verteilung)
 packages/sim        Simulationskern
 packages/routing    Straßengraph, Routing, Fahrzeitmodell
 packages/protocol   Nachrichtentypen Sim-Host <-> UI
@@ -96,4 +98,6 @@ auf Windows manuell geprüft · im `CHANGELOG.md` unter „Unreleased" eingetrag
 ## Umgebung
 
 - Windows 10/11 x64, Node.js LTS (Version in `.nvmrc`), pnpm (Version in `packageManager`).
+- Android: JDK 21, Android SDK (Platform/Build-Tools 36), `ANDROID_HOME` gesetzt – siehe
+  `docs/android.md`. Oberfläche immer auch im Telefon-Layout (< 900 px) prüfen.
 - Shell-Befehle in Doku und Skripten für PowerShell bzw. plattformneutral über Node-Skripte.

@@ -79,6 +79,8 @@ export default defineConfig(
       '**/node_modules/**',
       'playwright-report/**',
       'test-results/**',
+      // Von Capacitor erzeugtes Android-Projekt (Gradle, Java) und dessen Web-Kopie.
+      'apps/android/android/**',
     ],
   },
   js.configs.recommended,
@@ -87,7 +89,13 @@ export default defineConfig(
     languageOptions: {
       parserOptions: {
         projectService: {
-          allowDefaultProject: ['*.js', '*.ts', 'scripts/*.mjs', 'apps/desktop/scripts/*.mjs'],
+          allowDefaultProject: [
+            '*.js',
+            '*.ts',
+            'scripts/*.mjs',
+            'apps/desktop/scripts/*.mjs',
+            'apps/android/scripts/*.mjs',
+          ],
         },
         tsconfigRootDir: import.meta.dirname,
       },
@@ -122,7 +130,7 @@ export default defineConfig(
     rules: { ...tseslint.configs.disableTypeChecked.rules, 'no-restricted-exports': 'off' },
   },
   {
-    files: ['apps/ui/src/**/*.{ts,tsx}'],
+    files: ['apps/ui/src/**/*.{ts,tsx}', 'apps/android/src/**/*.ts'],
     languageOptions: { globals: globals.browser },
     plugins: { 'react-hooks': reactHooks },
     rules: reactHooks.configs.recommended.rules,

@@ -151,3 +151,52 @@
   border-radius: 4px;
   padding: 4px 8px;
 }
+
+/* Schmale Bildschirme (Telefon, ADR-0021). */
+@media (max-width: 899px) {
+  .start {
+    grid-template-columns: minmax(0, 1fr);
+    place-items: start stretch;
+    overflow-y: auto;
+    padding: calc(16px + env(safe-area-inset-top)) 14px calc(16px + env(safe-area-inset-bottom));
+  }
+
+  .startInner {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .startPreset {
+    flex-wrap: wrap;
+  }
+
+  .startPreset select {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .logoMark {
+    flex: none;
+    width: 56px;
+    height: 56px;
+    font-size: 1.4rem;
+  }
+
+  .startTitle {
+    font-size: 1.8rem;
+  }
+
+  .cards,
+  .columns {
+    grid-template-columns: 1fr;
+  }
+
+  /* Oben, damit die Schnellknöpfe unten frei bleiben. */
+  .coach {
+    top: 8px;
+    bottom: auto;
+    left: 8px;
+    right: 8px;
+    width: auto;
+  }
+}

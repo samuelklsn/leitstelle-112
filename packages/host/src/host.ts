@@ -20,7 +20,7 @@ import {
   type QueryResult,
 } from '@ls112/protocol';
 import { SimClock } from './clock';
-import type { SaveStore } from './saves';
+import type { SaveStore } from './save-store';
 
 /** Abstraktion eines Fensters – in Electron ein MessagePortMain, im Test ein Fake. */
 export interface ClientPort {
@@ -119,14 +119,22 @@ export class SimHost {
     if (!this.options.reloadContent) return;
     try {
       const next = this.options.reloadContent();
-      this.content = next.content;
-      this.mods = next.mods;
-      this.broadcast({ type: 'mods', mods: this.mods });
-      this.broadcast(this.catalog());
-      this.options.log.info({ mods: this.mods.length }, 'Inhalte neu geladen');
+      this.replaceContent(next.content, next.mods);
     } catch (error) {
       this.options.log.error({ err: error }, 'Inhalte konnten nicht neu geladen werden');
     }
+  }
+
+  /**
+   * Neue Inhalte übernehmen (gelten für neue Spiele). Für Plattformen, die Inhalte asynchron
+   * laden – Android liest Mods aus IndexedDB (ADR-0021).
+   */
+  replaceContent(content: ContentBundle, mods: readonly ModStatusView[]): void {
+    this.content = content;
+    this.mods = mods;
+    this.broadcast({ type: 'mods', mods: this.mods });
+    this.broadcast(this.catalog());
+    this.options.log.info({ mods: this.mods.length }, 'Inhalte neu geladen');
   }
 
   newGame(
@@ -166,6 +174,17 @@ export class SimHost {
     this.options.log.info({ id, name: stored.info.name }, 'Spielstand geladen');
     this.markDirty();
     return true;
+  }
+
+  /**
+   * App geht in den Hintergrund oder wird beendet: Stand sichern und anhalten. Auf Android kann
+   * das System eine Hintergrund-App jederzeit beenden (ADR-0021).
+   */
+  suspend(name: string): boolean {
+    const saved = this.save('auto', name);
+    this.clock.setPaused(true);
+    this.markDirty();
+    return saved;
   }
 
   save(kind: 'auto' | 'manual', name: string): boolean {

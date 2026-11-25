@@ -6,6 +6,7 @@
 import { contextBridge, ipcRenderer } from 'electron';
 
 export interface Ls112Bridge {
+  readonly platform: 'windows';
   log(level: 'info' | 'warn' | 'error', message: string, context?: Record<string, unknown>): void;
   appInfo(): Promise<{ version: string; electron: string; simHostRestarts: number }>;
   e2eCrashSimHost(): void;
@@ -31,6 +32,7 @@ export interface LayoutList {
 }
 
 const bridge: Ls112Bridge = {
+  platform: 'windows',
   log: (level, message, context) => {
     ipcRenderer.send('renderer-log', level, message, context ?? {});
   },

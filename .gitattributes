@@ -7,3 +7,6 @@
 *.mbtiles binary
 *.pmtiles binary
 *.db binary
+# Windows-Batchdateien brauchen CRLF (gradlew.bat im Android-Projekt).
+*.bat text eol=crlf
+*.jar binary

@@ -8,3 +8,4 @@ export {
   type ContentFile,
   type ContentProblem,
 } from './loader';
+export { loadWithModLayers, type ModStatus } from './mods';

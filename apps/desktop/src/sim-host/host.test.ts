@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { loadContentFromDirs } from '@ls112/content/node';
 import { simTimeFrom } from '@ls112/sim';
 import type { HostMessage } from '@ls112/protocol';
-import { SimHost, type ClientPort } from './host';
+import { SimHost, type ClientPort } from '@ls112/host';
 import { AUTOSAVE_KEEP, SqliteSaveStore } from './saves';
 
 const content = loadContentFromDirs(

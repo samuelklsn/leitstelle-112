@@ -27,3 +27,4 @@ Entscheidung bekommt ein neues ADR, das alte wird auf „Abgelöst" gesetzt. Nac
 | [0018](0018-langzeitspiel.md)                    | Langzeitspiel: Laufbahn, Bedarfsplanung, Personen    | Angenommen |
 | [0019](0019-mods-editoren.md)                    | Mods, Editoren und Trainingsszenarien                | Angenommen |
 | [0020](0020-osm-regionen.md)                     | Echte Regionen aus OpenStreetMap                     | Angenommen |
+| [0021](0021-android-app.md)                      | Android-App mit Capacitor und Sim-Worker             | Angenommen |
