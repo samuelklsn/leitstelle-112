@@ -18,6 +18,7 @@ Versionierung nach [Semantic Versioning](https://semver.org/lang/de/).
   Notruf und Großlage, Bildschirm bleibt während einer Schicht an.
 - Beim Wechsel in den Hintergrund speichert die App automatisch und hält die Zeit an.
 - Diagnosepaket auf Android über das Teilen-Menü.
+- Installationsanleitung für Android (`docs/android-installation.md`).
 - CI baut zusätzlich eine Debug-APK.
 
 ### Geändert

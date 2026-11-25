@@ -75,5 +75,5 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           version="${GITHUB_REF_NAME#v}"
-          cp apps/android/android/app/build/outputs/apk/debug/app-debug.apk "Leitstelle112-${version}.apk"
-          gh release upload "$GITHUB_REF_NAME" "Leitstelle112-${version}.apk"
+          cp apps/android/android/app/build/outputs/apk/debug/app-debug.apk "Leitstelle112-${version}-android.apk"
+          gh release upload "$GITHUB_REF_NAME" "Leitstelle112-${version}-android.apk"

@@ -5,11 +5,12 @@ Architektur und Begründung: [ADR-0021](adr/0021-android-app.md).
 
 ## Installieren
 
-1. Die Datei `Leitstelle112-<Version>.apk` aus den
-   [Releases](https://github.com/samuelklsn/leitstelle-112/releases) oder dem CI-Lauf
-   („Artifacts") aufs Telefon laden.
-2. Öffnen und „Aus dieser Quelle installieren" erlauben (Android fragt einmalig nach).
-3. Voraussetzung: Android 8.0 oder neuer, aktuelles „Android System WebView" (Play Store).
+Kurz: `Leitstelle112-…-android.apk` von der
+[Release-Seite](https://github.com/samuelklsn/leitstelle-112/releases) aufs Telefon laden, öffnen,
+„Aus dieser Quelle zulassen" einschalten, installieren. Ab Android 8.0.
+
+**Schritt für Schritt mit Herstellerhinweisen, Aktualisieren und Problemlösungen:
+[docs/android-installation.md](android-installation.md).**
 
 Die App fragt nach keinen Berechtigungen und lädt nichts aus dem Internet; sie läuft vollständig
 offline.

@@ -86,9 +86,15 @@ auf Leitung 2 klingelt schon der nächste Notruf.
 
 Dasselbe Spiel gibt es als Android-App (ab Android 8.0) – mit einem eigenen Layout für Telefone:
 ein Bereich zur Zeit, Leiste unten, Schnellknöpfe für Annehmen, Alarmieren und Zielklinik.
-Tablets im Querformat zeigen die volle Arbeitsfläche. Die APK liegt bei den
-[Releases](https://github.com/samuelklsn/leitstelle-112/releases); Installation, Bedienung und
-Bauen: [docs/android.md](docs/android.md).
+Tablets im Querformat zeigen die volle Arbeitsfläche.
+
+1. Auf dem Telefon die [Release-Seite](https://github.com/samuelklsn/leitstelle-112/releases)
+   öffnen und unter **Assets** die Datei `Leitstelle112-…-android.apk` laden.
+2. Öffnen, „Aus dieser Quelle zulassen" einschalten, **Installieren**.
+
+Ausführliche Anleitung mit Herstellerhinweisen und Problemlösungen:
+[docs/android-installation.md](docs/android-installation.md) · Bedienung und Bauen:
+[docs/android.md](docs/android.md).
 
 ### Tastatur
 
