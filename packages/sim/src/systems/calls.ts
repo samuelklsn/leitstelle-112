@@ -160,6 +160,37 @@ export function isOutdoor(ctx: Ctx, truth: Truth): boolean {
   return ctx.content.diagnoses.get(truth.diagnosisId)?.outdoor ?? false;
 }
 
+/** Zufällige Hausadresse in einem Ort (Szenarien legen den Ort fest). */
+function townAddress(ctx: Ctx, townId: string | undefined): number | undefined {
+  const houses = townId !== undefined ? ctx.content.townHouses.get(townId) : undefined;
+  return houses && houses.length > 0 ? ctx.rng.patients.pick(houses) : undefined;
+}
+
+/** Geplanter Notruf eines Trainingsszenarios (ADR-0019). */
+export function scenarioCall(
+  ctx: Ctx,
+  call: {
+    diagnosis?: string | undefined;
+    fire?: string | undefined;
+    mci?: string | undefined;
+    town?: string | undefined;
+  },
+): CallState {
+  if (call.mci !== undefined) {
+    const scenario = ctx.content.mciScenarios.get(call.mci);
+    if (scenario) {
+      const addressId = townAddress(ctx, call.town) ?? pickAddress(ctx, scenario.outdoor);
+      return createCall(ctx, 'emergency', createMciTruth(ctx, addressId, scenario));
+    }
+  }
+  if (call.fire !== undefined)
+    return createCall(ctx, 'emergency', createFireTruth(ctx, call.fire, call.town));
+  const d = ctx.content.diagnoses.get(call.diagnosis ?? '');
+  if (!d) return createCall(ctx, 'emergency');
+  const addressId = townAddress(ctx, call.town) ?? pickAddress(ctx, d.outdoor);
+  return createCall(ctx, 'emergency', { ...patientFrom(ctx, d.id), addressId, patient: true });
+}
+
 export function pickAddress(ctx: Ctx, outdoor: boolean): number {
   const rng = ctx.rng.patients;
   const { world } = ctx;
@@ -179,7 +210,7 @@ type PatientPart = Pick<
 >;
 
 /** Patient nach Krankheitsbild – für Rettungsdienst-Notrufe und Verletzte bei Feuerwehrlagen. */
-function patientFrom(ctx: Ctx, diagnosisId: string): PatientPart {
+export function patientFrom(ctx: Ctx, diagnosisId: string): PatientPart {
   const rng = ctx.rng.patients;
   const d = ctx.content.diagnoses.get(diagnosisId);
   if (!d) throw new Error(`Unbekanntes Krankheitsbild ${diagnosisId}`);
@@ -198,11 +229,13 @@ function patientFrom(ctx: Ctx, diagnosisId: string): PatientPart {
 }
 
 /** Brand- oder Hilfeleistungslage, ggf. mit verletzter Person. */
-function createFireTruth(ctx: Ctx): Truth {
+function createFireTruth(ctx: Ctx, scenarioId?: string, townId?: string): Truth {
   const rng = ctx.rng.patients;
-  const s = ctx.content.bundle.fireScenarios[pickCumulative(rng, mixWeights(ctx).fire)];
+  const s =
+    (scenarioId !== undefined ? ctx.content.fireScenarios.get(scenarioId) : undefined) ??
+    ctx.content.bundle.fireScenarios[pickCumulative(rng, mixWeights(ctx).fire)];
   if (!s) throw new Error('Keine Feuerwehrlagen');
-  const addressId = pickAddress(ctx, s.outdoor);
+  const addressId = townAddress(ctx, townId) ?? pickAddress(ctx, s.outdoor);
   const fire = { scenarioId: s.id, originalScenarioId: s.id, escalations: 0, done: false };
   if (s.casualty && rng.chance(s.casualty.probability)) {
     return { ...patientFrom(ctx, s.casualty.diagnosis), addressId, patient: true, fire };

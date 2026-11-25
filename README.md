@@ -98,6 +98,13 @@ nächsten Start wiederhergestellt.
 
 ![Fenster und Layouts](docs/images/fenster.png)
 
+### Eigene Inhalte
+
+Unter **Mods** lassen sich eigene Trainingsszenarien und Wachen bauen und als Mod speichern. Wie
+Mods aufgebaut sind, steht in [docs/modding.md](docs/modding.md).
+
+![Szenario-Editor](docs/images/szenario-editor.png)
+
 ### Fehler melden
 
 **Hilfe → Diagnosepaket erstellen** speichert Protokolle und Absturzberichte als ZIP. Es wird
@@ -106,24 +113,25 @@ nichts automatisch versendet – das Paket kann einem
 
 ## Stand und Roadmap
 
-**v0.8.0:** Laufbahn, Bedarfsplanung, wiederkehrende Personen. **v0.7.0:** Massenanfall von Verletzten und Großlagen. **v0.6.0:** Mehrere Fenster und Bildschirme, eigene Tastenbelegung, Diagnosepaket. **v0.5.0:** Wetter, Feiertage, Ereignisse, Rettungshubschrauber. **v0.4.0:** Krankentransporte, Klinikabmeldungen, Pausen. **v0.3.0:** Feuerwehr mit Brand- und Hilfeleistungslagen, die sich ausbreiten. **v0.2.0:** strukturierte Notrufabfrage mit Fehl-, Scherz- und Doppelanrufen. **Seit v0.1.0:** Rettungsdienst im fiktiven Landkreis Brakenfeld. Dazu gehören
+**v1.0.0:** Mods, Szenario- und Wachen-Editor, Trainingsszenarien, Hilfsfrist-Regeln der Länder – die erste stabile Version. **v0.8.0:** Laufbahn, Bedarfsplanung, wiederkehrende Personen. **v0.7.0:** Massenanfall von Verletzten und Großlagen. **v0.6.0:** Mehrere Fenster und Bildschirme, eigene Tastenbelegung, Diagnosepaket. **v0.5.0:** Wetter, Feiertage, Ereignisse, Rettungshubschrauber. **v0.4.0:** Krankentransporte, Klinikabmeldungen, Pausen. **v0.3.0:** Feuerwehr mit Brand- und Hilfeleistungslagen, die sich ausbreiten. **v0.2.0:** strukturierte Notrufabfrage mit Fehl-, Scherz- und Doppelanrufen. **Seit v0.1.0:** Rettungsdienst im fiktiven Landkreis Brakenfeld. Dazu gehören
 7 Orte, 3 Rettungswachen, 2 Notarztstandorte, 2 Krankenhäuser, 4 Stichworte und
 14 Krankheitsbilder, außerdem Tutorial, Speichern und Laden sowie die Schichtauswertung.
 
-| Meilenstein          | Inhalt                                                                      | Stand                                                              |
-| -------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| M1 Fundament         | Monorepo, CI, Electron, deterministischer Simulationskern                   | ✅                                                                 |
-| M2 Welt & Routing    | Landkreis-Generator, Straßengraph, Fahrzeitmodell, Offline-Karte            | ✅                                                                 |
-| M3 Vertical Slice    | Notruf → Disposition → Anfahrt → Befund → Transport → Krankenhaus           | ✅                                                                 |
-| M4 v0.1.0            | Speichern, Autosave, Auswertung, Tutorial, Tastatur                         | ✅                                                                 |
-| M5 Notrufannahme 2.0 | Strukturierte Abfrage, Fehl-, Scherz- und Doppelanrufe, Polizei-Übergaben   | ✅                                                                 |
-| M6 Feuerwehr         | Feuerwachen, B/TH-Stichworte, Lagemeldung, Nachforderung, Brandausbreitung  | ✅                                                                 |
-| M7 RD-Logistik       | KTW/ITW, Krankentransporte, Klinikabmeldungen, Status 6, Pausen             | ✅                                                                 |
-| M8 Welt-Dynamik      | Wetter, Feiertage, Sommerzeit, Ereignisse, Sperrungen, Regie, RTH           | ✅                                                                 |
-| M9 Mehrfenster       | Fenster je Ansicht, Layout-Profile, Tastenbelegung, Diagnosepaket           | ✅                                                                 |
-| M10 MANV             | Großlagen, Sichtung, LNA/OrgL/SEG, Bereitstellungsraum, Patientenverteilung | ✅                                                                 |
-| M11 Langzeitspiel    | Laufbahn, Bedarfsplanung, Tages-Herausforderung, Personen, Eigensicherung   | ✅                                                                 |
-| M12 – M13            | Editoren und Modding (v1.0.0), echte Regionen                               | [geplant](https://github.com/samuelklsn/leitstelle-112/milestones) |
+| Meilenstein           | Inhalt                                                                      | Stand                                                              |
+| --------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| M1 Fundament          | Monorepo, CI, Electron, deterministischer Simulationskern                   | ✅                                                                 |
+| M2 Welt & Routing     | Landkreis-Generator, Straßengraph, Fahrzeitmodell, Offline-Karte            | ✅                                                                 |
+| M3 Vertical Slice     | Notruf → Disposition → Anfahrt → Befund → Transport → Krankenhaus           | ✅                                                                 |
+| M4 v0.1.0             | Speichern, Autosave, Auswertung, Tutorial, Tastatur                         | ✅                                                                 |
+| M5 Notrufannahme 2.0  | Strukturierte Abfrage, Fehl-, Scherz- und Doppelanrufe, Polizei-Übergaben   | ✅                                                                 |
+| M6 Feuerwehr          | Feuerwachen, B/TH-Stichworte, Lagemeldung, Nachforderung, Brandausbreitung  | ✅                                                                 |
+| M7 RD-Logistik        | KTW/ITW, Krankentransporte, Klinikabmeldungen, Status 6, Pausen             | ✅                                                                 |
+| M8 Welt-Dynamik       | Wetter, Feiertage, Sommerzeit, Ereignisse, Sperrungen, Regie, RTH           | ✅                                                                 |
+| M9 Mehrfenster        | Fenster je Ansicht, Layout-Profile, Tastenbelegung, Diagnosepaket           | ✅                                                                 |
+| M10 MANV              | Großlagen, Sichtung, LNA/OrgL/SEG, Bereitstellungsraum, Patientenverteilung | ✅                                                                 |
+| M11 Langzeitspiel     | Laufbahn, Bedarfsplanung, Tages-Herausforderung, Personen, Eigensicherung   | ✅                                                                 |
+| M12 Editoren (v1.0.0) | Mods, Szenario- und Wachen-Editor, Trainingsszenarien, Hilfsfrist-Regeln    | ✅                                                                 |
+| M13 Echte Regionen    | OSM-Import für echte Landkreise                                             | [geplant](https://github.com/samuelklsn/leitstelle-112/milestones) |
 
 ## Technik
 

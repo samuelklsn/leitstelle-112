@@ -2,7 +2,7 @@
  * Electron-Main-Prozess: Fenster, Lifecycle, Logging-Sammelstelle, Crash-Handling (ADR-0005).
  * Enthält keine Spiellogik.
  */
-import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { basename, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import {
@@ -49,6 +49,8 @@ app.setPath(
 app.setAppUserModelId(APP_ID);
 
 const logDir = join(app.getPath('userData'), 'logs');
+/** Mods: je Unterordner ein Mod (ADR-0019). Eigene Szenarien und Wachen speichern die Editoren hier. */
+const modsDir = join(app.getPath('userData'), 'mods');
 const crashDir = join(app.getPath('userData'), 'crashes');
 app.setPath('crashDumps', crashDir);
 crashReporter.start({ uploadToServer: false });
@@ -236,6 +238,7 @@ function startSimHost(resume = false): void {
       LS112_CONTENT_DIR: contentDir(),
       LS112_SAVE_FILE: join(app.getPath('userData'), 'saves.db'),
       LS112_RESUME: resume ? '1' : '0',
+      LS112_MODS_DIR: modsDir,
     },
   });
   child.stdout?.on('data', (chunk: Buffer) => {
@@ -415,6 +418,47 @@ ipcMain.handle('layout-save', (_event, name: unknown) => {
 ipcMain.handle('layout-delete', (_event, name: unknown) => {
   if (typeof name !== 'string') return false;
   writeLayouts(removeLayout(readLayouts(), name));
+  return true;
+});
+
+ipcMain.handle('mods-open-folder', async () => {
+  mkdirSync(modsDir, { recursive: true });
+  return (await shell.openPath(modsDir)) === '';
+});
+
+/**
+ * Editor speichert in einen eigenen Mod: Manifest plus eine JSON-Datei (JSON ist gültiges YAML).
+ * Der Sim-Host prüft und lädt die Inhalte danach neu – kaputte Mods werden gemeldet, nicht geladen.
+ */
+ipcMain.handle('mods-save', (_event, modId: unknown, fileName: unknown, data: unknown) => {
+  if (
+    typeof modId !== 'string' ||
+    !/^[a-z0-9][a-z0-9-]{1,40}$/.test(modId) ||
+    typeof fileName !== 'string' ||
+    !/^[a-z0-9][a-z0-9-]{0,60}$/.test(fileName) ||
+    typeof data !== 'object' ||
+    data === null
+  )
+    return false;
+  const text = JSON.stringify(data, null, 2);
+  if (text.length > 1_000_000) return false;
+  const dir = join(modsDir, modId);
+  mkdirSync(dir, { recursive: true });
+  const manifest = join(dir, 'mod.json');
+  if (!existsSync(manifest)) {
+    writeFileSync(
+      manifest,
+      JSON.stringify(
+        { mod: { id: modId, name: 'Eigene Inhalte', version: '1.0.0', author: 'Spieler/in' } },
+        null,
+        2,
+      ),
+      'utf8',
+    );
+  }
+  writeFileSync(join(dir, `${fileName}.json`), text, 'utf8');
+  log.info({ mod: modId, file: fileName }, 'Mod-Datei gespeichert');
+  simHost?.postMessage({ type: 'reload-content' });
   return true;
 });
 

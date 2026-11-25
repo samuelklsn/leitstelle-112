@@ -3,7 +3,7 @@
  * dokumentiert (docs/domain/auswertung.md): Es belohnt, was in der Realität zählt –
  * schnelle Hilfe, der richtige Notarzt-Einsatz und die geeignete Zielklinik.
  */
-import type { Ctx } from '../context';
+import { hilfsfristOf, type Ctx } from '../context';
 import { MS_PER_MINUTE } from '../time';
 import type { ErrorCode, IncidentState, Outcome } from '../types';
 import { countError } from './calls';
@@ -47,12 +47,12 @@ export function closeIncident(ctx: Ctx, incident: IncidentState): void {
     return;
   }
 
-  // Hilfsfrist nur für Notfälle mit Patient.
-  const hf = ctx.content.bundle.settings.hilfsfrist;
+  // Hilfsfrist nur für Notfälle mit Patient – Messbeginn laut geltender Regel.
+  const hf = hilfsfristOf(ctx);
   const emergency = ctx.content.keywords.get(d?.keyword ?? '')?.emergency ?? true;
   const responseMs =
     incident.firstArrivalAt !== undefined
-      ? incident.firstArrivalAt - incident.receivedAt
+      ? incident.firstArrivalAt - responseStart(incident, hf.measure)
       : undefined;
   const realCall = incident.callKind === 'emergency' && incident.duplicateOf === undefined;
   const realPatient = realCall && incident.truth.patient;
@@ -121,10 +121,10 @@ function closeMci(ctx: Ctx, incident: IncidentState): void {
   const mci = incident.truth.mci;
   if (!mci) return;
   const shift = ctx.state.shift;
-  const hf = ctx.content.bundle.settings.hilfsfrist;
+  const hf = hilfsfristOf(ctx);
   const realCall = incident.callKind === 'emergency' && incident.duplicateOf === undefined;
   if (realCall && incident.firstArrivalAt !== undefined) {
-    const responseMs = incident.firstArrivalAt - incident.receivedAt;
+    const responseMs = incident.firstArrivalAt - responseStart(incident, hf.measure);
     shift.hilfsfristMeasured++;
     shift.totalResponseMs += responseMs;
     if (responseMs <= hf.minutes * MS_PER_MINUTE) shift.hilfsfristMet++;
@@ -171,6 +171,17 @@ function closeMci(ctx: Ctx, incident: IncidentState): void {
     incidentId: incident.id,
     outcome: worst,
   });
+}
+
+/** Beginn der Hilfsfrist: Notrufeingang, Alarmierung oder Ausrücken (#32). */
+export function responseStart(
+  incident: IncidentState,
+  measure: 'call' | 'dispatch' | 'departure',
+): number {
+  if (measure === 'dispatch') return incident.firstAlarmAt ?? incident.receivedAt;
+  if (measure === 'departure')
+    return incident.firstDepartureAt ?? incident.firstAlarmAt ?? incident.receivedAt;
+  return incident.receivedAt;
 }
 
 function pruneClosed(ctx: Ctx): void {

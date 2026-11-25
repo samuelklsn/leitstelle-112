@@ -6,6 +6,26 @@ Versionierung nach [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+## [1.0.0] – 2026-11-24 – Editoren und Modding (M12)
+
+Erste stabile Version. Das Inhaltsformat ist ab jetzt stabil: Änderungen nur abwärtskompatibel
+oder mit Migrationshinweis in [docs/modding.md](docs/modding.md).
+
+### Hinzugefügt
+
+- **Mods (#57):** Unterordner im Mod-Ordner ergänzen Inhalte oder ersetzen Einträge mit gleicher
+  ID; `settingsOverride` ändert einzelne Einstellungen. Fehlerhafte Mods werden übersprungen und
+  im Dialog **Mods** mit ihren Fehlern angezeigt. Modding-Anleitung mit Beispiel-Mod.
+- **Szenario-Editor und Trainingsszenarien (#56):** Startzeit, Wetter, Ereignisse, geplante
+  Notrufe und Ziele; drei Szenarien in den Basisinhalten (Blitzeis, zwei Reanimationen,
+  Hitzetag mit Volksfest). Die Auswertung zeigt, ob die Ziele erreicht sind.
+- **Wachen-Editor (#55):** Standort einer Wache per Klick auf die Karte, Fahrzeuge ergänzen,
+  Ergebnis als Mod.
+- **Hilfsfrist-Regeln mit Quelle (#32):** Baden-Württemberg, Bayern (nur Fahrzeit), Hessen,
+  Nordrhein-Westfalen (ländlich) und die Vorgabe des Landkreises; Messbeginn ab Notruf,
+  Alarmierung oder Ausrücken.
+- ADR-0019.
+
 ## [0.8.0] – 2026-11-24 – Langzeitspiel (M11)
 
 ### Hinzugefügt
@@ -262,7 +282,8 @@ eigentlichen Sinn – das kommt ab M2/M3.
 - Nach einem Absturz startet die Simulation neu beim Schichtbeginn; Autosave folgt in M4.
 - Der Installer wird nur in der CI gebaut (Richtlinie des Entwicklungsrechners, PLAN Kapitel 9).
 
-[Unreleased]: https://github.com/samuelklsn/leitstelle-112/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/samuelklsn/leitstelle-112/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/samuelklsn/leitstelle-112/compare/v0.8.0...v1.0.0
 [0.8.0]: https://github.com/samuelklsn/leitstelle-112/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/samuelklsn/leitstelle-112/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/samuelklsn/leitstelle-112/compare/v0.5.0...v0.6.0

@@ -1,0 +1,32 @@
+# Gleiche ID wie in der Basis: Diese Wache ersetzt die Rettungswache Tannrode.
+stations:
+  - id: base:rw-tannrode
+    name: Rettungswache Tannrode
+    kind: rettungswache
+    position: [21100, 4500]
+    vehicles:
+      - { id: base:rtw-3-83-1, callsign: Rettung Tannrode 3/83-1, type: base:rtw }
+      - { id: beispiel:rtw-3-83-2, callsign: Rettung Tannrode 3/83-2, type: base:rtw }
+      - {
+          id: base:ktw-3-85-1,
+          callsign: Rettung Tannrode 3/85-1,
+          type: base:ktw,
+          service: { from: 7, to: 15, weekdaysOnly: true },
+        }
+
+# Nur die genannten Einstellungen ändern sich.
+settingsOverride:
+  hilfsfrist: { minutes: 10, label: 10 Minuten in 95 % (Beispiel-Mod) }
+
+scenarios:
+  - id: beispiel:nachtdienst
+    name: Nachtdienst im Süden
+    description: Drei Notrufe kurz nach Mitternacht – reicht der zweite RTW in Tannrode?
+    startHour: 0
+    callRateFactor: 0.5
+    durationHours: 1
+    calls:
+      - { atMinutes: 2, diagnosis: base:dyspnea, town: base:tannrode }
+      - { atMinutes: 5, diagnosis: base:fall, town: base:oberwiesel }
+      - { atMinutes: 9, diagnosis: base:acs, town: base:tannrode }
+    goals: { hilfsfristQuota: 0.9, maxErrors: 2 }

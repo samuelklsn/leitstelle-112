@@ -285,6 +285,61 @@ export const FireScenario = z.object({
   escalation: z.object({ after: Range, to: Id }).optional(),
 });
 
+// ---------------------------------------------------------------- Mods, Szenarien (ADR-0019)
+
+/** Steckbrief eines Mods. */
+export const ModManifest = z.object({
+  id: z.string().regex(/^[a-z0-9][a-z0-9-]{1,40}$/, 'nur Kleinbuchstaben, Ziffern und Bindestrich'),
+  name: z.string().min(1).max(80),
+  version: z.string().min(1).max(20),
+  author: z.string().max(80).optional(),
+  description: z.string().max(500).optional(),
+});
+
+/** Hilfsfrist-Regel eines Landes mit Quelle (#32). */
+export const HilfsfristPreset = z.object({
+  id: Id,
+  label: z.string(),
+  minutes: z.number().positive(),
+  targetQuota: Probability,
+  /** Ab wann gemessen wird: Notrufeingang, Alarmierung oder Ausrücken (nur Fahrzeit). */
+  measure: z.enum(['call', 'dispatch', 'departure']).default('call'),
+  source: z.string(),
+});
+
+/**
+ * Trainingsszenario: feste Startzeit und Wetter, geplante Notrufe und Ziele. Mit dem
+ * Szenario-Editor lassen sich eigene Szenarien als Mod speichern.
+ */
+export const TrainingScenario = z.object({
+  id: Id,
+  name: z.string().min(1).max(80),
+  description: z.string().max(1000).default(''),
+  startHour: z.number().int().min(0).max(23),
+  month: z.number().int().min(1).max(12).optional(),
+  weather: Id.optional(),
+  /** Faktor auf das übrige Aufkommen (0 = nur die geplanten Notrufe). */
+  callRateFactor: z.number().min(0).max(5).default(1),
+  durationHours: z.number().positive().max(24).default(2),
+  /** Ereignisse der Weltlage, die mit dem Szenario beginnen (z. B. Volksfest). */
+  events: z.array(Id).default([]),
+  calls: z
+    .array(
+      z.object({
+        atMinutes: z.number().nonnegative(),
+        diagnosis: Id.optional(),
+        fire: Id.optional(),
+        mci: Id.optional(),
+        /** Ort des Einsatzes (sonst zufällig nach Einwohnern). */
+        town: Id.optional(),
+      }),
+    )
+    .default([]),
+  goals: z
+    .object({ hilfsfristQuota: Probability.optional(), maxErrors: z.number().int().nonnegative().optional() })
+    .default({}),
+});
+
 // ---------------------------------------------------------------- Großlagen (ADR-0017)
 
 /** Sichtungskategorien: T1 rot, T2 gelb, T3 grün, T4 blau/schwarz. */
@@ -404,6 +459,8 @@ export const Settings = z.object({
     targetQuota: Probability,
     /** Eintreffzeit der Feuerwehr (erstes Löschfahrzeug), Minuten. */
     fireMinutes: z.number().positive().default(10),
+    /** Messbeginn: Notrufeingang, Alarmierung oder Ausrücken (#32). */
+    measure: z.enum(['call', 'dispatch', 'departure']).default('call'),
     source: z.string(),
   }),
   shift: z.object({
@@ -650,6 +707,9 @@ export type Climate = z.infer<typeof Climate>;
 export type WorldEvent = z.infer<typeof WorldEvent>;
 export type Holiday = z.infer<typeof Holiday>;
 export type MciScenario = z.infer<typeof MciScenario>;
+export type ModInfo = z.infer<typeof ModManifest>;
+export type HilfsfristPreset = z.infer<typeof HilfsfristPreset>;
+export type TrainingScenario = z.infer<typeof TrainingScenario>;
 
 /** Vollständiger, validierter Inhaltsstand, den die Simulation erhält. */
 export interface ContentBundle {
@@ -666,5 +726,9 @@ export interface ContentBundle {
   readonly worldEvents: readonly WorldEvent[];
   readonly holidays: readonly Holiday[];
   readonly mciScenarios: readonly MciScenario[];
+  readonly scenarios: readonly TrainingScenario[];
+  readonly hilfsfristPresets: readonly HilfsfristPreset[];
+  /** Geladene Mods in Ladereihenfolge (ADR-0019). */
+  readonly mods: readonly ModInfo[];
   readonly settings: Settings;
 }

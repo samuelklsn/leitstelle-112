@@ -5,6 +5,7 @@
  */
 import type { ContentBundle } from '@ls112/content';
 import { holidayName } from './calendar';
+import { hilfsfristOf } from './context';
 import type { Simulation } from './simulation';
 import { toCalendar, type CalendarTime, type SimTime } from './time';
 import {
@@ -220,6 +221,10 @@ export interface GameView {
   readonly world: WorldView;
   readonly shift: ShiftStats;
   readonly lastShift: ShiftStats | null;
+  /** Geltende Hilfsfrist-Regel (Preset oder Vorgabe der Region). */
+  readonly hilfsfrist: ReturnType<typeof hilfsfristOf>;
+  /** Laufendes Trainingsszenario mit Zielen (ADR-0019). */
+  readonly scenario?: { readonly id: string; readonly endsAt: SimTime };
   /** Laufbahn und Budget der Bedarfsplanung (ADR-0018). */
   readonly career: {
     readonly rank: number;
@@ -358,6 +363,19 @@ export function buildView(sim: Simulation): GameView {
     world: worldView(sim),
     shift: s.shift,
     lastShift: s.shiftHistory.at(-1) ?? null,
+    hilfsfrist: hilfsfristOf({ content: sim.content, config: sim.config }),
+    ...(sim.config.scenarioId !== undefined
+      ? {
+          scenario: {
+            id: sim.config.scenarioId,
+            endsAt:
+              s.shift.startedAt +
+              (sim.content.bundle.scenarios.find((x) => x.id === sim.config.scenarioId)
+                ?.durationHours ?? 2) *
+                3_600_000,
+          },
+        }
+      : {}),
     career: {
       rank: s.career.rank,
       xp: s.career.xp,
@@ -551,6 +569,9 @@ export interface WorldInfo {
   readonly weather: readonly { id: string; name: string; symbol: string; flyable: boolean }[];
   readonly worldEvents: readonly { id: string; name: string }[];
   readonly mciScenarios: readonly { id: string; name: string }[];
+  readonly scenarios: ContentBundle['scenarios'];
+  readonly hilfsfristPresets: ContentBundle['hilfsfristPresets'];
+  readonly mods: ContentBundle['mods'];
   readonly hilfsfrist: ContentBundle['settings']['hilfsfrist'];
   readonly career: ContentBundle['settings']['career'];
   readonly shift: ContentBundle['settings']['shift'];
@@ -606,6 +627,9 @@ export function buildWorldInfo(sim: Simulation): WorldInfo {
     })),
     worldEvents: c.worldEvents.map((e) => ({ id: e.id, name: e.name })),
     mciScenarios: c.mciScenarios.map((s) => ({ id: s.id, name: s.name })),
+    scenarios: c.scenarios,
+    hilfsfristPresets: c.hilfsfristPresets,
+    mods: c.mods,
     hilfsfrist: c.settings.hilfsfrist,
     career: c.settings.career,
     shift: c.settings.shift,

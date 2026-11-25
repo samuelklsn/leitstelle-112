@@ -71,11 +71,13 @@ import {
   onDirectorPhase,
   onEventEnd,
   onWeatherChange,
+  startWorldEvent,
   syncClosures,
   updateWorld,
 } from './systems/world';
 import { onMciOnSite, onMciTriage, setMciOption } from './systems/mci';
 import { careerAfterShift, initialCareer, requestVehicle } from './systems/career';
+import { scenarioCall } from './systems/calls';
 import { initialPersons } from './systems/persons';
 import { generateWorld } from './world/generator';
 import type { World } from './world/types';
@@ -241,6 +243,7 @@ export class Simulation {
     // Erst die Welt (Wetter entscheidet, ob der Hubschrauber fliegt), dann die Fahrzeuge.
     initWorld(sim.ctx);
     sim.state.persons = initialPersons(sim.ctx);
+    sim.startScenario();
     sim.state.vehicles = sim.initialVehicles();
     for (const v of sim.state.vehicles) initVehicleLogistics(sim.ctx, v);
     sim.state.hospitals = initialHospitals(sim.ctx);
@@ -475,6 +478,12 @@ export class Simulation {
       onEventEnd(ctx, p.key);
       return;
     }
+    if (p.kind === 'scenario/call') {
+      const scenario = this.content.bundle.scenarios.find((x) => x.id === this.config.scenarioId);
+      const call = scenario?.calls[p.index];
+      if (call) scenarioCall(ctx, call);
+      return;
+    }
     if (p.kind === 'mci/triage' || p.kind === 'mci/onSite') {
       const incident = this.state.incidents.find((i) => i.id === p.incidentId);
       if (!incident || incident.status === 'closed') return;
@@ -533,6 +542,31 @@ export class Simulation {
         crewSince: this.state.time,
         breakTakenMs: 0,
       }));
+    });
+  }
+
+  /**
+   * Trainingsszenario (ADR-0019): Wetter festlegen und die geplanten Notrufe einplanen. Das übrige
+   * Aufkommen bestimmt der Sim-Host über `callRateFactor`.
+   */
+  private startScenario(): void {
+    const id = this.config.scenarioId;
+    if (id === undefined) return;
+    const scenario = this.content.bundle.scenarios.find((x) => x.id === id);
+    if (!scenario) throw new RangeError(`Unbekanntes Szenario ${id}`);
+    const start = this.state.time;
+    if (scenario.weather && this.content.weather.has(scenario.weather)) {
+      const w = this.state.world;
+      w.weatherId = scenario.weather;
+      w.weatherUntil = start + scenario.durationHours * MS_PER_HOUR;
+      this.queue.schedule(w.weatherUntil, { kind: 'world/weather' });
+    }
+    for (const e of scenario.events) startWorldEvent(this.ctx, e);
+    scenario.calls.forEach((call, index) => {
+      this.queue.schedule(start + Math.round(call.atMinutes * 60_000), {
+        kind: 'scenario/call',
+        index,
+      });
     });
   }
 

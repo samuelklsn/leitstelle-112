@@ -12,7 +12,8 @@
     "evaluation": "Auswertung",
     "help": "Hilfe",
     "windows": "Fenster",
-    "keys": "Tasten"
+    "keys": "Tasten",
+    "mods": "Mods"
   },
   "clock": {
     "pause": "Pause",
@@ -409,7 +410,10 @@
       "newYear": "Silvesternacht – ab 19 Uhr",
       "drill": "MANV-Übung – heute, mit einer Großlage gleich zu Beginn",
       "daily": "Tages-Herausforderung – heute für alle derselbe Verlauf"
-    }
+    },
+    "scenario": "Trainingsszenario:",
+    "noScenario": "kein Szenario – freier Dienst",
+    "hilfsfrist": "Hilfsfrist-Regel:"
   },
   "help": {
     "title": "Tastatur und Ablauf",
@@ -662,5 +666,51 @@
     "request": "Antrag stellen",
     "planningHint": "Bewilligt wird, wenn die Fahrzeuge dieses Typs an der Wache in der letzten Schicht stark ausgelastet waren oder die Hilfsfrist verfehlt wurde.",
     "daily": "Tages-Herausforderung {{date}} · Bestleistung auf diesem Rechner: {{best}} Punkte"
+  },
+  "scenario": {
+    "title": "Szenario „{{name}}“",
+    "goalQuota": "Hilfsfrist in mindestens {{percent}} % der Notfälle",
+    "goalErrors_one": "höchstens {{count}} Fehler",
+    "goalErrors_other": "höchstens {{count}} Fehler"
+  },
+  "mods": {
+    "title": "Mods und Editoren",
+    "hint": "Mods liegen im Mod-Ordner, je Unterordner ein Mod. Sie ergänzen Inhalte oder ersetzen Einträge mit gleicher ID. Fehlerhafte Mods werden übersprungen. Änderungen gelten ab dem nächsten neuen Spiel.",
+    "none": "Keine Mods installiert.",
+    "ok": "geladen",
+    "failed": "übersprungen",
+    "openFolder": "Mod-Ordner öffnen",
+    "scenarioEditor": "Szenario-Editor",
+    "stationEditor": "Wachen-Editor"
+  },
+  "editor": {
+    "scenarioTitle": "Szenario-Editor",
+    "stationTitle": "Wachen-Editor",
+    "name": "Name",
+    "description": "Beschreibung",
+    "startHour": "Beginn (Uhr)",
+    "weather": "Wetter",
+    "weatherRandom": "nach Jahreszeit",
+    "rate": "übriges Aufkommen",
+    "rateValue": "{{percent}} %",
+    "goal": "Ziel Hilfsfrist",
+    "calls": "Geplante Notrufe",
+    "minutes": "Min.",
+    "kind": {
+      "diagnosis": "Rettungsdienst",
+      "fire": "Feuerwehr",
+      "mci": "Großlage"
+    },
+    "anyTown": "beliebiger Ort",
+    "addCall": "Notruf hinzufügen",
+    "save": "Als Mod speichern",
+    "saved": "Gespeichert – gilt ab dem nächsten neuen Spiel.",
+    "failed": "Speichern fehlgeschlagen.",
+    "scenarioHint": "Das Szenario landet im Mod „eigene-inhalte“ und erscheint im Startbildschirm. Die Notrufe kommen zu den angegebenen Minuten nach Spielbeginn.",
+    "position": "Standort",
+    "pick": "Auf der Karte wählen",
+    "pickNow": "Jetzt auf die Karte klicken …",
+    "vehicles": "Fahrzeuge",
+    "stationHint": "Die geänderte Wache ersetzt die bisherige (gleiche ID) im Mod „eigene-inhalte“. Gilt ab dem nächsten neuen Spiel; alte Spielstände bleiben bei den alten Inhalten."
   }
 }

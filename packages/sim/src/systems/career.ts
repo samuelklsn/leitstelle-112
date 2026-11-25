@@ -3,7 +3,7 @@
  * bringen Erfahrung und Budget; höhere Stufen übernehmen einen größeren Bereich (mehr Notrufe).
  * Mit Budget und eigener Statistik lassen sich zusätzliche Fahrzeuge beantragen.
  */
-import type { Ctx } from '../context';
+import { hilfsfristOf, type Ctx } from '../context';
 import type { CareerState, RejectReason, ShiftStats, VehicleState } from '../types';
 
 export function initialCareer(): CareerState {
@@ -63,7 +63,7 @@ export function requestVehicle(
     duration > 0 && busy.length > 0 ? busy.reduce((a, b) => a + b, 0) / busy.length / duration : 0;
   const quota =
     last && last.hilfsfristMeasured > 0 ? last.hilfsfristMet / last.hilfsfristMeasured : 1;
-  const target = ctx.content.bundle.settings.hilfsfrist.targetQuota;
+  const target = hilfsfristOf(ctx).targetQuota;
   // Ohne Fahrzeug dieses Typs an der Wache zählt die Hilfsfrist als Begründung.
   const justified =
     (busy.length > 0 && utilization >= settings.justifyUtilization) || quota < target;

@@ -124,6 +124,15 @@ export function MapView() {
     map.touchZoomRotate.disableRotation();
     map.addControl(new NavigationControl({ showCompass: false }), 'top-right');
     mapRef.current = map;
+    // Editoren: ein Klick auf die Karte liefert lokale Koordinaten (ADR-0019).
+    map.on('click', (e) => {
+      const pick = useSim.getState().mapPick;
+      if (!pick) return;
+      pick(
+        (e.lngLat.lng - world.geo.originLon) * world.geo.metersPerDegLon,
+        (e.lngLat.lat - world.geo.originLat) * world.geo.metersPerDegLat,
+      );
+    });
 
     const add = (lonlat: [number, number], cls: string, text: string, title: string) => {
       const { outer, inner } = markerElement();

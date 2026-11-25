@@ -18,6 +18,10 @@ export interface Ls112Bridge {
   deleteLayout(name: string): Promise<boolean>;
   /** Logs und Absturzberichte als ZIP speichern; liefert den Pfad oder null (abgebrochen). */
   createDiagnostics(): Promise<string | null>;
+  /** Mod-Ordner im Explorer öffnen (ADR-0019). */
+  openModsFolder(): Promise<boolean>;
+  /** Editor-Ergebnis als Mod-Datei speichern; Inhalte werden neu geladen. */
+  saveModFile(modId: string, fileName: string, data: unknown): Promise<boolean>;
 }
 
 export interface LayoutList {
@@ -48,6 +52,9 @@ const bridge: Ls112Bridge = {
   saveLayout: (name) => ipcRenderer.invoke('layout-save', name) as Promise<boolean>,
   deleteLayout: (name) => ipcRenderer.invoke('layout-delete', name) as Promise<boolean>,
   createDiagnostics: () => ipcRenderer.invoke('diagnostics-create') as Promise<string | null>,
+  openModsFolder: () => ipcRenderer.invoke('mods-open-folder') as Promise<boolean>,
+  saveModFile: (modId, fileName, data) =>
+    ipcRenderer.invoke('mods-save', modId, fileName, data) as Promise<boolean>,
 };
 
 contextBridge.exposeInMainWorld('ls112', bridge);

@@ -56,7 +56,13 @@ describe('SimHost', () => {
     const host = makeHost();
     const port = new FakePort();
     host.addClient(port);
-    expect(port.received.map((m) => m.type)).toEqual(['welcome', 'world', 'state']);
+    expect(port.received.map((m) => m.type)).toEqual([
+      'welcome',
+      'world',
+      'mods',
+      'catalog',
+      'state',
+    ]);
     const world = port.last('world')?.world;
     expect(world?.addresses.length).toBeGreaterThan(1000);
     expect(world?.map.roads.features.length).toBeGreaterThan(1000);

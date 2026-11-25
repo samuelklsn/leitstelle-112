@@ -55,6 +55,22 @@ export interface ContentIndex {
   readonly reserveVehicles: ReadonlySet<string>;
 }
 
+/** Geltende Hilfsfrist-Regel: Preset eines Landes (#32) oder die Vorgabe der Region. */
+export function hilfsfristOf(ctx: Pick<Ctx, 'content' | 'config'>): {
+  readonly label: string;
+  readonly minutes: number;
+  readonly targetQuota: number;
+  readonly fireMinutes: number;
+  readonly measure: 'call' | 'dispatch' | 'departure';
+  readonly source: string;
+} {
+  const base = ctx.content.bundle.settings.hilfsfrist;
+  const preset = ctx.config.hilfsfristPreset
+    ? ctx.content.bundle.hilfsfristPresets.find((p) => p.id === ctx.config.hilfsfristPreset)
+    : undefined;
+  return preset ? { ...preset, fireMinutes: base.fireMinutes } : base;
+}
+
 /**
  * Kräftebedarf und Arbeitszeit der Feuerwehr für eine Lage – aus einer Feuerwehrlage oder dem
  * technischen Teil einer Großlage (ADR-0017).

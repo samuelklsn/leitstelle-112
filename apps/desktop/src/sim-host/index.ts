@@ -5,7 +5,7 @@
 import { randomInt } from 'node:crypto';
 import { performance } from 'node:perf_hooks';
 import type { MessagePortMain } from 'electron';
-import { loadContentFromDirs } from '@ls112/content/node';
+import { loadWithMods } from '@ls112/content/node';
 import { hashString32, simTimeFrom } from '@ls112/sim';
 import type { HostMessage, StartPreset } from '@ls112/protocol';
 import { createLogger } from '../shared/logger';
@@ -22,7 +22,17 @@ const appVersion = env.LS112_APP_VERSION ?? '0.0.0';
 const log = createLogger(logDir, 'sim-host');
 
 const started = performance.now();
-const content = loadContentFromDirs(env.LS112_CONTENT_DIR ?? 'content/base');
+const contentDir = env.LS112_CONTENT_DIR ?? 'content/base';
+const modsDir = env.LS112_MODS_DIR;
+/** Basis plus Mods (ADR-0019); fehlerhafte Mods werden übersprungen und gemeldet. */
+function loadAll() {
+  const result = loadWithMods(contentDir, modsDir);
+  for (const m of result.mods)
+    if (!m.ok) log.warn({ mod: m.folder, problems: m.problems }, 'Mod übersprungen');
+  return result;
+}
+const loaded = loadAll();
+const content = loaded.bundle;
 let store: SaveStore | undefined;
 try {
   store = env.LS112_SAVE_FILE ? new SqliteSaveStore(env.LS112_SAVE_FILE) : undefined;
@@ -68,6 +78,18 @@ const host = new SimHost({
     return { seed: hashString32(`ls112-tag-${date}`), date };
   },
   startTime: shiftStart,
+  mods: loaded.mods,
+  reloadContent: () => {
+    const next = loadAll();
+    return { content: next.bundle, mods: next.mods };
+  },
+  scenarioStart: (hour, month) => {
+    const now = new Date();
+    const m = month ?? now.getMonth() + 1;
+    // Nächster passender Monat ab heute (das Datum selbst ist für Szenarien nebensächlich).
+    const year = m < now.getMonth() + 1 ? now.getFullYear() + 1 : now.getFullYear();
+    return simTimeFrom(year, m, month === undefined ? now.getDate() : 15, hour);
+  },
   callRateFactor: Number.isFinite(rate) && rate > 0 ? rate : 1,
 });
 
@@ -129,6 +151,8 @@ process.parentPort.on('message', (event) => {
     if (!port) return;
     host.addClient(wrapPort(port));
     port.start();
+  } else if (data?.type === 'reload-content') {
+    host.reloadContent();
   } else if (data?.type === 'shutdown') {
     // Beim Beenden den aktuellen Stand sichern.
     host.save('auto', 'Beim Beenden');

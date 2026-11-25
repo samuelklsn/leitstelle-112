@@ -28,6 +28,10 @@ export interface SimConfig {
   readonly tutorial: boolean;
   /** MANV-Übung: Der erste Notruf meldet eine Großlage (ADR-0017). */
   readonly drill?: boolean;
+  /** Trainingsszenario aus den Inhalten (ADR-0019). */
+  readonly scenarioId?: string;
+  /** Hilfsfrist-Regel eines Landes statt der Vorgabe der Region (#32). */
+  readonly hilfsfristPreset?: string;
 }
 
 /** FMS-Status (Fahrzeugstatus-Meldesystem). */
@@ -251,6 +255,8 @@ export interface IncidentState {
   status: 'open' | 'active' | 'closed';
   vehicleIds: string[];
   firstAlarmAt?: SimTime;
+  /** Erstes Fahrzeug rückt aus (Status 3) – Messbeginn bei reiner Fahrzeit. */
+  firstDepartureAt?: SimTime;
   firstArrivalAt?: SimTime;
   /** Eintreffen des ersten Feuerwehrfahrzeugs (Hilfsfrist Feuerwehr). */
   firstFireArrivalAt?: SimTime;
@@ -428,6 +434,7 @@ export type ScheduledPayload =
   | { readonly kind: 'world/director' }
   | { readonly kind: 'world/eventEnd'; readonly key: string }
   | { readonly kind: 'mci/triage'; readonly incidentId: string }
+  | { readonly kind: 'scenario/call'; readonly index: number }
   | { readonly kind: 'mci/onSite'; readonly incidentId: string }
   | { readonly kind: 'incident/callbackDone'; readonly incidentId: string }
   | { readonly kind: 'shift/end' }
