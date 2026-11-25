@@ -81,6 +81,9 @@ export default defineConfig(
       'test-results/**',
       // Von Capacitor erzeugtes Android-Projekt (Gradle, Java) und dessen Web-Kopie.
       'apps/android/android/**',
+      // Erzeugter Web-Teil und Swift-Build der 3D-Mac-App.
+      'apps/mac3d/Resources/**',
+      'apps/mac3d/.build/**',
     ],
   },
   js.configs.recommended,

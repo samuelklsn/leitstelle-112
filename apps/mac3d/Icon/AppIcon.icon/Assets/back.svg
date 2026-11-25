@@ -1,0 +1,7 @@
+<!-- Würfel als Zeichen für die 3D-Ausgabe (Eigenwerk, CC BY-SA 4.0). -->
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <g fill="none" stroke="#FFFFFF" stroke-width="28" stroke-linejoin="round">
+    <path d="M512 172 L822 344 L822 688 L512 860 L202 688 L202 344 Z"/>
+    <path d="M202 344 L512 516 L822 344 M512 516 L512 860"/>
+  </g>
+</svg>
