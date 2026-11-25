@@ -13,8 +13,11 @@ function isTyping(target: EventTarget | null): boolean {
   );
 }
 
-/** Führt eine globale Aktion aus. Rückgabe: wurde etwas getan? */
-function run(action: Action): boolean {
+/**
+ * Führt eine globale Aktion aus. Rückgabe: wurde etwas getan? Auch die Schnellknöpfe im
+ * Telefon-Layout nutzen das – dieselben Regeln wie F2/F3/F4.
+ */
+export function runAction(action: Action): boolean {
   const sim = useSim.getState();
   const view = sim.host?.view;
   switch (action) {
@@ -104,7 +107,7 @@ export function useGlobalShortcuts(): void {
       // Auf dem Startbildschirm gilt nur Esc nicht; dort gibt es noch kein Spiel.
       if (sim.dialog?.kind === 'start') return;
       if (isPlainKey(binding) && isTyping(event.target)) return;
-      if (run(action)) event.preventDefault();
+      if (runAction(action)) event.preventDefault();
     };
     // Leertaste ist global „Pause" – ein fokussierter Button darf sie nicht zusätzlich auslösen.
     const swallowSpace = (event: KeyboardEvent) => {

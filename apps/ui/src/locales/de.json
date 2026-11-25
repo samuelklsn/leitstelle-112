@@ -716,5 +716,18 @@
   "sound": {
     "on": "Töne einschalten",
     "off": "Töne ausschalten"
+  },
+  "mobile": {
+    "menu": "Menü",
+    "quick": "Schnellaktionen",
+    "accept": "Notruf annehmen",
+    "dispatch": "Alarmieren",
+    "destination": "Zielklinik",
+    "pane": {
+      "map": "Karte",
+      "calls": "Notrufe",
+      "vehicles": "Fahrzeuge",
+      "lists": "Einsätze"
+    }
   }
 }

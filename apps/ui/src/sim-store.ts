@@ -1,5 +1,12 @@
 import { loadKeymap, saveKeymap, type Keymap } from './keymap';
-import { cueFor, loadSoundSettings, play, saveSoundSettings, type SoundSettings } from './sound';
+import {
+  cueFor,
+  loadSoundSettings,
+  play,
+  saveSoundSettings,
+  type Cue,
+  type SoundSettings,
+} from './sound';
 import { create } from 'zustand';
 import {
   PROTOCOL_VERSION,
@@ -36,7 +43,9 @@ export type Dialog =
   | { readonly kind: 'mods' }
   | { readonly kind: 'scenarioEditor' }
   | { readonly kind: 'stationEditor' }
-  | { readonly kind: 'keys' };
+  | { readonly kind: 'keys' }
+  /** Hauptmenü auf kleinen Bildschirmen (Android, ADR-0021). */
+  | { readonly kind: 'menu' };
 
 /** Ansicht dieses Fensters (Mehrfenster, #50): Hauptfenster oder ein ausgelagerter Bereich. */
 export type WindowView = 'main' | 'map' | 'lists' | 'vehicles';
@@ -58,6 +67,9 @@ const channel: BroadcastChannel | undefined =
   typeof BroadcastChannel === 'undefined' ? undefined : new BroadcastChannel('ls112-windows');
 
 export type BottomTab = 'incidents' | 'orders' | 'hospitals' | 'radio';
+
+/** Sichtbarer Bereich im Telefon-Layout – dort passt immer nur einer auf den Schirm. */
+export type MobilePane = 'map' | 'calls' | 'vehicles' | 'lists';
 
 interface SimStore {
   status: 'connecting' | 'connected' | 'disconnected';
@@ -103,6 +115,8 @@ interface SimStore {
   setCapturingKey: (on: boolean) => void;
   bottomTab: BottomTab;
   setBottomTab: (tab: BottomTab) => void;
+  mobilePane: MobilePane;
+  setMobilePane: (pane: MobilePane) => void;
   /** Akustische Signale (Notruf, Sprechwunsch, Großlage). */
   sound: SoundSettings;
   setSound: (sound: SoundSettings) => void;
@@ -112,6 +126,13 @@ let port: MessagePort | undefined;
 let eventKey = 0;
 let queryId = 0;
 const pending = new Map<number, (r: QueryResult) => void>();
+const cueListeners = new Set<(cue: Cue) => void>();
+
+/** Zusätzliche Signale zu den Tönen, z. B. Vibration auf Android. Liefert eine Abmeldung. */
+export function onCue(listener: (cue: Cue) => void): () => void {
+  cueListeners.add(listener);
+  return () => cueListeners.delete(listener);
+}
 
 /**
  * Zustand des Fensters, gespeist aus Nachrichten des Sim-Hosts, plus reiner UI-Zustand
@@ -190,6 +211,10 @@ export const useSim = create<SimStore>((set, get) => ({
   setBottomTab: (tab) => {
     set({ bottomTab: tab });
   },
+  mobilePane: 'map',
+  setMobilePane: (pane) => {
+    set({ mobilePane: pane });
+  },
   sound: loadSoundSettings(),
   setSound: (sound) => {
     saveSoundSettings(sound);
@@ -229,7 +254,9 @@ function handleHostMessage(message: HostMessage): void {
       }));
       // Nur das Hauptfenster gibt Töne aus – sonst klingelt jeder Bildschirm.
       const cue = WINDOW_VIEW === 'main' ? cueFor(message.events) : undefined;
-      if (cue) play(cue, useSim.getState().sound);
+      const sound = useSim.getState().sound;
+      if (cue) play(cue, sound);
+      if (cue && sound.enabled) for (const listener of cueListeners) listener(cue);
       const created = message.events.find((e) => e.type === 'incident/created');
       if (created?.type === 'incident/created' && useSim.getState().expectDispatch) {
         useSim.setState({

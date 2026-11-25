@@ -1,30 +1,23 @@
-import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SPEEDS } from '@ls112/protocol';
-import { formatClock, formatDate, formatTimeOfDay } from './format';
-import { lookup } from './lookup';
+import { formatClock, formatDate } from './format';
+import { isAndroid, useCompact } from './platform';
 import { WINDOW_VIEW, useSim, type WindowView } from './sim-store';
 import { useGlobalShortcuts } from './use-shortcuts';
-import { CallMask } from './components/CallMask';
-import { DestinationDialog, DispatchDialog } from './components/DispatchDialog';
 import { MapView } from './components/MapView';
-import {
-  EvaluationDialog,
-  HelpDialog,
-  SavesDialog,
-  StartScreen,
-  TutorialCoach,
-} from './components/Overlays';
+import { TutorialCoach } from './components/Overlays';
+import { GlobalDialogs, SideDialogs } from './components/DialogHost';
 import { BottomTabs, CallsPanel, VehiclePanel } from './components/Panels';
-import { KeysDialog, WindowsDialog } from './components/Settings';
-import { MciDialog } from './components/MciDialog';
-import { ModsDialog, ScenarioEditor, StationEditor } from './components/Editors';
+import { MobileShell } from './components/MobileShell';
+import { Notice, SoundToggle, WorldChips } from './components/StatusBits';
 import css from './App.module.css';
 
 export function App() {
   useGlobalShortcuts();
-  const dialog = useSim((s) => s.dialog);
+  const compact = useCompact();
   if (WINDOW_VIEW !== 'main') return <SecondaryWindow view={WINDOW_VIEW} />;
+  // Telefone und schmale Fenster: ein Bereich zur Zeit (ADR-0021).
+  if (compact) return <MobileShell />;
   return (
     <div className={css.shell}>
       <Header />
@@ -32,29 +25,14 @@ export function App() {
         <CallsPanel />
         <section className={css.map} aria-label="Lagekarte">
           <MapView />
-          {dialog?.kind === 'call' && <CallMask key={dialog.callId} callId={dialog.callId} />}
-          {dialog?.kind === 'dispatch' && (
-            <DispatchDialog key={dialog.incidentId} incidentId={dialog.incidentId} />
-          )}
-          {dialog?.kind === 'destination' && (
-            <DestinationDialog key={dialog.vehicleId} vehicleId={dialog.vehicleId} />
-          )}
+          <SideDialogs />
           <TutorialCoach />
         </section>
         <VehiclePanel />
         <BottomTabs />
       </main>
       <Footer />
-      {dialog?.kind === 'start' && <StartScreen />}
-      {dialog?.kind === 'evaluation' && <EvaluationDialog shift={dialog.shift} />}
-      {dialog?.kind === 'saves' && <SavesDialog />}
-      {dialog?.kind === 'help' && <HelpDialog />}
-      {dialog?.kind === 'windows' && <WindowsDialog />}
-      {dialog?.kind === 'keys' && <KeysDialog />}
-      {dialog?.kind === 'mci' && <MciDialog incidentId={dialog.incidentId} />}
-      {dialog?.kind === 'mods' && <ModsDialog />}
-      {dialog?.kind === 'scenarioEditor' && <ScenarioEditor />}
-      {dialog?.kind === 'stationEditor' && <StationEditor />}
+      <GlobalDialogs />
       <Notice />
     </div>
   );
@@ -136,15 +114,18 @@ function Header({ secondary = false }: { secondary?: boolean }) {
           >
             {t('menu.help')}
           </button>
-          <button
-            type="button"
-            onClick={() => {
-              openDialog({ kind: 'windows' });
-            }}
-            data-testid="menu-windows"
-          >
-            {t('menu.windows')}
-          </button>
+          {/* Mehrere Fenster gibt es nur unter Windows (#50). */}
+          {!isAndroid() && (
+            <button
+              type="button"
+              onClick={() => {
+                openDialog({ kind: 'windows' });
+              }}
+              data-testid="menu-windows"
+            >
+              {t('menu.windows')}
+            </button>
+          )}
           <button
             type="button"
             onClick={() => {
@@ -267,82 +248,5 @@ function Footer() {
         </span>
       </span>
     </footer>
-  );
-}
-
-function Notice() {
-  const notice = useSim((s) => s.notice);
-  useEffect(() => {
-    if (!notice) return;
-    const timer = setTimeout(() => {
-      useSim.setState({ notice: null });
-    }, 3500);
-    return () => {
-      clearTimeout(timer);
-    };
-  }, [notice]);
-  return notice ? <div className={css.notice}>{notice.text}</div> : null;
-}
-
-/** Weltlage kompakt: Wetter mit Temperatur, Feiertag und laufende Ereignisse (ADR-0016). */
-function WorldChips() {
-  const { t } = useTranslation();
-  const world = useSim((s) => s.world);
-  const view = useSim((s) => s.host?.view.world);
-  if (!world || !view) return null;
-  const L = lookup(world);
-  const weather = world.weather.find((w) => w.id === view.weatherId);
-  return (
-    <span className={css.world} data-testid="world-chips">
-      {weather && (
-        <span
-          className={`${css.chip ?? ''} ${weather.flyable ? '' : (css.chipWarn ?? '')}`}
-          title={`${weather.name}${weather.flyable ? '' : ` – ${t('world.noFlying')}`}`}
-          data-testid="weather-chip"
-        >
-          {weather.symbol} {view.temperature} °C · {weather.name}
-        </span>
-      )}
-      {view.holiday && <span className={css.chip}>{view.holiday}</span>}
-      {view.events.map((e) => {
-        const name = world.worldEvents.find((x) => x.id === e.eventId)?.name ?? e.eventId;
-        const place = e.townId
-          ? L.townName(e.townId)
-          : e.closure
-            ? L.streetName(e.closure.streetId)
-            : undefined;
-        return (
-          <span
-            key={e.key}
-            className={`${css.chip ?? ''} ${css.chipWarn ?? ''}`}
-            title={t('world.until', { time: formatTimeOfDay(e.until) })}
-          >
-            {name}
-            {place ? ` · ${place}` : ''}
-          </span>
-        );
-      })}
-    </span>
-  );
-}
-
-/** Töne an/aus – gespeichert auf diesem Rechner. */
-function SoundToggle() {
-  const { t } = useTranslation();
-  const sound = useSim((s) => s.sound);
-  const setSound = useSim((s) => s.setSound);
-  return (
-    <button
-      type="button"
-      className={css.ctrl}
-      onClick={() => {
-        setSound({ ...sound, enabled: !sound.enabled });
-      }}
-      aria-pressed={sound.enabled}
-      title={sound.enabled ? t('sound.off') : t('sound.on')}
-      data-testid="btn-sound"
-    >
-      {sound.enabled ? '🔊' : '🔇'}
-    </button>
   );
 }

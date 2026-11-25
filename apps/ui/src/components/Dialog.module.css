@@ -429,3 +429,53 @@
   gap: 6px;
   align-items: center;
 }
+
+/* Schmale Bildschirme (Telefon, ADR-0021): Dialoge füllen den Bildschirm, Spalten untereinander. */
+@media (max-width: 899px) {
+  .backdrop {
+    place-items: stretch;
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .dialog,
+  .wide {
+    width: 100%;
+    max-height: none;
+    height: 100%;
+    border-radius: 0;
+    border: none;
+  }
+
+  .side {
+    inset: 0;
+    width: auto;
+  }
+
+  .split,
+  .questions,
+  .keywords {
+    grid-template-columns: 1fr;
+  }
+
+  .kpis {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .close {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .body {
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Touch: Tastenhinweise (Alt+1, Enter, Esc) helfen ohne Tastatur nicht und kosten Platz. */
+@media (pointer: coarse) {
+  .kbdSmall,
+  .foot > .hint {
+    display: none;
+  }
+}

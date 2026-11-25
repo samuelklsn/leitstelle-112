@@ -424,3 +424,38 @@
   border-color: var(--alarm);
   background: rgb(255 80 80 / 0.14);
 }
+
+/* Touch (ADR-0021): Zeilen und Knöpfe groß genug für den Finger. */
+@media (pointer: coarse) {
+  .table td {
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
+
+  .acceptBtn,
+  .openBtn,
+  .smallBtn,
+  .tab {
+    min-height: 40px;
+  }
+
+  .vehicleRow {
+    min-height: 48px;
+  }
+}
+
+/* Schmale Bildschirme: lange Texte umbrechen, Tabellen waagerecht wischbar. */
+@media (max-width: 899px) {
+  .body {
+    overflow-x: auto;
+  }
+
+  .report {
+    max-width: 60vw;
+  }
+
+  .tabs {
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+}
