@@ -214,6 +214,7 @@ function Header({ secondary = false }: { secondary?: boolean }) {
           </button>
         ))}
       </div>
+      <SoundToggle />
       <div className={css.connection} role="status" title={t(`app.${status}`)}>
         <span
           className={`${css.dot ?? ''} ${status === 'connected' ? (css.dotOk ?? '') : status === 'disconnected' ? (css.dotBad ?? '') : ''}`}
@@ -322,5 +323,26 @@ function WorldChips() {
         );
       })}
     </span>
+  );
+}
+
+/** Töne an/aus – gespeichert auf diesem Rechner. */
+function SoundToggle() {
+  const { t } = useTranslation();
+  const sound = useSim((s) => s.sound);
+  const setSound = useSim((s) => s.setSound);
+  return (
+    <button
+      type="button"
+      className={css.ctrl}
+      onClick={() => {
+        setSound({ ...sound, enabled: !sound.enabled });
+      }}
+      aria-pressed={sound.enabled}
+      title={sound.enabled ? t('sound.off') : t('sound.on')}
+      data-testid="btn-sound"
+    >
+      {sound.enabled ? '🔊' : '🔇'}
+    </button>
   );
 }

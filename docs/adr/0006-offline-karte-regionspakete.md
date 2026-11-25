@@ -63,8 +63,9 @@ ausgeliefert (`setWorkerUrl`), die CSP erlaubt nur `self` und `blob:`.
 - Beide Formate lassen sich ineinander umwandeln (`pmtiles convert`), die Entscheidung ist also
   umkehrbar.
 - Die importierten OSM-Regionen der Pipeline (M13) sind Landkreise mit einigen Tausend
-  Straßenstücken. Das bleibt als GeoJSON aus dem Regionspaket voraussichtlich schnell genug (wie
-  bei der fiktiven Region). Kacheln werden erst bei Regionen nötig, die deutlich größer als ein
+  Straßenstücken. Das bleibt als GeoJSON aus dem Regionspaket schnell genug – gemessen
+  (`tools/region-builder/src/region.perf.ts`): 43.838 OSM-Knoten werden zu 4.382 Graphknoten,
+  Import 0,3 s, Spielstart 2,4 s, Tick unter 0,01 ms. Kacheln werden erst bei Regionen nötig, die deutlich größer als ein
   Landkreis sind; dann kommt ein PMTiles-Schritt in den Region-Builder.
 
 [pm]: https://docs.protomaps.com/pmtiles/
