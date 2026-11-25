@@ -120,6 +120,104 @@ export function StartScreen() {
 
 // ------------------------------------------------------------------------------ Auswertung
 
+/** Laufbahn und Bedarfsplanung (ADR-0018). */
+function CareerSection() {
+  const { t } = useTranslation();
+  const world = useSim((s) => s.world);
+  const career = useSim((s) => s.host?.view.career);
+  const command = useSim((s) => s.command);
+  const [station, setStation] = useState('');
+  const [kind, setKind] = useState<'rtw' | 'rtwDay' | 'ktw' | 'nef'>('rtw');
+  if (!world || !career) return null;
+  const rankId = world.career.ranks[career.rank]?.id ?? '';
+  const stations = world.stations.filter((s) => s.kind !== 'feuerwache' && !s.reserve);
+  const target = station || stations[0]?.id || '';
+  const pct =
+    career.nextXp !== undefined
+      ? Math.min(100, Math.round((100 * career.xp) / career.nextXp))
+      : 100;
+  return (
+    <div className={css.section} data-testid="career">
+      <span className={css.label}>{t('career.title')}</span>
+      <div>
+        <strong>{t(`career.rank.${rankId}`)}</strong> ·{' '}
+        {t('career.xp', { xp: career.xp, next: career.nextXp ?? career.xp })} ·{' '}
+        {t('career.shifts', { count: career.shifts })}
+      </div>
+      <div className={css.bar}>
+        <div style={{ width: `${pct.toString()}%`, background: 'var(--ok)' }} />
+      </div>
+      <span className={css.hint}>{t('career.hint')}</span>
+      <span className={css.label}>
+        {t('career.planning')} · {t('career.budget', { budget: career.budget })}
+      </span>
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+        <select
+          value={target}
+          onChange={(e) => {
+            setStation(e.target.value);
+          }}
+          data-testid="planning-station"
+        >
+          {stations.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.name}
+            </option>
+          ))}
+        </select>
+        <select
+          value={kind}
+          onChange={(e) => {
+            const v = e.target.value;
+            if (v === 'rtw' || v === 'rtwDay' || v === 'ktw' || v === 'nef') setKind(v);
+          }}
+        >
+          {(['rtw', 'rtwDay', 'ktw', 'nef'] as const).map((k) => (
+            <option key={k} value={k}>
+              {t(`career.kind.${k}`, { cost: world.career.costs[k] })}
+            </option>
+          ))}
+        </select>
+        <button
+          type="button"
+          className={css.btn}
+          disabled={!target || career.budget < world.career.costs[kind]}
+          onClick={() => {
+            command({ type: 'planning/request', stationId: target, kind });
+          }}
+          data-testid="planning-request"
+        >
+          {t('career.request')}
+        </button>
+      </div>
+      <span className={css.hint}>{t('career.planningHint')}</span>
+    </div>
+  );
+}
+
+/** Tages-Herausforderung: lokale Bestleistung je Datum (nichts wird versendet). */
+function ChallengeLine({ score }: { score: number }) {
+  const { t } = useTranslation();
+  const challenge = useSim((s) => s.host?.challenge);
+  if (!challenge) return null;
+  const key = `ls112.daily.${challenge}`;
+  let best = Number.NEGATIVE_INFINITY;
+  try {
+    best = Number(globalThis.localStorage.getItem(key) ?? '-Infinity');
+    if (score > best) globalThis.localStorage.setItem(key, score.toString());
+  } catch {
+    // Kein Speicher verfügbar – dann ohne Bestleistung.
+  }
+  return (
+    <div className={css.hint} data-testid="daily-challenge">
+      {t('career.daily', {
+        date: challenge,
+        best: Number.isFinite(best) ? Math.max(best, score) : score,
+      })}
+    </div>
+  );
+}
+
 export function EvaluationDialog({ shift }: { shift: ShiftStats | undefined }) {
   const { t } = useTranslation();
   const world = useSim((s) => s.world);
@@ -156,6 +254,7 @@ export function EvaluationDialog({ shift }: { shift: ShiftStats | undefined }) {
       }
     >
       <div className={ov.rating}>{t(`evaluation.rating.${rating}`)}</div>
+      <ChallengeLine score={s.score} />
       <div className={css.kpis}>
         <div className={css.kpi}>
           <span>{t('evaluation.score')}</span>
@@ -214,6 +313,7 @@ export function EvaluationDialog({ shift }: { shift: ShiftStats | undefined }) {
           />
         </div>
       </div>
+      <CareerSection />
       <div className={ov.columns}>
         <div className={css.section}>
           <span className={css.label}>

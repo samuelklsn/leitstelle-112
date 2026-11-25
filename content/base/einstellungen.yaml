@@ -35,6 +35,27 @@ settings:
     destinationTimeoutSeconds: 180
     callbackSeconds: [60, 120]
   caller: {wrongHouseNumber: 0.06, missingTown: 0.12, misjudge: 0.2}
+  # Langzeitspiel (ADR-0018): Laufbahn mit Erfahrungspunkten aus den Schichtpunkten. Höhere Stufen
+  # übernehmen einen größeren Bereich (mehr Notrufe). Budget für die Bedarfsplanung.
+  career:
+    ranks:
+      - {id: disponent, xp: 0, area: 1}
+      - {id: erfahren, xp: 2500, area: 1.1}
+      - {id: schichtfuehrer, xp: 7000, area: 1.2}
+      - {id: lagedienst, xp: 15000, area: 1.35}
+    budgetPerPoint: 0.25
+    costs: {rtw: 600, rtwDay: 350, ktw: 200, nef: 500}
+    justifyUtilization: 0.35
+  # Wiederkehrende Personen (ADR-0018): Vielanrufer, Stammpatienten, Gefahrenadressen.
+  persons:
+    share: 0.06
+    frequent: 3
+    regular: 6
+    danger: 3
+    regularDiagnoses: [base:dyspnea, base:hypoglycemia, base:seizure, base:fall]
+    frequentDiagnoses: [base:psych, base:no-patient]
+    dangerDiagnoses: [base:intoxication, base:psych]
+    policeWaitMinutes: [5, 10]
   # Großlagen (ADR-0017): im Mittel etwa alle zwei bis drei Wochen eine – sonst wären sie nicht selten.
   mci:
     perDay: 0.05

@@ -7,6 +7,8 @@
 | Einsatz-Regie       | Schwankung des Aufkommens in Phasen innerhalb fester Grenzen (ADR-0014)                              | `director`            |
 | Disponent/in        | Fachkraft in der Leitstelle, die Notrufe annimmt und Einsätze führt                                  | –                     |
 | Einsatz             | Ein Ereignis, zu dem Kräfte alarmiert werden                                                         | `incident`            |
+| Eigensicherung      | Schutz der Einsatzkräfte vor Gefahren, z. B. Polizei bei Gewalt                                      | `danger`              |
+| Einsatzhistorie     | Frühere Einsätze an einer Adresse, wie sie ein Einsatzleitsystem zeigt                               | `addressHistory`      |
 | Erstbefund          | Erste Rückmeldung der Einsatzkräfte vor Ort                                                          | `assessed`, `finding` |
 | FMS                 | Funkmeldesystem: Statusmeldungen 0–9 der Fahrzeuge                                                   | `FmsStatus`           |
 | Hilfsfrist          | Zeit vom Notrufeingang bis zum Eintreffen des ersten Rettungsmittels                                 | `hilfsfrist`          |

@@ -106,7 +106,7 @@ nichts automatisch versendet – das Paket kann einem
 
 ## Stand und Roadmap
 
-**v0.7.0:** Massenanfall von Verletzten und Großlagen. **v0.6.0:** Mehrere Fenster und Bildschirme, eigene Tastenbelegung, Diagnosepaket. **v0.5.0:** Wetter, Feiertage, Ereignisse, Rettungshubschrauber. **v0.4.0:** Krankentransporte, Klinikabmeldungen, Pausen. **v0.3.0:** Feuerwehr mit Brand- und Hilfeleistungslagen, die sich ausbreiten. **v0.2.0:** strukturierte Notrufabfrage mit Fehl-, Scherz- und Doppelanrufen. **Seit v0.1.0:** Rettungsdienst im fiktiven Landkreis Brakenfeld. Dazu gehören
+**v0.8.0:** Laufbahn, Bedarfsplanung, wiederkehrende Personen. **v0.7.0:** Massenanfall von Verletzten und Großlagen. **v0.6.0:** Mehrere Fenster und Bildschirme, eigene Tastenbelegung, Diagnosepaket. **v0.5.0:** Wetter, Feiertage, Ereignisse, Rettungshubschrauber. **v0.4.0:** Krankentransporte, Klinikabmeldungen, Pausen. **v0.3.0:** Feuerwehr mit Brand- und Hilfeleistungslagen, die sich ausbreiten. **v0.2.0:** strukturierte Notrufabfrage mit Fehl-, Scherz- und Doppelanrufen. **Seit v0.1.0:** Rettungsdienst im fiktiven Landkreis Brakenfeld. Dazu gehören
 7 Orte, 3 Rettungswachen, 2 Notarztstandorte, 2 Krankenhäuser, 4 Stichworte und
 14 Krankheitsbilder, außerdem Tutorial, Speichern und Laden sowie die Schichtauswertung.
 
@@ -122,7 +122,8 @@ nichts automatisch versendet – das Paket kann einem
 | M8 Welt-Dynamik      | Wetter, Feiertage, Sommerzeit, Ereignisse, Sperrungen, Regie, RTH           | ✅                                                                 |
 | M9 Mehrfenster       | Fenster je Ansicht, Layout-Profile, Tastenbelegung, Diagnosepaket           | ✅                                                                 |
 | M10 MANV             | Großlagen, Sichtung, LNA/OrgL/SEG, Bereitstellungsraum, Patientenverteilung | ✅                                                                 |
-| M11 – M12            | Langzeitspiel, Editoren                                                     | [geplant](https://github.com/samuelklsn/leitstelle-112/milestones) |
+| M11 Langzeitspiel    | Laufbahn, Bedarfsplanung, Tages-Herausforderung, Personen, Eigensicherung   | ✅                                                                 |
+| M12 – M13            | Editoren und Modding (v1.0.0), echte Regionen                               | [geplant](https://github.com/samuelklsn/leitstelle-112/milestones) |
 
 ## Technik
 

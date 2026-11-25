@@ -2,6 +2,8 @@ import { pickCumulative, pickWeighted, rangeInt, type Ctx } from '../context';
 import { MS_PER_HOUR, MS_PER_MINUTE, TICK_MS, toCalendar } from '../time';
 import { callFactor, eventTown, mixWeights } from './world';
 import { createMciTruth, mciDueNow, pickMciScenario } from './mci';
+import { areaFactor } from './career';
+import { personOf, personTruth, pickPerson } from './persons';
 import {
   QUESTIONS,
   type CallKind,
@@ -17,7 +19,10 @@ import {
 /** Notrufe je Stunde im Tagesmittel aus Einwohnerzahl, Rate und Schwierigkeitsgrad. */
 export function meanCallsPerHour(ctx: Ctx): number {
   const s = ctx.content.bundle.settings.calls;
-  return (s.ratePer100k * ctx.content.population * ctx.config.callRateFactor) / 100_000;
+  // Laufbahn: Höhere Stufen übernehmen einen größeren Bereich (ADR-0018).
+  return (
+    (s.ratePer100k * ctx.content.population * ctx.config.callRateFactor * areaFactor(ctx)) / 100_000
+  );
 }
 
 /** Doppelmeldungen beziehen sich auf Einsätze, die höchstens so alt sind. */
@@ -54,6 +59,18 @@ export function generateCalls(ctx: Ctx): void {
   }
   if (ctx.config.drill === true && ctx.state.shift.callsReceived === 0) return;
   if (!ctx.rng.calls.chance(p)) return;
+  // Bekannte Person: Vielanrufer, Stammpatient oder Gefahrenadresse (ADR-0018).
+  const person = tutorialFirst ? undefined : pickPerson(ctx);
+  if (person) {
+    const lonely = person.kind === 'frequent' && ctx.rng.calls.chance(0.5);
+    const base = {
+      ...patientFrom(ctx, person.diagnosisId),
+      addressId: person.addressId,
+      patient: true,
+    };
+    createCall(ctx, lonely ? 'info' : 'emergency', personTruth(person, base));
+    return;
+  }
   createCall(ctx, tutorialFirst ? 'emergency' : pickKind(ctx));
 }
 
@@ -91,6 +108,13 @@ export function createCall(ctx: Ctx, kind: CallKind = 'emergency', given?: Truth
     }
   } else if (kind === 'emergency') {
     truth = given ?? createTruth(ctx);
+  } else if (given) {
+    // Vielanrufer ohne Notfall: bekannte Adresse, aber niemand braucht Hilfe.
+    truth = {
+      ...createNonEmergencyTruth(ctx),
+      addressId: given.addressId,
+      ...(given.personId !== undefined ? { personId: given.personId } : {}),
+    };
   } else {
     truth = createNonEmergencyTruth(ctx);
   }
@@ -274,8 +298,10 @@ function createReport(ctx: Ctx, truth: Truth, kind: CallKind, source: CallSource
       : address.townId;
   const misjudge = official ? 0 : rng.chance(settings.misjudge) ? (rng.chance(0.5) ? 1 : -1) : 0;
   const digits = () => rng.nextInt(0, 9).toString();
-  const callback =
-    kind === 'prank' || kind === 'misdial'
+  const person = personOf(ctx, truth);
+  const callback = person
+    ? person.callback
+    : kind === 'prank' || kind === 'misdial'
       ? ''
       : rng.chance(0.55)
         ? `01${rng.pick(['51', '52', '57', '60', '62', '76'])}${digits()} ${Array.from({ length: 7 }, digits).join('')}`
@@ -284,7 +310,11 @@ function createReport(ctx: Ctx, truth: Truth, kind: CallKind, source: CallSource
 
   let reportKey = pickWeighted(rng, reports).key;
   if (kind === 'misdial') reportKey = 'silence';
-  if (kind === 'info') reportKey = rng.pick(['info_pharmacy', 'info_doctor', 'info_transport']);
+  if (kind === 'info')
+    reportKey =
+      person?.kind === 'frequent'
+        ? 'info_lonely'
+        : rng.pick(['info_pharmacy', 'info_doctor', 'info_transport']);
   if (kind === 'prank') reportKey = rng.pick(PRANK_REPORTS);
   if (kind === 'duplicate') reportKey = outdoor ? 'witness' : reportKey;
 
@@ -331,6 +361,7 @@ function createReport(ctx: Ctx, truth: Truth, kind: CallKind, source: CallSource
     misjudge,
     conscious,
     breathing,
+    ...(truth.danger && rng.chance(0.6) ? { aggressive: true } : {}),
   };
 }
 
@@ -452,4 +483,5 @@ export const ERROR_PENALTY = {
   breakMissed: 10,
   unsuitableTransport: 15,
   mciOverload: 15,
+  policeNotRequested: 10,
 } as const;

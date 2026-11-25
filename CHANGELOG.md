@@ -6,6 +6,25 @@ Versionierung nach [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+## [0.8.0] – 2026-11-24 – Langzeitspiel (M11)
+
+### Hinzugefügt
+
+- **Laufbahn (#53):** Erfahrung aus jeder Schicht, Beförderung bis zur Lagedienstführung. Jede
+  Stufe übernimmt einen größeren Bereich mit mehr Aufkommen.
+- **Bedarfsplanung (#53):** Budget aus guten Schichten; zusätzliche RTW, Tages-RTW, KTW oder NEF
+  beantragen. Bewilligt wird nur, was die Statistik der letzten Schicht begründet.
+- **Tages-Herausforderung:** Seed aus dem Datum, für alle gleich, Bestleistung lokal.
+- **Wiederkehrende Personen und Adressen (#54):** Vielanrufer, Stammpatienten und
+  Gefahrenadressen; Einsatzhistorie und bekannte Rufnummern in der Notrufmaske.
+- **Eigensicherung:** Kräfte warten an Gefahrenadressen auf die Polizei; Knopf „Polizei“ in der
+  Einsatzliste, Fehler bei bekannter Gefahr ohne Polizei.
+- ADR-0018 und Fachdoku `docs/domain/langzeit.md`.
+
+### Geändert
+
+- Spielstände haben die Snapshot-Version 6. Spielstände aus 0.7.0 lassen sich nicht laden.
+
 ## [0.7.0] – 2026-11-24 – MANV und Großlagen (M10)
 
 ### Hinzugefügt
@@ -243,7 +262,8 @@ eigentlichen Sinn – das kommt ab M2/M3.
 - Nach einem Absturz startet die Simulation neu beim Schichtbeginn; Autosave folgt in M4.
 - Der Installer wird nur in der CI gebaut (Richtlinie des Entwicklungsrechners, PLAN Kapitel 9).
 
-[Unreleased]: https://github.com/samuelklsn/leitstelle-112/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/samuelklsn/leitstelle-112/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/samuelklsn/leitstelle-112/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/samuelklsn/leitstelle-112/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/samuelklsn/leitstelle-112/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/samuelklsn/leitstelle-112/compare/v0.4.0...v0.5.0

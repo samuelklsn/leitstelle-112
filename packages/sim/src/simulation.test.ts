@@ -261,7 +261,7 @@ describe('Simulation – Determinismus', () => {
     expect(() => Simulation.restore({ ...snap, contentHash: 'x' }, baseContent())).toThrow(
       RangeError,
     );
-    expect(() => Simulation.restore({ ...snap, version: 1 as 5 }, baseContent())).toThrow(
+    expect(() => Simulation.restore({ ...snap, version: 1 as 6 }, baseContent())).toThrow(
       RangeError,
     );
   });
@@ -274,9 +274,9 @@ describe('Simulation – Determinismus', () => {
     expect({ tick: sim.tick, hash: sim.hash(), calls: sh.callsReceived, incidents: sh.incidents })
       .toMatchInlineSnapshot(`
         {
-          "calls": 8,
-          "hash": "3d38fb1a85ec2408",
-          "incidents": 7,
+          "calls": 4,
+          "hash": "b2098fe0d67bc0eb",
+          "incidents": 3,
           "tick": 7200,
         }
       `);

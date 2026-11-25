@@ -23,6 +23,7 @@ import {
   patientOf,
 } from './mci';
 import { closeIncident } from './outcome';
+import { policeDelay } from './persons';
 import {
   accountDriving,
   airMs,
@@ -154,6 +155,12 @@ export function createIncident(
     locating: false,
     errors: [],
   };
+  // Gefahrenadresse bekannt (Historie) oder vom Anrufer erwähnt: Eigensicherung nötig.
+  if (
+    ctx.state.addressHistory[addressId.toString()]?.flags.includes('danger') ||
+    call.report.aggressive
+  )
+    incident.knownDanger = true;
   const keyword = ctx.content.keywords.get(keywordId);
   if (keyword?.aao.some((a) => ctx.content.doctorTypes.has(a.type))) {
     incident.doctorNeededSince = ctx.state.time;
@@ -477,7 +484,10 @@ function arriveAtScene(ctx: Ctx, v: VehicleState): void {
   }
   if (!incident.assessed && !hasAssessmentPending(ctx, incident, v)) {
     const seq = v.taskSeq;
-    const delay = rangeInt(ctx.rng.crews, ASSESSMENT_SECONDS) * 1000;
+    // Gefahr für Einsatzkräfte: ohne Polizei warten sie, bevor sie zum Patienten gehen.
+    const wait = policeDelay(ctx, incident, v);
+    if (wait > 0 && incident.knownDanger) addIncidentError(ctx, incident, 'policeNotRequested');
+    const delay = rangeInt(ctx.rng.crews, ASSESSMENT_SECONDS) * 1000 + wait;
     ctx.schedule(ctx.state.time + delay, { kind: 'vehicle/assessed', vehicleId: v.id, seq });
   }
   if (incident.truth.mci) {

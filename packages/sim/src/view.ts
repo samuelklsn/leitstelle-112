@@ -49,6 +49,18 @@ export interface ReportView {
   readonly breathing?: CallerReport['breathing'];
   /** Leer bei unterdrückter Nummer. */
   readonly callback?: string;
+  /** Der Anrufer erwähnt Aggression oder Waffen (nach „Was ist passiert?“). */
+  readonly aggressive?: boolean;
+}
+
+/** Was die Leitstelle über eine Adresse bzw. Rufnummer weiß (ADR-0018). */
+export interface KnownInfo {
+  /** Einsätze an der genannten Adresse in diesem Spiel. */
+  readonly addressCount: number;
+  readonly addressFlags: readonly ('danger' | 'frequent')[];
+  readonly lastKeywords: readonly string[];
+  /** Rufnummer gehört einer bekannten Person. */
+  readonly caller?: { readonly kind: 'frequent' | 'regular' | 'danger'; readonly calls: number };
 }
 
 export interface CallView {
@@ -62,6 +74,8 @@ export interface CallView {
   readonly asked: readonly Question[];
   /** Erst nach Annahme bekannt. */
   readonly report?: ReportView;
+  /** Historie zur genannten Adresse und zur Rufnummer (erst nach den passenden Fragen). */
+  readonly known?: KnownInfo;
 }
 
 export interface FindingView {
@@ -126,6 +140,11 @@ export interface IncidentView {
   /** Laut Lage fehlen noch Kräfte (Nachforderung). */
   readonly unitsMissing: boolean;
   readonly locating: boolean;
+  /** Gefahrenadresse bekannt bzw. vom Anrufer erwähnt; Polizei verständigt? */
+  readonly knownDanger: boolean;
+  readonly policeRequested: boolean;
+  /** Einsätze an dieser Adresse in diesem Spiel (vor diesem). */
+  readonly history?: { readonly count: number; readonly flags: readonly string[] };
   readonly finding?: FindingView;
   readonly firstArrivalAt?: SimTime;
   readonly hospitalId?: string;
@@ -201,6 +220,14 @@ export interface GameView {
   readonly world: WorldView;
   readonly shift: ShiftStats;
   readonly lastShift: ShiftStats | null;
+  /** Laufbahn und Budget der Bedarfsplanung (ADR-0018). */
+  readonly career: {
+    readonly rank: number;
+    readonly xp: number;
+    readonly nextXp?: number;
+    readonly budget: number;
+    readonly shifts: number;
+  };
 }
 
 export function buildView(sim: Simulation): GameView {
@@ -219,7 +246,10 @@ export function buildView(sim: Simulation): GameView {
       answered: [...c.answered],
       asked: [...c.asked],
       ...(c.status === 'talking'
-        ? { report: reportView(c.report, c.answered, c.kind === 'misdial', c.kind === 'prank') }
+        ? {
+            report: reportView(c.report, c.answered, c.kind === 'misdial', c.kind === 'prank'),
+            ...knownInfo(sim, c),
+          }
         : {}),
     })),
     incidents: s.incidents.map((i) => ({
@@ -274,6 +304,16 @@ export function buildView(sim: Simulation): GameView {
       doctorRequested: i.doctorRequested,
       unitsMissing: i.assessed && i.status !== 'closed' && sim.missingNeeds(i.id).length > 0,
       locating: i.locating,
+      knownDanger: i.knownDanger === true,
+      policeRequested: i.policeRequested === true,
+      ...(s.addressHistory[i.addressId.toString()]
+        ? {
+            history: {
+              count: s.addressHistory[i.addressId.toString()]?.count ?? 0,
+              flags: [...(s.addressHistory[i.addressId.toString()]?.flags ?? [])],
+            },
+          }
+        : {}),
       errors: [...i.errors],
       ...(i.assessed
         ? {
@@ -318,6 +358,15 @@ export function buildView(sim: Simulation): GameView {
     world: worldView(sim),
     shift: s.shift,
     lastShift: s.shiftHistory.at(-1) ?? null,
+    career: {
+      rank: s.career.rank,
+      xp: s.career.xp,
+      ...(sim.content.bundle.settings.career.ranks[s.career.rank + 1]
+        ? { nextXp: sim.content.bundle.settings.career.ranks[s.career.rank + 1]?.xp ?? 0 }
+        : {}),
+      budget: s.career.budget,
+      shifts: s.career.shifts,
+    },
   };
 }
 
@@ -367,6 +416,46 @@ function reportView(
     ...(has('conscious') && !silent ? { conscious: r.conscious } : {}),
     ...(has('breathing') && !silent ? { breathing: r.breathing } : {}),
     ...(has('callback') ? { callback: r.callback } : {}),
+    ...(has('what') && r.aggressive ? { aggressive: true } : {}),
+  };
+}
+
+/**
+ * Historie zur genannten Adresse (nach „Wo?“) und zur Rufnummer (nach „Rückrufnummer?“) – so wie
+ * ein Einsatzleitsystem bekannte Adressen und Anrufer anzeigt.
+ */
+function knownInfo(sim: Simulation, c: Simulation['raw']['calls'][number]): { known?: KnownInfo } {
+  const s = sim.raw;
+  const r = c.report;
+  let addressCount = 0;
+  let addressFlags: ('danger' | 'frequent')[] = [];
+  let lastKeywords: string[] = [];
+  if (c.answered.includes('where') && c.kind !== 'misdial') {
+    const a = sim.world.addresses.find(
+      (x) =>
+        x.streetId === r.streetId &&
+        x.number === r.number &&
+        (r.townId === null || x.townId === r.townId),
+    );
+    const h = a ? s.addressHistory[a.id.toString()] : undefined;
+    if (h) {
+      addressCount = h.count;
+      addressFlags = [...h.flags];
+      lastKeywords = [...h.keywords];
+    }
+  }
+  const person =
+    c.answered.includes('callback') && r.callback !== ''
+      ? s.persons.find((p) => p.callback === r.callback && p.calls > 1)
+      : undefined;
+  if (addressCount === 0 && !person) return {};
+  return {
+    known: {
+      addressCount,
+      addressFlags,
+      lastKeywords,
+      ...(person ? { caller: { kind: person.kind, calls: person.calls - 1 } } : {}),
+    },
   };
 }
 
@@ -463,6 +552,7 @@ export interface WorldInfo {
   readonly worldEvents: readonly { id: string; name: string }[];
   readonly mciScenarios: readonly { id: string; name: string }[];
   readonly hilfsfrist: ContentBundle['settings']['hilfsfrist'];
+  readonly career: ContentBundle['settings']['career'];
   readonly shift: ContentBundle['settings']['shift'];
 }
 
@@ -486,7 +576,23 @@ export function buildWorldInfo(sim: Simulation): WorldInfo {
       y: Math.round(a.y),
     })),
     vehicleTypes: c.vehicleTypes,
-    stations: c.stations,
+    // Bewilligte Fahrzeuge der Bedarfsplanung gehören zu ihrer Wache (ADR-0018).
+    stations: c.stations.map((st) => ({
+      ...st,
+      vehicles: [
+        ...st.vehicles,
+        ...sim.raw.career.extraVehicles
+          .filter((e) => e.stationId === st.id)
+          .map((e) => ({
+            id: e.id,
+            callsign: e.callsign,
+            type: e.typeId,
+            ...(e.service
+              ? { service: { ...e.service, weekdaysOnly: false, daylight: false } }
+              : {}),
+          })),
+      ],
+    })),
     hospitals: c.hospitals,
     keywords: c.keywords,
     diagnoses: c.diagnoses.map((d) => ({ id: d.id, name: d.name })),
@@ -501,6 +607,7 @@ export function buildWorldInfo(sim: Simulation): WorldInfo {
     worldEvents: c.worldEvents.map((e) => ({ id: e.id, name: e.name })),
     mciScenarios: c.mciScenarios.map((s) => ({ id: s.id, name: s.name })),
     hilfsfrist: c.settings.hilfsfrist,
+    career: c.settings.career,
     shift: c.settings.shift,
   };
 }

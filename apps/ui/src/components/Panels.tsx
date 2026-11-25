@@ -100,6 +100,7 @@ export function needsUnits(i: IncidentView, L: Lookup): boolean {
 
 export function IncidentList() {
   const { t } = useTranslation();
+  const command = useSim((s) => s.command);
   const world = useSim((s) => s.world);
   const incidents = useSim((s) => s.host?.view.incidents ?? EMPTY);
   const vehicles = useSim((s) => s.host?.view.vehicles ?? EMPTY);
@@ -157,6 +158,30 @@ export function IncidentList() {
                     >
                       {t('mci.open')}
                     </button>
+                  </span>
+                )}
+                {i.knownDanger && !i.policeRequested && i.status !== 'closed' && (
+                  <span className={css.flagAlarm}>
+                    ⚠ {t('incidents.danger')}{' '}
+                    <button
+                      type="button"
+                      className={css.smallBtn}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        command({ type: 'incident/police', incidentId: i.id });
+                      }}
+                      data-testid="request-police"
+                    >
+                      {t('incidents.police')}
+                    </button>
+                  </span>
+                )}
+                {i.policeRequested && i.status !== 'closed' && (
+                  <span className={css.flag}>{t('incidents.policeRequested')}</span>
+                )}
+                {i.history && i.history.count > 0 && (
+                  <span className={css.flag} title={t('incidents.historyHint')}>
+                    {t('incidents.history', { count: i.history.count })}
                   </span>
                 )}
                 {i.locating && <span className={css.flagAlarm}>{t('incidents.locating')}</span>}
@@ -454,6 +479,15 @@ function describe(e: LogEntry, L: Lookup, t: TFunction): string {
       return t('events.call/answer', { id: e.callId, question: t(`question.${e.question}`) });
     case 'call/linked':
       return t('events.call/linked', { id: e.callId, incident: e.incidentId });
+    case 'career/promoted': {
+      const id = L.world.career.ranks[e.rank]?.id ?? '';
+      return t('events.career/promoted', { rank: t(`career.rank.${id}`) });
+    }
+    case 'planning/approved':
+      return t('events.planning/approved', {
+        vehicle: `${L.vehicle(e.vehicleId)?.type ?? ''} ${L.vehicle(e.vehicleId)?.short ?? e.vehicleId}`,
+        station: L.world.stations.find((s) => s.id === e.stationId)?.name ?? e.stationId,
+      });
     case 'world/weather': {
       const w = L.world.weather.find((x) => x.id === e.weatherId);
       return t('events.world/weather', { weather: `${w?.symbol ?? ''} ${w?.name ?? ''}` });

@@ -17,4 +17,5 @@ die Issue-Vorlage „Fachliches Feedback“.
 | [logistik.md](logistik.md)                   | Krankentransport, Kliniken, Dienst, Pausen, Status 6 |
 | [welt.md](welt.md)                           | Wetter, Feiertage, Ereignisse, Regie, Luftrettung    |
 | [manv.md](manv.md)                           | MANV und Großlagen: Sichtung, Verteilung, Reserven   |
+| [langzeit.md](langzeit.md)                   | Laufbahn, Bedarfsplanung, Personen, Eigensicherung   |
 | [region-brakenfeld.md](region-brakenfeld.md) | Der fiktive Landkreis und seine Vorhaltung           |

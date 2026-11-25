@@ -49,7 +49,7 @@ export const PROTOCOL_VERSION = 2;
 export type GameMode = 'free' | 'tutorial';
 
 /** Spielbeginn: heute oder eine Jahreszeit bzw. die Silvesternacht (ADR-0016). */
-export const START_PRESETS = ['today', 'winter', 'summer', 'newYear', 'drill'] as const;
+export const START_PRESETS = ['today', 'winter', 'summer', 'newYear', 'drill', 'daily'] as const;
 export type StartPreset = (typeof START_PRESETS)[number];
 
 export type Query =
@@ -91,6 +91,8 @@ export interface HostState {
   readonly speed: Speed;
   readonly mode: GameMode;
   readonly gameId: number;
+  /** Tages-Herausforderung: Datum (JJJJ-MM-TT), sonst nicht gesetzt. */
+  readonly challenge?: string;
 }
 
 export type HostMessage =
@@ -216,6 +218,13 @@ export function parseSimCommand(c: unknown): SimCommand | undefined {
     case 'vehicle/break':
     case 'vehicle/resume':
       return isId(c.vehicleId) ? { type: c.type, vehicleId: c.vehicleId } : undefined;
+    case 'incident/police':
+      return isId(c.incidentId) ? { type: 'incident/police', incidentId: c.incidentId } : undefined;
+    case 'planning/request':
+      return isId(c.stationId) &&
+        (c.kind === 'rtw' || c.kind === 'rtwDay' || c.kind === 'ktw' || c.kind === 'nef')
+        ? { type: 'planning/request', stationId: c.stationId, kind: c.kind }
+        : undefined;
     case 'mci/autoDistribute':
     case 'mci/staging':
       return isId(c.incidentId) && typeof c.on === 'boolean'

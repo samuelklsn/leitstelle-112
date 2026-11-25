@@ -40,6 +40,8 @@ export interface HostOptions {
   readonly store?: SaveStore;
   /** Neuer Seed je Spiel (Host darf echten Zufall nutzen, der Kern nicht). */
   readonly newSeed: () => number;
+  /** Tages-Herausforderung: Seed und Datum aus dem heutigen Tag – überall gleich, offline. */
+  readonly dailySeed?: () => { seed: number; date: string };
   /** Spielbeginn für ein neues Spiel (Schichtbeginn heute). */
   readonly startTime: (preset?: StartPreset) => number;
   readonly callRateFactor?: number;
@@ -61,7 +63,9 @@ export class SimHost {
   mode: GameMode = 'free';
   gameId = 1;
   private readonly clients = new Set<ClientPort>();
-  private readonly world: WorldInfo;
+  private world: WorldInfo;
+  /** Tages-Herausforderung: Datum, aus dem der Seed stammt (ADR-0018). */
+  challenge: string | undefined;
   private sinceBroadcastMs = Number.POSITIVE_INFINITY;
   private dirty = true;
   private lastAutosaveAt: number;
@@ -89,6 +93,9 @@ export class SimHost {
 
   newGame(mode: GameMode, start?: StartPreset): void {
     this.sim = this.createSim(mode, start);
+    this.challenge =
+      mode === 'free' && start === 'daily' ? this.options.dailySeed?.().date : undefined;
+    this.refreshWorld();
     this.mode = mode;
     this.gameId++;
     this.lastAutosaveAt = this.sim.time;
@@ -109,6 +116,8 @@ export class SimHost {
       return false;
     }
     this.mode = stored.mode;
+    this.challenge = undefined;
+    this.refreshWorld();
     this.gameId++;
     this.lastAutosaveAt = this.sim.time;
     this.clock.setPaused(true);
@@ -159,6 +168,12 @@ export class SimHost {
     }
   }
 
+  /** Weltdaten neu senden – z. B. nachdem die Bedarfsplanung ein Fahrzeug bewilligt hat. */
+  private refreshWorld(): void {
+    this.world = buildWorldInfo(this.sim);
+    this.broadcast({ type: 'world', world: this.world });
+  }
+
   state(): HostState {
     return {
       view: buildView(this.sim),
@@ -166,6 +181,7 @@ export class SimHost {
       speed: this.clock.speed,
       mode: this.mode,
       gameId: this.gameId,
+      ...(this.challenge !== undefined ? { challenge: this.challenge } : {}),
     };
   }
 
@@ -183,7 +199,10 @@ export class SimHost {
   private createSim(mode: GameMode, start?: StartPreset): Simulation {
     return Simulation.create(
       defaultConfig({
-        seed: this.options.newSeed() >>> 0,
+        seed:
+          (mode === 'free' && start === 'daily' && this.options.dailySeed
+            ? this.options.dailySeed().seed
+            : this.options.newSeed()) >>> 0,
         // Das Training beginnt immer heute; sonst nach Wahl im Startbildschirm.
         startTime: this.options.startTime(mode === 'tutorial' ? 'today' : start),
         callRateFactor: this.options.callRateFactor ?? 1,
@@ -199,6 +218,7 @@ export class SimHost {
     if (events.length === 0) return;
     this.broadcast({ type: 'events', events });
     for (const e of events) {
+      if (e.type === 'planning/approved') this.refreshWorld();
       if (e.type === 'shift/ended') {
         const shift = this.sim.raw.shiftHistory.at(-1);
         if (shift) this.broadcast({ type: 'shiftEnded', shift });

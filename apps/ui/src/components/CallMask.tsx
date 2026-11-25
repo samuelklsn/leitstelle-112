@@ -226,6 +226,30 @@ export function CallMask({ callId }: { callId: string }) {
                 {chosen && <div className={css.ok}>✓ {L.addressLabel(chosen.id)}</div>}
               </div>
 
+              {(call.known || r?.aggressive) && (
+                <div className={css.section} data-testid="known-info">
+                  <span className={css.label}>{t('known.title')}</span>
+                  {r?.aggressive && <div className={css.bad}>⚠ {t('known.aggressive')}</div>}
+                  {call.known && call.known.addressCount > 0 && (
+                    <div>
+                      {t('known.address', { count: call.known.addressCount })}
+                      {call.known.lastKeywords.length > 0 &&
+                        ` (${call.known.lastKeywords.map((k) => L.keywordCode(k)).join(', ')})`}
+                    </div>
+                  )}
+                  {call.known?.addressFlags.includes('danger') && (
+                    <div className={css.bad}>⚠ {t('known.danger')}</div>
+                  )}
+                  {call.known?.caller && (
+                    <div className={css.warn}>
+                      {t(`known.caller.${call.known.caller.kind}`, {
+                        count: call.known.caller.calls,
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+
               {nearby.length > 0 && (
                 <div className={css.section} data-testid="nearby-incidents">
                   <span className={css.label}>{t('mask.nearby')}</span>
