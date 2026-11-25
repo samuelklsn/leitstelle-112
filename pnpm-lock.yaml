@@ -135,6 +135,19 @@ importers:
         specifier: workspace:*
         version: link:../routing
 
+  tools/region-builder:
+    dependencies:
+      '@ls112/content':
+        specifier: workspace:*
+        version: link:../../packages/content
+      '@ls112/routing':
+        specifier: workspace:*
+        version: link:../../packages/routing
+    devDependencies:
+      '@ls112/sim':
+        specifier: workspace:*
+        version: link:../../packages/sim
+
 packages:
 
   '@babel/code-frame@7.29.7':

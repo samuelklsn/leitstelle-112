@@ -3,6 +3,7 @@ import { RoadClass, buildGraph } from '@ls112/routing';
 import { Rng } from '../rng';
 import { crossesPolyline, degToRad, detCos, detSin, dist, normalize, type Vec } from './geometry';
 import { STREET_NAMES } from './street-names';
+import { buildPrebuiltWorld } from './prebuilt';
 import type { World, WorldAddress, WorldSegment, WorldStreet, WorldTown } from './types';
 
 const ROAD_CLASS_BY_NAME = {
@@ -39,6 +40,8 @@ interface TownGrid {
  * auf jedem Rechner. Das Ergebnis enthält den Routinggraphen, Straßen und Adressen.
  */
 export function generateWorld(region: RegionConfig): World {
+  // Echte Region: Straßennetz und Adressen fertig aus dem Regionspaket (ADR-0020).
+  if (region.prebuilt) return buildPrebuiltWorld(region, region.prebuilt);
   const b: Builder = { nodes: [], nodeTown: [], segments: [], streets: [] };
   const river: Vec[] = region.river?.points.map((p) => [p[0], p[1]] as Vec) ?? [];
 

@@ -344,7 +344,7 @@ Krankenhauses nie negativ; nach Pause ändert sich der Zustand nicht.
 
 ## 6. Meilensteine
 
-**Stand 2026-11-24:** M0–M12 abgeschlossen (v1.0.0: erste stabile Version mit Mods und Editoren). Nächster Meilenstein: M13 (echte Regionen).
+**Stand 2026-11-24:** M0–M13 abgeschlossen (v1.1.0: echte Regionen aus OpenStreetMap). Alle geplanten Meilensteine sind umgesetzt; weitere Arbeit folgt aus Rückmeldungen.
 
 Jeder Meilenstein endet lauffähig, getestet, committet, mit CHANGELOG-Eintrag und
 Zusammenfassung an den Product Owner.

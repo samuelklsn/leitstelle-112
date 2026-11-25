@@ -60,3 +60,12 @@ den installierten Paketen ausgelesen (Stand v0.1.0).
 | Logo „112", Kartenstil, Marker (CSS) | Eigenwerk                                                              | CC BY-SA 4.0 |
 | Schriften                            | Windows-Systemschriften (Segoe UI, Cascadia Mono) – nicht mitgeliefert | –            |
 | Screenshots in `docs/images`         | Eigenwerk (erzeugt aus dem Spiel)                                      | CC BY-SA 4.0 |
+
+## Daten aus OpenStreetMap (nur Region-Builder)
+
+Das Spiel bringt keine OpenStreetMap-Daten mit. Wer mit dem Region-Builder eine eigene Region aus
+einem OSM-Auszug erzeugt, verarbeitet Daten unter der
+[Open Database License 1.0](https://opendatacommons.org/licenses/odbl/) – © OpenStreetMap-Mitwirkende.
+Das erzeugte Regionspaket trägt die Namensnennung; die Karte zeigt sie an. Für die Umwandlung von
+PBF nach XML wird das externe Werkzeug [Osmium](https://osmcode.org/osmium-tool/) (Boost Software
+License 1.0) empfohlen; es ist nicht Teil des Projekts.
