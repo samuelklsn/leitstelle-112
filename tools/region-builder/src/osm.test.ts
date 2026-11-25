@@ -116,8 +116,10 @@ describe('OSM-Import (ADR-0020)', () => {
     };
     expect(region.towns.map((t) => t.id)).toEqual(['testkreis:altdorf', 'testkreis:neuweiler']);
     expect(region.towns[0]?.population).toBe(8000);
-    // Abgehängtes Stück entfernt: 2 × 25 Rasterknoten + 1 Zwischenknoten.
-    expect(region.prebuilt.nodes).toHaveLength(51);
+    // Abgehängtes Stück entfernt (2 × 25 Rasterknoten + 1 Zwischenknoten), gerade Abschnitte
+    // vereinfacht – Kreuzungen bleiben.
+    expect(region.prebuilt.nodes.length).toBeLessThanOrEqual(51);
+    expect(region.prebuilt.nodes.length).toBeGreaterThanOrEqual(50);
     expect(region.prebuilt.addresses.some((a) => a[1] === '3')).toBe(true);
     expect(region.prebuilt.roadSections.length).toBeGreaterThanOrEqual(1);
     expect(region.attribution).toContain('OpenStreetMap');
@@ -144,7 +146,7 @@ describe('OSM-Import (ADR-0020)', () => {
       defaultConfig({ seed: 5, startTime: simTimeFrom(2026, 11, 24, 7), callRateFactor: 8 }),
       bundle,
     );
-    expect(sim.world.graph.nodeCount).toBe(51);
+    expect(sim.world.graph.nodeCount).toBeGreaterThanOrEqual(50);
     // Eine Stunde mit vielen Notrufen: Fahrzeuge erreichen Einsatzorte über das echte Netz.
     let arrived = 0;
     for (let t = 0; t < 3600; t++) {

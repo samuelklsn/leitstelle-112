@@ -10,6 +10,8 @@
  * hier erlaubt.
  */
 
+import { simplifyNetwork } from './simplify';
+
 export interface OsmNode {
   readonly lat: number;
   readonly lon: number;
@@ -252,16 +254,22 @@ export function buildRegionMod(osm: OsmData, options: BuildOptions): ModFiles {
     rawSegments.map(([a, b]) => [a, b]),
   );
   const remap = new Map<number, number>();
-  const finalNodes: Vec[] = [];
+  const connected: Vec[] = [];
   nodes.forEach((p, i) => {
     if (keep[i]) {
-      remap.set(i, finalNodes.length);
-      finalNodes.push(p);
+      remap.set(i, connected.length);
+      connected.push(p);
     }
   });
-  const segments = rawSegments
-    .filter(([a, b]) => a !== b && remap.has(a) && remap.has(b))
-    .map(([a, b, c, s, o]) => [remap.get(a) ?? 0, remap.get(b) ?? 0, c, s, o] as const);
+  // Gerade Abschnitte vereinfachen: weniger Knoten, schnelleres Routing, gleiche Geometrie.
+  const simplified = simplifyNetwork(
+    connected,
+    rawSegments
+      .filter(([a, b]) => a !== b && remap.has(a) && remap.has(b))
+      .map(([a, b, c, s, o]) => [remap.get(a) ?? 0, remap.get(b) ?? 0, c, s, o] as const),
+  );
+  const finalNodes = simplified.nodes;
+  const segments = simplified.segs;
 
   // Räumlicher Index für die nächsten Knoten (Raster 250 m).
   const CELL = 250;

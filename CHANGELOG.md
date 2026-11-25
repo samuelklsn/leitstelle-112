@@ -11,6 +11,9 @@ Versionierung nach [Semantic Versioning](https://semver.org/lang/de/).
 - **Akustische Signale:** Notrufe klingeln, Sprechwünsche und Nachforderungen piepen, eine Großlage
   löst einen Gong aus. Die Töne entstehen per Web Audio (keine Tondateien) und lassen sich in der
   Kopfzeile abschalten; nur das Hauptfenster gibt Töne aus.
+- **Region-Builder vereinfacht das Straßennetz:** Stützpunkte auf geraden Abschnitten derselben
+  Straße fallen weg (Abschnitte höchstens 300 m), Kurven, Kreuzungen und Einbahnrichtungen bleiben.
+  Das hält das Routing in echten Landkreisen schnell.
 
 ## [1.1.0] – 2026-11-25 – Echte Regionen (M13)
 
