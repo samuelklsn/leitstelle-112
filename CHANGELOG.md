@@ -6,6 +6,8 @@ Versionierung nach [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+## [1.2.0] – 2026-11-25 – Akustik und große Regionen
+
 ### Hinzugefügt
 
 - **Akustische Signale:** Notrufe klingeln, Sprechwünsche und Nachforderungen piepen, eine Großlage
@@ -14,6 +16,12 @@ Versionierung nach [Semantic Versioning](https://semver.org/lang/de/).
 - **Region-Builder vereinfacht das Straßennetz:** Stützpunkte auf geraden Abschnitten derselben
   Straße fallen weg (Abschnitte höchstens 300 m), Kurven, Kreuzungen und Einbahnrichtungen bleiben.
   Das hält das Routing in echten Landkreisen schnell.
+- **Leistungsbudget für echte Regionen:** Ein synthetischer Landkreis mit rund 44.000 OSM-Knoten
+  startet in unter 5 Sekunden; gemessen in `tools/region-builder/src/region.perf.ts`.
+
+### Geändert
+
+- ImgBot lässt die automatisch erzeugten Screenshots aus (`.imgbotconfig`).
 
 ## [1.1.0] – 2026-11-25 – Echte Regionen (M13)
 
@@ -307,7 +315,8 @@ eigentlichen Sinn – das kommt ab M2/M3.
 - Nach einem Absturz startet die Simulation neu beim Schichtbeginn; Autosave folgt in M4.
 - Der Installer wird nur in der CI gebaut (Richtlinie des Entwicklungsrechners, PLAN Kapitel 9).
 
-[Unreleased]: https://github.com/samuelklsn/leitstelle-112/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/samuelklsn/leitstelle-112/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/samuelklsn/leitstelle-112/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/samuelklsn/leitstelle-112/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/samuelklsn/leitstelle-112/compare/v0.8.0...v1.0.0
 [0.8.0]: https://github.com/samuelklsn/leitstelle-112/compare/v0.7.0...v0.8.0
