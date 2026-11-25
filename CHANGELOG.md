@@ -6,6 +6,28 @@ Versionierung nach [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unreleased]
 
+### Hinzugefügt
+
+- **Android-App** (`apps/android`, ADR-0021): dasselbe Spiel als APK für Telefone und Tablets ab
+  Android 8.0, vollständig offline, ohne Berechtigungsabfragen. Die Simulation läuft in einem Web Worker,
+  Spielstände und eigene Mods liegen in IndexedDB.
+- **Telefon-Layout** unter 900 px Breite: ein Bereich zur Zeit (Karte, Notrufe, Fahrzeuge,
+  Einsätze) mit Leiste und Zählern, Schnellknöpfe für Annehmen, Alarmieren und Zielklinik,
+  Dialoge im Vollbild, Zeitraffer über einen Knopf.
+- Touch-Bedienung: größere Tippflächen, Android-Zurück-Taste schließt Dialoge, Vibration bei
+  Notruf und Großlage, Bildschirm bleibt während einer Schicht an.
+- Beim Wechsel in den Hintergrund speichert die App automatisch und hält die Zeit an.
+- Diagnosepaket auf Android über das Teilen-Menü.
+- CI baut zusätzlich eine Debug-APK.
+
+### Geändert
+
+- Der plattformneutrale Sim-Host (`SimHost`, `SimClock`, Startzeiten) liegt jetzt im Paket
+  `packages/host` und wird von Windows und Android gemeinsam genutzt.
+- Das Zusammenführen von Mods (`loadWithModLayers`) ist dateisystemfrei in `packages/content`.
+- Fenster unter 1280 px Breite: Untertitel, Weltlage und Schichtnummer weichen aus der
+  Kopfzeile, damit Uhr und Zeitraffer sichtbar bleiben.
+
 ## [1.2.0] – 2026-11-25 – Akustik und große Regionen
 
 ### Hinzugefügt

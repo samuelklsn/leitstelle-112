@@ -25,17 +25,29 @@ den installierten Paketen ausgelesen (Stand v0.1.0).
 | pino                                    | 10.4.0          | MIT                                | Logging         |
 | SQLite (über `node:sqlite` in Electron) | –               | Public Domain                      | Spielstände     |
 
+### Zusätzlich in der Android-App (ADR-0021)
+
+| Komponente                                                       | Version                       | Lizenz             | Zweck                                  |
+| ---------------------------------------------------------------- | ----------------------------- | ------------------ | -------------------------------------- |
+| Capacitor (`@capacitor/core`, `@capacitor/android`)              | 8.6.2                         | MIT                | Android-Hülle (WebView)                |
+| Capacitor-Plugins App, Haptics, Filesystem, Share                | 8.1.2 / 8.0.2 / 8.1.5 / 8.0.3 | MIT                | Lebenszyklus, Vibration, Diagnosepaket |
+| fflate                                                           | 0.8.3                         | MIT                | zlib/ZIP im Browser (Spielstände)      |
+| AndroidX (AppCompat, Core, Activity, WebKit, SplashScreen u. a.) | siehe `variables.gradle`      | Apache-2.0         | Android-Bibliotheken (über Capacitor)  |
+| Android System WebView (Chromium)                                | auf dem Gerät                 | BSD-3-Clause u. a. | Laufzeit – nicht mitgeliefert          |
+
 ## Nur zum Entwickeln und Bauen
 
-| Komponente                          | Version                 | Lizenz     |
-| ----------------------------------- | ----------------------- | ---------- |
-| TypeScript                          | 6.0.3                   | Apache-2.0 |
-| Vite, @vitejs/plugin-react          | 8.3.8                   | MIT        |
-| esbuild                             | 0.28.2                  | MIT        |
-| electron-builder (NSIS)             | 26.18.0                 | MIT        |
-| ESLint, typescript-eslint, Prettier | 10.15.0, 8.74.0, 3.10.1 | MIT        |
-| Vitest, fast-check                  | 5.1.1, 4.11.0           | MIT        |
-| Playwright                          | 1.65.1                  | Apache-2.0 |
+| Komponente                                 | Version                 | Lizenz     |
+| ------------------------------------------ | ----------------------- | ---------- |
+| TypeScript                                 | 6.0.3                   | Apache-2.0 |
+| Vite, @vitejs/plugin-react                 | 8.3.8                   | MIT        |
+| esbuild                                    | 0.28.2                  | MIT        |
+| electron-builder (NSIS)                    | 26.18.0                 | MIT        |
+| Capacitor CLI                              | 8.6.2                   | MIT        |
+| Android SDK, Gradle, Android Gradle Plugin | –                       | Apache-2.0 |
+| ESLint, typescript-eslint, Prettier        | 10.15.0, 8.74.0, 3.10.1 | MIT        |
+| Vitest, fast-check                         | 5.1.1, 4.11.0           | MIT        |
+| Playwright                                 | 1.65.1                  | Apache-2.0 |
 
 ## Geplant (beim Einbau prüfen)
 
@@ -55,11 +67,12 @@ den installierten Paketen ausgelesen (Stand v0.1.0).
 
 ## Grafiken, Icons, Sounds, Schriften
 
-| Asset                                | Urheber                                                                | Lizenz       |
-| ------------------------------------ | ---------------------------------------------------------------------- | ------------ |
-| Logo „112", Kartenstil, Marker (CSS) | Eigenwerk                                                              | CC BY-SA 4.0 |
-| Schriften                            | Windows-Systemschriften (Segoe UI, Cascadia Mono) – nicht mitgeliefert | –            |
-| Screenshots in `docs/images`         | Eigenwerk (erzeugt aus dem Spiel)                                      | CC BY-SA 4.0 |
+| Asset                                     | Urheber                                                                | Lizenz       |
+| ----------------------------------------- | ---------------------------------------------------------------------- | ------------ |
+| Logo „112", Kartenstil, Marker (CSS)      | Eigenwerk                                                              | CC BY-SA 4.0 |
+| Android-App-Symbol und Startbild (Vektor) | Eigenwerk (`apps/android/android/app/src/main/res/drawable`)           | CC BY-SA 4.0 |
+| Schriften                                 | Windows-Systemschriften (Segoe UI, Cascadia Mono) – nicht mitgeliefert | –            |
+| Screenshots in `docs/images`              | Eigenwerk (erzeugt aus dem Spiel)                                      | CC BY-SA 4.0 |
 
 ## Daten aus OpenStreetMap (nur Region-Builder)
 

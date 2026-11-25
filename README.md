@@ -82,6 +82,14 @@ auf Leitung 2 klingelt schon der nächste Notruf.
 > Der Installer ist noch nicht signiert. Windows SmartScreen zeigt deshalb eine Warnung
 > („Weitere Informationen“ → „Trotzdem ausführen“).
 
+### Android
+
+Dasselbe Spiel gibt es als Android-App (ab Android 8.0) – mit einem eigenen Layout für Telefone:
+ein Bereich zur Zeit, Leiste unten, Schnellknöpfe für Annehmen, Alarmieren und Zielklinik.
+Tablets im Querformat zeigen die volle Arbeitsfläche. Die APK liegt bei den
+[Releases](https://github.com/samuelklsn/leitstelle-112/releases); Installation, Bedienung und
+Bauen: [docs/android.md](docs/android.md).
+
 ### Tastatur
 
 | Taste                  | Funktion                                       |
@@ -152,8 +160,8 @@ nichts automatisch versendet – das Paket kann einem
 
 ## Technik
 
-Electron · TypeScript (strict) · React · MapLibre GL · SQLite (`node:sqlite`) · Zod · Vitest ·
-fast-check · Playwright
+Electron · Capacitor (Android) · TypeScript (strict) · React · MapLibre GL · SQLite (`node:sqlite`) ·
+IndexedDB · Zod · Vitest · fast-check · Playwright
 
 Der Simulationskern ist deterministisch: Gleicher Seed und gleiche Eingaben ergeben immer denselben
 Verlauf. So lassen sich Abstürze per Replay nachstellen, und Bots können ganze Schichten
