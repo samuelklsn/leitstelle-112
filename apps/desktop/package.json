@@ -17,6 +17,7 @@
   },
   "devDependencies": {
     "@ls112/content": "workspace:*",
+    "@ls112/host": "workspace:*",
     "@ls112/protocol": "workspace:*",
     "@ls112/sim": "workspace:*",
     "electron": "^45.4.1",

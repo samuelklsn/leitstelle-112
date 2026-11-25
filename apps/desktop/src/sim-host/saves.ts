@@ -6,32 +6,10 @@ import { DatabaseSync } from 'node:sqlite';
 import { deflateSync, inflateSync } from 'node:zlib';
 import type { SaveInfo } from '@ls112/protocol';
 import type { LoggedCommand, SimSnapshot } from '@ls112/sim';
+import { AUTOSAVE_KEEP, type SaveStore, type StoredGame } from '@ls112/host';
 
-export interface StoredGame {
-  readonly info: SaveInfo;
-  readonly snapshot: SimSnapshot;
-  readonly commands: readonly LoggedCommand[];
-  readonly mode: 'free' | 'tutorial';
-}
-
-export interface SaveStore {
-  list(): SaveInfo[];
-  write(entry: {
-    kind: 'auto' | 'manual';
-    name: string;
-    snapshot: SimSnapshot;
-    commands: readonly LoggedCommand[];
-    region: string;
-    shiftIndex: number;
-    mode: 'free' | 'tutorial';
-  }): SaveInfo;
-  read(id: number): StoredGame | undefined;
-  latestAuto(): number | undefined;
-  close(): void;
-}
-
-/** Wie viele automatische Spielstände aufbewahrt werden (rollierend). */
-export const AUTOSAVE_KEEP = 3;
+export { AUTOSAVE_KEEP };
+export type { SaveStore, StoredGame };
 
 const SCHEMA_VERSION = 1;
 
