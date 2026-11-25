@@ -41,6 +41,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         shell: pwsh
         run: |
-          $prerelease = if ('${{ github.ref_name }}' -match '^v0\.') { '--prerelease' } else { '' }
-          gh release create '${{ github.ref_name }}' apps/desktop/release/*.exe `
-            --title "Leitstelle 112 ${{ github.ref_name }}" --notes-file release-notes.md $prerelease
+          # Argumente als Liste: Ohne Vorabversion darf kein leeres Argument entstehen.
+          $installer = Get-ChildItem apps/desktop/release/*.exe | Select-Object -ExpandProperty FullName
+          $ghArgs = @('release', 'create', '${{ github.ref_name }}') + $installer + @(
+            '--title', 'Leitstelle 112 ${{ github.ref_name }}', '--notes-file', 'release-notes.md')
+          if ('${{ github.ref_name }}' -match '^v0\.') { $ghArgs += '--prerelease' }
+          gh @ghArgs
