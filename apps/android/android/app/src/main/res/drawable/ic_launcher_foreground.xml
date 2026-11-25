@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  App-Symbol (Eigenwerk, CC BY-SA 4.0): roter Leitstellen-Würfel mit „112", wie das Logo der
+  Oberfläche. Adaptive Icon: 108 dp, sichtbare Zone die mittleren 66 dp.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#D7263D"
+        android:pathData="M32,26 L76,26 Q82,26 82,32 L82,76 Q82,82 76,82 L32,82 Q26,82 26,76 L26,32 Q26,26 32,26 Z" />
+    <path
+        android:fillColor="#A3162A"
+        android:pathData="M82,52 L82,76 Q82,82 76,82 L32,82 Q26,82 26,76 L26,64 Q54,70 82,52 Z" />
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M36,47 L41,42 L41,66 M49,47 L54,42 L54,66" />
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M62,47.5 C62,44 64.5,42 68,42 C71.5,42 74,44.2 74,47.5 C74,51.5 70.5,54.5 62,66 L75,66" />
+</vector>

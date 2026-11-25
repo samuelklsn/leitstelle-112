@@ -8,3 +8,6 @@ playwright-report
 test-results
 # Inhaltsdateien bleiben kompakt und von Hand formatiert – für Modder lesbarer.
 content
+
+# Von Capacitor erzeugtes Android-Projekt (Gradle, Java, Ressourcen)
+apps/android/android/

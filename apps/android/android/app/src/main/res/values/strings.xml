@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Leitstelle 112</string>
+    <string name="title_activity_main">Leitstelle 112</string>
+    <string name="package_name">de.leitstelle112.app</string>
+    <string name="custom_url_scheme">de.leitstelle112.app</string>
+</resources>
