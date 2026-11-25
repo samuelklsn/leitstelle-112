@@ -8,6 +8,13 @@ Versionierung nach [Semantic Versioning](https://semver.org/lang/de/).
 
 ### Hinzugefügt
 
+- **Leitstelle 112 3D für den Mac** (`apps/mac3d`, ADR-0022): Leitstellenraum und Landkreis in 3D
+  (Swift, RealityKit). Im Raum zeigen die Monitore live die Leitstellen-Software, das Telefon
+  blinkt bei Notrufen; in der Lage 3D fahren die Fahrzeuge mit Blaulicht durch prozedural
+  erzeugte Orte, über Brände steigt Rauch, Tageszeit und Wetter folgen dem Spiel. Simulation und
+  Bedienung kommen aus dem gemeinsamen Code.
+- Gemeinsames Paket `packages/web-host` (Sim-Worker, IndexedDB-Ablage) für Android und Mac.
+
 - **Android-App** (`apps/android`, ADR-0021): dasselbe Spiel als APK für Telefone und Tablets ab
   Android 8.0, vollständig offline, ohne Berechtigungsabfragen. Die Simulation läuft in einem Web Worker,
   Spielstände und eigene Mods liegen in IndexedDB.

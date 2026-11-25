@@ -30,9 +30,11 @@ deterministischer TypeScript-Simulationskern. Plan: `docs/PLAN.md`, Entscheidung
 
 ```
 apps/desktop        Electron Main, Preload, Sim-Host (utilityProcess), SQLite, Logging
-apps/android        Capacitor-App: Sim-Worker, IndexedDB, Brücke, Android-Projekt (ADR-0021)
+apps/android        Capacitor-App: Brücke, Lebenszyklus, Android-Projekt (ADR-0021)
+apps/mac3d          3D-Mac-App: Swift/RealityKit-Hülle + Web-Teil mit Szenen-Feed (ADR-0022)
 apps/ui             React-Renderer (Vite), auch Telefon-Layout
 packages/host       Plattformneutraler Sim-Host (Takt, Spielstände, Verteilung)
+packages/web-host   Sim-Host im Web Worker, IndexedDB-Ablage (Android, Mac)
 packages/sim        Simulationskern
 packages/routing    Straßengraph, Routing, Fahrzeitmodell
 packages/protocol   Nachrichtentypen Sim-Host <-> UI
@@ -100,4 +102,7 @@ auf Windows manuell geprüft · im `CHANGELOG.md` unter „Unreleased" eingetrag
 - Windows 10/11 x64, Node.js LTS (Version in `.nvmrc`), pnpm (Version in `packageManager`).
 - Android: JDK 21, Android SDK (Platform/Build-Tools 36), `ANDROID_HOME` gesetzt – siehe
   `docs/android.md`. Oberfläche immer auch im Telefon-Layout (< 900 px) prüfen.
+- 3D-Mac-App: Xcode 26 (Swift 6.2), macOS 26; Bauen mit `pnpm --filter @ls112/mac3d build`,
+  Prüfbilder über `LS112_SNAPSHOT_DIR` (siehe `docs/mac3d.md`). Swift-Code folgt Swift 6 mit
+  MainActor als Standard-Isolation; 3D-Objekte nur aus eigenem Code (Regel 2).
 - Shell-Befehle in Doku und Skripten für PowerShell bzw. plattformneutral über Node-Skripte.

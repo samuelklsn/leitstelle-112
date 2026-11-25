@@ -25,6 +25,11 @@ den installierten Paketen ausgelesen (Stand v0.1.0).
 | pino                                    | 10.4.0          | MIT                                | Logging         |
 | SQLite (über `node:sqlite` in Electron) | –               | Public Domain                      | Spielstände     |
 
+### Zusätzlich in der 3D-Mac-App (ADR-0022)
+
+Nur Systembibliotheken von macOS (RealityKit, WebKit, SwiftUI, Metal) – nicht mitgeliefert, keine
+weiteren Abhängigkeiten. Der Web-Teil nutzt dieselben Pakete wie die Android-App (fflate u. a.).
+
 ### Zusätzlich in der Android-App (ADR-0021)
 
 | Komponente                                                       | Version                       | Lizenz             | Zweck                                  |
@@ -67,12 +72,13 @@ den installierten Paketen ausgelesen (Stand v0.1.0).
 
 ## Grafiken, Icons, Sounds, Schriften
 
-| Asset                                     | Urheber                                                                | Lizenz       |
-| ----------------------------------------- | ---------------------------------------------------------------------- | ------------ |
-| Logo „112", Kartenstil, Marker (CSS)      | Eigenwerk                                                              | CC BY-SA 4.0 |
-| Android-App-Symbol und Startbild (Vektor) | Eigenwerk (`apps/android/android/app/src/main/res/drawable`)           | CC BY-SA 4.0 |
-| Schriften                                 | Windows-Systemschriften (Segoe UI, Cascadia Mono) – nicht mitgeliefert | –            |
-| Screenshots in `docs/images`              | Eigenwerk (erzeugt aus dem Spiel)                                      | CC BY-SA 4.0 |
+| Asset                                                              | Urheber                                                                | Lizenz       |
+| ------------------------------------------------------------------ | ---------------------------------------------------------------------- | ------------ |
+| Logo „112", Kartenstil, Marker (CSS)                               | Eigenwerk                                                              | CC BY-SA 4.0 |
+| 3D-Mac-App: Symbol, Fahrzeuge, Gebäude, Raum (prozedural aus Code) | Eigenwerk (`apps/mac3d`)                                               | CC BY-SA 4.0 |
+| Android-App-Symbol und Startbild (Vektor)                          | Eigenwerk (`apps/android/android/app/src/main/res/drawable`)           | CC BY-SA 4.0 |
+| Schriften                                                          | Windows-Systemschriften (Segoe UI, Cascadia Mono) – nicht mitgeliefert | –            |
+| Screenshots in `docs/images`                                       | Eigenwerk (erzeugt aus dem Spiel)                                      | CC BY-SA 4.0 |
 
 ## Daten aus OpenStreetMap (nur Region-Builder)
 
