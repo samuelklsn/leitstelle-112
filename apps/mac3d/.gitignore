@@ -1,0 +1,3 @@
+# Erzeugt: Web-Teil (pnpm build:web) und kompiliertes App-Symbol (tools/make_icon.sh)
+Resources/
+.build/

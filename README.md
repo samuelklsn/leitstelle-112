@@ -92,7 +92,17 @@ Tablets im Querformat zeigen die volle Arbeitsfläche.
    öffnen und unter **Assets** die Datei `Leitstelle112-…-android.apk` laden.
 2. Öffnen, „Aus dieser Quelle zulassen" einschalten, **Installieren**.
 
-Ausführliche Anleitung mit Herstellerhinweisen und Problemlösungen:
+### 3D-Ausgabe (Mac)
+
+**Leitstelle 112 3D** zeigt dieselbe Leitstelle in 3D: Du sitzt im Leitstellenraum vor deinen
+Monitoren, und in der _Lage 3D_ fahren die Einsatzfahrzeuge mit Blaulicht durch den Landkreis.
+Für macOS 26 – Bauen und Bedienung: [docs/mac3d.md](docs/mac3d.md). Android folgt später.
+
+| Leitstellenraum                                            | Lage 3D im Ort                                           | Landkreis bei Nacht                                      |
+| ---------------------------------------------------------- | -------------------------------------------------------- | -------------------------------------------------------- |
+| ![Leitstellenraum in 3D](docs/images/mac3d-leitstelle.png) | ![Ort mit Einsatzstelle](docs/images/mac3d-lage-ort.png) | ![Landkreis bei Nacht](docs/images/mac3d-lage-nacht.png) |
+
+Ausführliche Android-Anleitung mit Herstellerhinweisen und Problemlösungen:
 [docs/android-installation.md](docs/android-installation.md) · Bedienung und Bauen:
 [docs/android.md](docs/android.md).
 

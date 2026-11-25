@@ -11,3 +11,8 @@ content
 
 # Von Capacitor erzeugtes Android-Projekt (Gradle, Java, Ressourcen)
 apps/android/android/
+
+# 3D-Mac-App: erzeugte Dateien und Icon Composer (JSON von Xcode-Werkzeugen)
+apps/mac3d/Resources/
+apps/mac3d/.build/
+apps/mac3d/Icon/

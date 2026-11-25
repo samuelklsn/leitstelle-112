@@ -1,7 +1,7 @@
 /** Vom Preload bereitgestellte Brücke (apps/desktop/src/preload). Fehlt im reinen Browser. */
 interface Ls112Bridge {
   /** Auf welcher Plattform die Oberfläche läuft (ADR-0021). Fehlt bei älteren Brücken. */
-  readonly platform?: 'windows' | 'android';
+  readonly platform?: 'windows' | 'android' | 'mac';
   log(level: 'info' | 'warn' | 'error', message: string, context?: Record<string, unknown>): void;
   appInfo(): Promise<{ version: string; electron: string; simHostRestarts: number }>;
   e2eCrashSimHost(): void;

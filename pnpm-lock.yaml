@@ -87,6 +87,9 @@ importers:
       '@ls112/sim':
         specifier: workspace:*
         version: link:../../packages/sim
+      '@ls112/web-host':
+        specifier: workspace:*
+        version: link:../../packages/web-host
       '@vitejs/plugin-react':
         specifier: ^6.3.0
         version: 6.3.0(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))
@@ -120,6 +123,34 @@ importers:
       pino:
         specifier: ^10.4.0
         version: 10.4.0
+
+  apps/mac3d:
+    dependencies:
+      fflate:
+        specifier: ^0.8.3
+        version: 0.8.3
+    devDependencies:
+      '@ls112/content':
+        specifier: workspace:*
+        version: link:../../packages/content
+      '@ls112/host':
+        specifier: workspace:*
+        version: link:../../packages/host
+      '@ls112/protocol':
+        specifier: workspace:*
+        version: link:../../packages/protocol
+      '@ls112/sim':
+        specifier: workspace:*
+        version: link:../../packages/sim
+      '@ls112/web-host':
+        specifier: workspace:*
+        version: link:../../packages/web-host
+      '@vitejs/plugin-react':
+        specifier: ^6.3.0
+        version: 6.3.0(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))
+      vite:
+        specifier: ^8.3.8
+        version: 8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1)
 
   apps/ui:
     dependencies:
@@ -195,6 +226,28 @@ importers:
       '@ls112/routing':
         specifier: workspace:*
         version: link:../routing
+
+  packages/web-host:
+    dependencies:
+      '@ls112/content':
+        specifier: workspace:*
+        version: link:../content
+      '@ls112/host':
+        specifier: workspace:*
+        version: link:../host
+      '@ls112/protocol':
+        specifier: workspace:*
+        version: link:../protocol
+      '@ls112/sim':
+        specifier: workspace:*
+        version: link:../sim
+      fflate:
+        specifier: ^0.8.3
+        version: 0.8.3
+    devDependencies:
+      vite:
+        specifier: ^8.3.8
+        version: 8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1)
 
   tools/region-builder:
     dependencies:

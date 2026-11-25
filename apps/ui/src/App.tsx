@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { SPEEDS } from '@ls112/protocol';
 import { formatClock, formatDate } from './format';
-import { isAndroid, useCompact } from './platform';
+import { hasMultiWindow, useCompact } from './platform';
 import { WINDOW_VIEW, useSim, type WindowView } from './sim-store';
 import { useGlobalShortcuts } from './use-shortcuts';
 import { MapView } from './components/MapView';
@@ -115,7 +115,7 @@ function Header({ secondary = false }: { secondary?: boolean }) {
             {t('menu.help')}
           </button>
           {/* Mehrere Fenster gibt es nur unter Windows (#50). */}
-          {!isAndroid() && (
+          {hasMultiWindow() && (
             <button
               type="button"
               onClick={() => {

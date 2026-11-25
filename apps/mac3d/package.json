@@ -1,0 +1,26 @@
+{
+  "name": "@ls112/mac3d",
+  "version": "1.2.0",
+  "private": true,
+  "description": "Leitstelle 112 3D – Mac-App (Swift, RealityKit) mit gemeinsamer Simulation",
+  "license": "GPL-3.0-or-later",
+  "type": "module",
+  "scripts": {
+    "dev": "vite web",
+    "build:web": "vite build web",
+    "build": "pnpm run build:web && ./build.sh",
+    "typecheck": "tsc -p web/tsconfig.json"
+  },
+  "devDependencies": {
+    "@ls112/content": "workspace:*",
+    "@ls112/host": "workspace:*",
+    "@ls112/protocol": "workspace:*",
+    "@ls112/sim": "workspace:*",
+    "@ls112/web-host": "workspace:*",
+    "@vitejs/plugin-react": "^6.3.0",
+    "vite": "^8.3.8"
+  },
+  "dependencies": {
+    "fflate": "^0.8.3"
+  }
+}

@@ -7,6 +7,12 @@ import { useSim } from './sim-store';
 
 export { onCue } from './sim-store';
 
+/** Mehrere Fenster und Layouts gibt es nur unter Windows (#50) – und im Browser zur Ansicht. */
+export function hasMultiWindow(): boolean {
+  const platform = typeof window === 'undefined' ? undefined : window.ls112?.platform;
+  return platform === undefined || platform === 'windows';
+}
+
 /** Läuft die Oberfläche in der Android-App? */
 export function isAndroid(): boolean {
   return typeof window !== 'undefined' && window.ls112?.platform === 'android';

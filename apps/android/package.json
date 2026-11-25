@@ -27,6 +27,7 @@
     "@ls112/host": "workspace:*",
     "@ls112/protocol": "workspace:*",
     "@ls112/sim": "workspace:*",
+    "@ls112/web-host": "workspace:*",
     "@vitejs/plugin-react": "^6.3.0",
     "vite": "^8.3.8"
   }

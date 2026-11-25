@@ -81,6 +81,9 @@ export default defineConfig(
       'test-results/**',
       // Von Capacitor erzeugtes Android-Projekt (Gradle, Java) und dessen Web-Kopie.
       'apps/android/android/**',
+      // Erzeugter Web-Teil und Swift-Build der 3D-Mac-App.
+      'apps/mac3d/Resources/**',
+      'apps/mac3d/.build/**',
     ],
   },
   js.configs.recommended,
@@ -130,7 +133,11 @@ export default defineConfig(
     rules: { ...tseslint.configs.disableTypeChecked.rules, 'no-restricted-exports': 'off' },
   },
   {
-    files: ['apps/ui/src/**/*.{ts,tsx}', 'apps/android/src/**/*.ts'],
+    files: [
+      'apps/ui/src/**/*.{ts,tsx}',
+      'apps/android/src/**/*.ts',
+      'packages/web-host/src/**/*.ts',
+    ],
     languageOptions: { globals: globals.browser },
     plugins: { 'react-hooks': reactHooks },
     rules: reactHooks.configs.recommended.rules,
