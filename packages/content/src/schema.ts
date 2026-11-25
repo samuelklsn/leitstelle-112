@@ -61,6 +61,26 @@ export const Motorway = z.object({
   ),
 });
 
+const Int = z.number().int().nonnegative();
+
+/**
+ * Fertig aufgebaute Welt aus einem Regionspaket (ADR-0020), z. B. aus OpenStreetMap. Kompakt als
+ * Tupel, weil echte Landkreise Zehntausende Knoten und Adressen haben.
+ */
+export const PrebuiltWorld = z.object({
+  /** Knoten [x, y] in Metern. */
+  nodes: z.array(Point),
+  /** Straßenstücke [von, nach, Straßenklasse 0–6, Straße, Einbahn 0/1]. */
+  segments: z.array(z.tuple([Int, Int, z.number().int().min(0).max(6), Int, z.number().int().min(0).max(1)])),
+  streets: z.array(
+    z.object({ name: z.string(), town: Id.nullable(), roadClass: z.number().int().min(0).max(6) }),
+  ),
+  /** Hausadressen [Straße, Hausnummer, Ort, x, y, Anfahrtsknoten]. */
+  addresses: z.array(z.tuple([Int, z.string(), Id, z.number(), z.number(), Int])),
+  /** Einsatzorte im Freien [Straße, Ort A, Ort B, Knoten]. */
+  roadSections: z.array(z.tuple([Int, Id, Id, Int])).default([]),
+});
+
 export const RegionConfig = z.object({
   id: Id,
   name: z.string(),
@@ -85,6 +105,8 @@ export const RegionConfig = z.object({
   forests: z
     .array(z.object({ name: z.string().optional(), points: z.array(Point).min(3) }))
     .default([]),
+  /** Echte Region: Straßennetz und Adressen kommen fertig aus dem Region-Builder (ADR-0020). */
+  prebuilt: PrebuiltWorld.optional(),
 });
 
 // ---------------------------------------------------------------- Fahrzeuge, Wachen, Kliniken
@@ -294,6 +316,24 @@ export const ModManifest = z.object({
   version: z.string().min(1).max(20),
   author: z.string().max(80).optional(),
   description: z.string().max(500).optional(),
+  /**
+   * Diese Listen der Basis vollständig ersetzen statt ergänzen – z. B. Wachen und Kliniken einer
+   * echten Region, die mit dem fiktiven Landkreis nichts zu tun haben.
+   */
+  replaces: z
+    .array(
+      z.enum([
+        'stations',
+        'hospitals',
+        'transportOrders',
+        'scenarios',
+        'worldEvents',
+        'mciScenarios',
+        'fireScenarios',
+        'hilfsfristPresets',
+      ]),
+    )
+    .default([]),
 });
 
 /** Hilfsfrist-Regel eines Landes mit Quelle (#32). */

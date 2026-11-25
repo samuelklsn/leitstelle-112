@@ -4,7 +4,11 @@ export default defineConfig({
   test: {
     // Simulationstests spielen ganze Schichten durch.
     testTimeout: 60_000,
-    include: ['packages/*/src/**/*.test.ts', 'apps/*/src/**/*.test.{ts,tsx}'],
+    include: [
+      'packages/*/src/**/*.test.ts',
+      'apps/*/src/**/*.test.{ts,tsx}',
+      'tools/*/src/**/*.test.ts',
+    ],
     coverage: {
       provider: 'v8',
       include: ['packages/*/src/**/*.ts'],

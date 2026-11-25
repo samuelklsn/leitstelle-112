@@ -183,6 +183,7 @@ export function loadContentLayers(layers: readonly ContentLayer[]): ContentBundl
   const mods: ModInfo[] = [];
   for (const layer of parsed) {
     if (layer !== first) {
+      for (const key of layer.mod?.replaces ?? []) (lists[key] as unknown[]).length = 0;
       for (const key of LIST_KEYS) {
         const target = lists[key] as unknown[];
         for (const item of layer.lists[key] as unknown[]) {
