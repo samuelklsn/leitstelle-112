@@ -38,13 +38,24 @@ auf Leitung 2 klingelt schon der nächste Notruf.
 - **Realistische Abläufe:** FMS-Status 1–8, Sprechwünsche, Alarm- und Ausrückeordnung,
   Ausrückzeiten bei Tag und Nacht, Übergabe im Krankenhaus, Rückfahrt zur Wache.
 - **Nie durchgespielt:** Einsätze entstehen aus Bausteinen (Krankheitsbild × Patient × Ort ×
-  Anrufer × Tageszeit). Rund 15.000 Adressen, 14 Krankheitsbilder und unzählige Kombinationen sorgen
+  Anrufer × Tageszeit). Rund 15.000 Adressen, 17 Krankheitsbilder und unzählige Kombinationen sorgen
   dafür, dass jede Schicht anders verläuft ([ADR-0014](docs/adr/0014-endlosspiel-prozedurale-vielfalt.md)).
-- **Ehrliche Auswertung:** Hilfsfrist-Quote, Eintreff- und Annahmezeiten, Patientenoutcome,
-  Dispositionsfehler und Auslastung jedes Fahrzeugs.
+- **Rettungsdienst, Feuerwehr und Großlagen:** RTW, NEF, KTW, ITW, Rettungshubschrauber,
+  Feuerwachen und Freiwillige Feuerwehren, Brände, die sich ausbreiten, und seltene Großlagen mit
+  Sichtung, Leitendem Notarzt und Patientenverteilung.
+- **Eine lebendige Welt:** Wetter nach Jahreszeit, Glätte und Hitze, Feiertage, Sommerzeit,
+  Volksfeste, Baustellen, Krankentransporte mit Termin, Kliniken, die sich abmelden, Pausen und
+  Desinfektion – und ein Gedächtnis für Vielanrufer und Gefahrenadressen.
+- **Langzeitspiel:** Laufbahn bis zur Lagedienstführung, Bedarfsplanung mit eigener Statistik,
+  Tages-Herausforderung.
+- **Ehrliche Auswertung:** Hilfsfrist-Quote nach Regeln einzelner Länder, Eintreff- und
+  Annahmezeiten, Patientenoutcome, Dispositionsfehler und Auslastung jedes Fahrzeugs.
+- **Arbeitsplatz wie in der Leitstelle:** mehrere Fenster und Bildschirme, frei belegbare Tasten,
+  akustische Signale.
 - **Komplett offline:** keine Accounts, keine Telemetrie. Spielstände bleiben lokal.
-- **Modbar:** Region, Wachen, Fahrzeuge, Stichworte und Krankheitsbilder sind YAML-Dateien mit
-  Schema-Prüfung.
+- **Modbar:** Wachen, Fahrzeuge, Stichworte, Szenarien und ganze Regionen sind YAML-Dateien mit
+  Schema-Prüfung; Szenario- und Wachen-Editor im Spiel, echte Landkreise aus OpenStreetMap
+  ([Modding](docs/modding.md), [eigene Region](docs/regionen.md)).
 
 ## Screenshots
 
