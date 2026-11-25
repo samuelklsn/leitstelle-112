@@ -117,6 +117,15 @@ export type HostMessage =
   | { readonly type: 'world'; readonly world: WorldInfo }
   /** Geladene und übersprungene Mods (ADR-0019). */
   | { readonly type: 'mods'; readonly mods: readonly ModStatusView[] }
+  /**
+   * Was ein neues Spiel wählen kann – nach dem Neuladen der Inhalte aktuell, auch wenn das
+   * laufende Spiel noch die alten Inhalte hat.
+   */
+  | {
+      readonly type: 'catalog';
+      readonly scenarios: WorldInfo['scenarios'];
+      readonly hilfsfristPresets: WorldInfo['hilfsfristPresets'];
+    }
   | { readonly type: 'state'; readonly state: HostState }
   | { readonly type: 'events'; readonly events: readonly SimEvent[] }
   | { readonly type: 'reply'; readonly id: number; readonly result: QueryResult }

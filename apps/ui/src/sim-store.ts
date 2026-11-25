@@ -83,6 +83,11 @@ interface SimStore {
   ) => void;
   /** Geladene und übersprungene Mods (ADR-0019). */
   mods: readonly ModStatusView[];
+  /** Wählbare Szenarien und Hilfsfrist-Regeln für ein neues Spiel. */
+  catalog: {
+    scenarios: WorldInfo['scenarios'];
+    hilfsfristPresets: WorldInfo['hilfsfristPresets'];
+  } | null;
   /** Kartenauswahl für Editoren: nächster Klick auf die Karte liefert Koordinaten. */
   mapPick: ((x: number, y: number) => void) | null;
   setMapPick: (pick: ((x: number, y: number) => void) | null) => void;
@@ -172,6 +177,7 @@ export const useSim = create<SimStore>((set, get) => ({
     set({ capturingKey: on });
   },
   mods: [],
+  catalog: null,
   mapPick: null,
   setMapPick: (pick) => {
     set({ mapPick: pick });
@@ -192,6 +198,11 @@ function handleHostMessage(message: HostMessage): void {
       return;
     case 'mods':
       useSim.setState({ mods: message.mods });
+      return;
+    case 'catalog':
+      useSim.setState({
+        catalog: { scenarios: message.scenarios, hilfsfristPresets: message.hilfsfristPresets },
+      });
       return;
     case 'state': {
       const prev = useSim.getState().host;

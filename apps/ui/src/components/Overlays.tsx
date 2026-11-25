@@ -48,6 +48,9 @@ export function StartScreen() {
   const openDialog = useSim((s) => s.openDialog);
   const [start, setStart] = useState<StartPreset>('today');
   const [scenario, setScenario] = useState('');
+  const catalog = useSim((s) => s.catalog);
+  const scenarios = catalog?.scenarios ?? world?.scenarios ?? [];
+  const presets = catalog?.hilfsfristPresets ?? world?.hilfsfristPresets ?? [];
   const [hilfsfrist, setHilfsfrist] = useState('');
   const extra = {
     ...(scenario ? { scenario } : {}),
@@ -118,7 +121,7 @@ export function StartScreen() {
             ))}
           </select>
         </label>
-        {world && world.scenarios.length > 0 && (
+        {scenarios.length > 0 && (
           <label className={ov.startPreset}>
             {t('start.scenario')}
             <select
@@ -129,7 +132,7 @@ export function StartScreen() {
               data-testid="start-scenario"
             >
               <option value="">{t('start.noScenario')}</option>
-              {world.scenarios.map((s) => (
+              {scenarios.map((s) => (
                 <option key={s.id} value={s.id} title={s.description}>
                   {s.name}
                 </option>
@@ -137,7 +140,7 @@ export function StartScreen() {
             </select>
           </label>
         )}
-        {world && world.hilfsfristPresets.length > 0 && (
+        {world && presets.length > 0 && (
           <label className={ov.startPreset}>
             {t('start.hilfsfrist')}
             <select
@@ -148,7 +151,7 @@ export function StartScreen() {
               data-testid="start-hilfsfrist"
             >
               <option value="">{world.hilfsfrist.label}</option>
-              {world.hilfsfristPresets.map((p) => (
+              {presets.map((p) => (
                 <option key={p.id} value={p.id} title={p.source}>
                   {p.label}
                 </option>
@@ -244,7 +247,8 @@ function ScenarioGoals({ quota, errors }: { quota: number; errors: number }) {
   const { t } = useTranslation();
   const world = useSim((s) => s.world);
   const id = useSim((s) => s.host?.view.scenario?.id);
-  const scenario = world?.scenarios.find((x) => x.id === id);
+  const catalog = useSim((s) => s.catalog);
+  const scenario = (catalog?.scenarios ?? world?.scenarios ?? []).find((x) => x.id === id);
   if (!scenario) return null;
   const goals: [string, boolean][] = [];
   if (scenario.goals.hilfsfristQuota !== undefined)

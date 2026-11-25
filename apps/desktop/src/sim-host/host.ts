@@ -102,7 +102,16 @@ export class SimHost {
     port.postMessage({ type: 'welcome', protocol: PROTOCOL_VERSION, seed: this.sim.config.seed });
     port.postMessage({ type: 'world', world: this.world });
     port.postMessage({ type: 'mods', mods: this.mods });
+    port.postMessage(this.catalog());
     port.postMessage({ type: 'state', state: this.state() });
+  }
+
+  private catalog(): HostMessage {
+    return {
+      type: 'catalog',
+      scenarios: this.content.scenarios,
+      hilfsfristPresets: this.content.hilfsfristPresets,
+    };
   }
 
   /** Inhalte samt Mods neu laden; das laufende Spiel bleibt unverändert. */
@@ -113,6 +122,7 @@ export class SimHost {
       this.content = next.content;
       this.mods = next.mods;
       this.broadcast({ type: 'mods', mods: this.mods });
+      this.broadcast(this.catalog());
       this.options.log.info({ mods: this.mods.length }, 'Inhalte neu geladen');
     } catch (error) {
       this.options.log.error({ err: error }, 'Inhalte konnten nicht neu geladen werden');
