@@ -253,6 +253,27 @@ test('Tages-Herausforderung: Laufbahn und Bedarfsplanung in der Auswertung', asy
   await page.keyboard.press('Escape');
 });
 
+test('Szenario-Editor: eigenes Szenario als Mod speichern und spielen', async () => {
+  await page.getByTestId('menu-mods').click();
+  await page.getByTestId('open-scenario-editor').click();
+  await page.getByTestId('scenario-name').fill('Übung Nordkreis');
+  await page.getByTestId('add-call').click();
+  await page.getByTestId('add-call').click();
+  await shot('szenario-editor');
+  await page.getByTestId('save-scenario').click();
+  // Der Sim-Host prüft und lädt die Inhalte neu; der Mod erscheint als geladen.
+  await expect(page.getByTestId('mods-dialog')).toContainText('eigene-inhalte', {
+    timeout: 15_000,
+  });
+  await expect(page.getByTestId('mods-dialog')).toContainText('geladen');
+  await page.keyboard.press('Escape');
+  await page.getByTestId('menu-new').click();
+  await page.getByTestId('start-scenario').selectOption({ label: 'Übung Nordkreis' });
+  await page.getByTestId('start-hilfsfrist').selectOption('base:hf-by');
+  await page.getByTestId('start-free').click();
+  await expect(page.getByTestId('call-row').first()).toBeVisible({ timeout: 30_000 });
+});
+
 test('stellt die Simulation nach einem Absturz aus dem Autosave wieder her', async () => {
   // Autosave alle 5 Spielminuten – bei 10× genügen gut 30 s Echtzeit.
   await page.getByTestId('btn-speed-10').click();

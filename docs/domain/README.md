@@ -18,4 +18,5 @@ die Issue-Vorlage „Fachliches Feedback“.
 | [welt.md](welt.md)                           | Wetter, Feiertage, Ereignisse, Regie, Luftrettung    |
 | [manv.md](manv.md)                           | MANV und Großlagen: Sichtung, Verteilung, Reserven   |
 | [langzeit.md](langzeit.md)                   | Laufbahn, Bedarfsplanung, Personen, Eigensicherung   |
+| [../modding.md](../modding.md)               | Mods, Editoren, Szenarien, Hilfsfrist-Regeln         |
 | [region-brakenfeld.md](region-brakenfeld.md) | Der fiktive Landkreis und seine Vorhaltung           |

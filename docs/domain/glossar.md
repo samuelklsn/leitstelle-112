@@ -22,6 +22,8 @@
 | KTP                 | Krankentransport: Transport ohne Notfall, meist mit Termin                                           | `base:ktp`, `order`   |
 | KTW                 | Krankentransportwagen: Krankentransporte und Verlegungen ohne Überwachung                            | `base:ktw`            |
 | Meldebild           | Was der Anrufer schildert (nicht unbedingt die wahre Lage)                                           | `reportKey`           |
+| Mod                 | Erweiterung mit eigenen Inhalten im Mod-Ordner                                                       | `mods`                |
+| Trainingsszenario   | Übung mit fester Startzeit, geplanten Notrufen und Zielen                                            | `scenarios`           |
 | NACA                | Schweregrad-Skala 0–7 (vom Notarzt erhoben). Ab 4 akute Lebensgefahr nicht ausgeschlossen, 7 tödlich | `naca`                |
 | NAW                 | Notarztwagen: RTW mit Notarzt an Bord, transportiert selbst                                          | `base:naw`            |
 | NEF                 | Notarzteinsatzfahrzeug: bringt den Notarzt zum Einsatzort (Rendezvous-System)                        | `base:nef`            |

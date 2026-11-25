@@ -1,0 +1,6 @@
+mod:
+  id: beispiel-nachtdienst
+  name: Beispiel – Nachtdienst Süd
+  version: 1.0.0
+  author: Leitstelle 112
+  description: Zweiter RTW in Tannrode, strengere Hilfsfrist, ein Übungsszenario.
